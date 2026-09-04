@@ -111,9 +111,7 @@ const DATAX_FIELDS: FieldDef[] = [
     options: [
       { label: 'insert（插入）', value: 'insert' },
       { label: 'replace（替换）', value: 'replace' },
-      { label: 'update（更新）', value: 'update' },
-      { label: 'append（追加）', value: 'append' },
-      { label: 'truncate（清空后写入）', value: 'truncate' }
+      { label: 'update（冲突更新）', value: 'update' }
     ]
   },
   { key: 'batchSize', label: '写入批次', type: 'number' },

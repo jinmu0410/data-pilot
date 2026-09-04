@@ -65,7 +65,12 @@ public class DataXSyncEngine implements SyncEngine {
         Map<String, Object> writerParam = new LinkedHashMap<>();
         writerParam.put("username", tgt.getUsername());
         writerParam.put("password", tgt.getPassword());
-        writerParam.put("writeMode", StrUtil.isBlank(ctx.getWriteMode()) ? "insert" : ctx.getWriteMode());
+        // PostgreSQL Writer does not accept writeMode. MySQL Writer supports
+        // insert/replace/update and resolves update conflicts through existing
+        // primary-key or unique-index constraints on the target table.
+        if (!"PostgreSQL".equalsIgnoreCase(tgt.getType())) {
+            writerParam.put("writeMode", StrUtil.isBlank(ctx.getWriteMode()) ? "insert" : ctx.getWriteMode());
+        }
         writerParam.put("column", targetColumns(ctx));
         writerParam.put("preSql", this.splitStatements(ctx.getPreSql()));
         writerParam.put("postSql", this.splitStatements(ctx.getPostSql()));

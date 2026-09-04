@@ -244,13 +244,33 @@
               <div class="block-title"><span>写入策略</span><small>控制目标端写入行为</small></div>
               <label class="field-label">写入模式</label>
               <el-select v-model="config.writeMode" size="large">
-                <el-option label="Insert · 追加插入" value="insert" />
-                <el-option label="Replace · 主键替换" value="replace" />
-                <el-option label="Update · 冲突更新" value="update" />
-                <el-option label="Append · 仅追加" value="append" />
-                <el-option label="Truncate · 清表后写入" value="truncate" />
+                <el-option v-for="mode in writeModeOptions" :key="mode.value" :label="mode.label" :value="mode.value" />
               </el-select>
-              <div v-if="config.writeMode === 'truncate'" class="danger-tip">运行前会清理目标表，请确认该表可被覆盖。</div>
+              <div v-if="!targetIsMySql" class="performance-tip">
+                {{ targetDatasource?.type || '当前目标端' }} 的 DataX Writer 仅开放 Insert 模式。
+              </div>
+              <div v-if="requiresConflictKey" class="conflict-card" :class="{ invalid: !conflictReady }">
+                <div class="conflict-title">
+                  <span>冲突判定约束</span>
+                  <em>{{ conflictReady ? '映射完整' : '需要处理' }}</em>
+                </div>
+                <template v-if="conflictConstraints.length">
+                  <div v-for="constraint in conflictConstraints" :key="constraint.name" class="constraint-row">
+                    <span>{{ constraint.label }}</span>
+                    <div>
+                      <el-tag
+                        v-for="column in constraint.columns"
+                        :key="column"
+                        size="small"
+                        :type="mappedTargetColumns.has(column) ? 'success' : 'danger'"
+                        effect="plain"
+                      >{{ column }}</el-tag>
+                    </div>
+                  </div>
+                  <p>MySQL 根据主键或唯一索引自动判断冲突；至少保证一组约束字段全部参与映射。</p>
+                </template>
+                <p v-else>目标表没有主键或唯一索引，{{ config.writeMode }} 无法判断需要更新或替换的记录。</p>
+              </div>
               <div class="number-row">
                 <div><label class="field-label">读取批次</label><el-input-number v-model="config.fetchSize" :min="1" :controls="false" placeholder="自动" /></div>
                 <div><label class="field-label">写入批次</label><el-input-number v-model="config.batchSize" :min="1" :controls="false" placeholder="自动" /></div>
@@ -301,7 +321,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import SqlEditor from '../../components/SqlEditor.vue'
-import { listSchemaTable, tableDetail, type SchemaTableMap, type TableColumn } from '../../api/datasource'
+import { listSchemaTable, tableDetail, type SchemaTableMap, type TableColumn, type TableIndex } from '../../api/datasource'
 import type { NodeConfig, FieldMappingRow } from './nodes'
 
 interface DataSourceOption {
@@ -336,10 +356,20 @@ const sourceTree = ref<SchemaTableMap[]>([])
 const targetTree = ref<SchemaTableMap[]>([])
 const sourceColumns = ref<TableColumn[]>([])
 const targetColumns = ref<TableColumn[]>([])
+const targetIndexes = ref<TableIndex[]>([])
 const loading = reactive({ sourceTree: false, targetTree: false, sourceColumns: false, targetColumns: false })
 
 const sourceDatasource = computed(() => props.datasources.find((item) => item.code === props.config.sourceDataSourceCode))
 const targetDatasource = computed(() => props.datasources.find((item) => item.code === props.config.targetDataSourceCode))
+const targetIsMySql = computed(() => targetDatasource.value?.type?.toLowerCase() === 'mysql')
+const writeModeOptions = computed(() => targetIsMySql.value
+  ? [
+      { label: 'Insert · 直接插入，冲突时报错', value: 'insert' },
+      { label: 'Replace · 按主键/唯一键替换整行', value: 'replace' },
+      { label: 'Update · 冲突时更新映射字段', value: 'update' }
+    ]
+  : [{ label: 'Insert · 直接插入', value: 'insert' }]
+)
 const sourceTables = computed(() => sourceTree.value.find((item) => item.key === props.config.sourceSchema)?.children ?? [])
 const targetTables = computed(() => targetTree.value.find((item) => item.key === props.config.targetSchema)?.children ?? [])
 const mappingRows = computed<FieldMappingRow[]>(() => {
@@ -347,6 +377,21 @@ const mappingRows = computed<FieldMappingRow[]>(() => {
   return props.config.fieldMapping
 })
 const completeMappings = computed(() => mappingRows.value.filter((item) => item.source && item.target))
+const mappedTargetColumns = computed(() => new Set(completeMappings.value.map((item) => item.target)))
+const requiresConflictKey = computed(() => targetIsMySql.value && ['replace', 'update'].includes(props.config.writeMode))
+const conflictConstraints = computed(() => {
+  const result: { name: string; label: string; columns: string[] }[] = []
+  const primaryColumns = targetColumns.value.filter((column) => column.primaryKey).map((column) => column.name)
+  if (primaryColumns.length) result.push({ name: 'PRIMARY', label: '主键', columns: primaryColumns })
+  for (const index of targetIndexes.value.filter((item) => item.unique && item.columns?.length)) {
+    if (index.columns.join('\u0000') === primaryColumns.join('\u0000')) continue
+    result.push({ name: index.name, label: `唯一索引 ${index.name}`, columns: index.columns })
+  }
+  return result
+})
+const conflictReady = computed(() => conflictConstraints.value.some((constraint) =>
+  constraint.columns.every((column) => mappedTargetColumns.value.has(column))
+))
 const sourceQualifiedName = computed(() => [props.config.sourceSchema, props.config.sourceTable].filter(Boolean).join('.') || '尚未选择源表')
 
 watch(
@@ -372,6 +417,13 @@ function initializeDefaults() {
   props.config.writeMode ||= 'insert'
   props.config.channel ||= 3
   props.config.timeout ||= 30
+  normalizeWriteMode()
+}
+
+function normalizeWriteMode() {
+  if (!writeModeOptions.value.some((mode) => mode.value === props.config.writeMode)) {
+    props.config.writeMode = 'insert'
+  }
 }
 
 function datasource(side: 'source' | 'target') {
@@ -403,9 +455,12 @@ async function loadTableColumns(side: 'source' | 'target') {
   const key = side === 'source' ? 'sourceColumns' : 'targetColumns'
   loading[key] = true
   try {
-    columns.value = (await tableDetail(selected.id, schema, table)).columns ?? []
+    const detail = await tableDetail(selected.id, schema, table)
+    columns.value = detail.columns ?? []
+    if (side === 'target') targetIndexes.value = detail.indexes ?? []
   } catch {
     columns.value = []
+    if (side === 'target') targetIndexes.value = []
   } finally {
     loading[key] = false
   }
@@ -422,6 +477,8 @@ async function onDatasourceChange(side: 'source' | 'target') {
     props.config.targetTable = ''
     targetTree.value = []
     targetColumns.value = []
+    targetIndexes.value = []
+    normalizeWriteMode()
   }
   clearMappings()
   await loadTree(side)
@@ -435,6 +492,7 @@ function onSchemaChange(side: 'source' | 'target') {
   } else {
     props.config.targetTable = ''
     targetColumns.value = []
+    targetIndexes.value = []
   }
   clearMappings()
   regenerateSql()
@@ -442,7 +500,10 @@ function onSchemaChange(side: 'source' | 'target') {
 
 async function onTableChange(side: 'source' | 'target') {
   if (side === 'source') sourceColumns.value = []
-  else targetColumns.value = []
+  else {
+    targetColumns.value = []
+    targetIndexes.value = []
+  }
   clearMappings()
   await loadTableColumns(side)
   if (sourceColumns.value.length && targetColumns.value.length) autoMap()
@@ -513,6 +574,8 @@ function validate(targetStep: number, quiet = false) {
   if (targetStep === 3) {
     if (!props.config.channel || props.config.channel < 1) message = '并发通道必须大于 0'
     else if (!props.config.timeout || props.config.timeout < 1) message = '超时时间必须大于 0'
+    else if (requiresConflictKey.value && !conflictConstraints.value.length) message = '目标表需要主键或唯一索引才能使用更新/替换模式'
+    else if (requiresConflictKey.value && !conflictReady.value) message = '请将至少一组主键或唯一索引字段完整加入字段映射'
   }
   if (message && !quiet) ElMessage.warning(message)
   return !message
@@ -635,6 +698,14 @@ function cancelWithoutDone() {
 .query-mode-hint, .danger-tip, .performance-tip { margin-top: 18px; padding: 10px 12px; border-radius: 7px; font-size: 11px; line-height: 1.55; }
 .query-mode-hint, .performance-tip { color: #64748b; background: #f5f7fb; }
 .danger-tip { color: #b45309; background: #fff7e6; }
+.conflict-card { margin-top: 13px; padding: 12px; border: 1px solid #b9ead9; border-radius: 8px; background: #f2fbf8; }
+.conflict-card.invalid { border-color: #f4c7c7; background: #fff7f7; }
+.conflict-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; color: #354052; font-size: 11px; font-weight: 700; }
+.conflict-title em { color: #0f9f74; font-size: 10px; font-style: normal; }
+.conflict-card.invalid .conflict-title em { color: #d9534f; }
+.constraint-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-top: 7px; color: #697386; font-size: 10px; }
+.constraint-row > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.conflict-card p { margin: 8px 0 0; color: #7e8797; font-size: 10px; line-height: 1.5; }
 .mapping-heading { align-items: center; }
 .mapping-actions { display: flex; gap: 7px; }
 .sql-block { margin-bottom: 16px; padding: 15px; border: 1px solid #e6e8ef; border-radius: 10px; }
