@@ -5,7 +5,7 @@
  */
 package io.debezium.pipeline;
 
-import cn.dataplatform.open.common.constant.Constant;
+import cn.datapilot.common.constant.Constant;
 import cn.hutool.core.collection.CollUtil;
 import io.debezium.DebeziumException;
 import io.debezium.annotation.ThreadSafe;

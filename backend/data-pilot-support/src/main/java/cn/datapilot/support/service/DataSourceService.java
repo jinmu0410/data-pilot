@@ -1,0 +1,31 @@
+package cn.datapilot.support.service;
+
+import cn.datapilot.support.store.entity.DataSource;
+import com.baomidou.mybatisplus.extension.service.IService;
+
+
+/**
+ * 〈一句话功能简述〉<br>
+ * 〈〉
+ *
+ * @author jinmu
+ * @date 2025/1/11
+ * @since 1.0.0
+ */
+public interface DataSourceService extends IService<DataSource> {
+
+    /**
+     * 加载数据源
+     *
+     * @param id 数据源ID
+     */
+    void load(Long id);
+
+    /**
+     * 移除数据源
+     *
+     * @param id 数据源ID
+     */
+    void remove(Long id);
+
+}

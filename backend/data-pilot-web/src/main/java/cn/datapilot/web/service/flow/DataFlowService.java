@@ -1,0 +1,118 @@
+package cn.datapilot.web.service.flow;
+
+
+import cn.datapilot.common.vo.base.PageRequest;
+import cn.datapilot.common.vo.base.PageResult;
+import cn.datapilot.web.store.entity.DataFlow;
+import cn.datapilot.web.vo.data.flow.*;
+import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
+
+/**
+ * 〈一句话功能简述〉<br>
+ * 〈〉
+ *
+ * @author jinmu
+ * @date 2025/1/4
+ * @since 1.0.0
+ */
+public interface DataFlowService extends IService<DataFlow> {
+
+    /**
+     * 数据流列表
+     *
+     * @param pageRequest p
+     * @return r
+     */
+    PageResult<DataFlowListResponse> list(PageRequest<DataFlowListRequest> pageRequest);
+
+    /**
+     * 创建数据流
+     *
+     * @param dataFlowCreateRequest d
+     * @return r
+     */
+    DataFlowCreateResponse create(DataFlowCreateRequest dataFlowCreateRequest);
+
+    /**
+     * 更新数据流
+     *
+     * @param dataFlowUpdateRequest d
+     * @return r
+     */
+    Boolean update(DataFlowUpdateRequest dataFlowUpdateRequest);
+
+    /**
+     * 获取数据流详情
+     *
+     * @param id d
+     * @return r
+     */
+    DataFlowDetailResponse detail(Long id);
+
+    /**
+     * 发布
+     *
+     * @param publishRequest d
+     * @return r
+     */
+    Boolean publish(PublishRequest publishRequest);
+
+    /**
+     * 停止流程
+     *
+     * @param id d
+     * @return r
+     */
+    Boolean stop(Long id);
+
+    /**
+     * 删除流程
+     *
+     * @param id d
+     * @return r
+     */
+    Boolean delete(Long id);
+
+
+    /**
+     * 回滚至某个版本
+     *
+     * @param id id
+     * @return r
+     */
+    Boolean rollback(Long id);
+
+    /**
+     * 启动流程
+     *
+     * @param id d
+     * @return r
+     */
+    Boolean start(Long id);
+
+    /**
+     * 手动运行一次任务流
+     *
+     * @param id              id
+     * @param failureStrategy 失败策略 CONTINUE/END
+     * @return flowInstanceId
+     */
+    Long run(Long id, String failureStrategy);
+
+    /**
+     * 查询启用且配置了 cron 的任务流
+     *
+     * @return list
+     */
+    List<DataFlow> listEnabledCronFlows();
+
+    /**
+     * 推进任务流 cron 游标
+     *
+     * @param flow f
+     */
+    void advanceNextExecTime(DataFlow flow);
+
+}

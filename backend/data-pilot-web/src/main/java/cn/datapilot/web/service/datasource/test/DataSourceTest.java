@@ -1,0 +1,33 @@
+package cn.datapilot.web.service.datasource.test;
+
+import cn.datapilot.common.enums.DataSourceType;
+
+/**
+ * 〈一句话功能简述〉<br>
+ * 〈〉
+ *
+ * @author jinmu
+ * @date 2025/3/15
+ * @since 1.0.0
+ */
+public interface DataSourceTest {
+
+
+    /**
+     * 测试连接
+     *
+     * @param url      url
+     * @param username 用户名
+     * @param password 密码
+     * @return r
+     */
+    boolean testConnection(String url, String username, String password);
+
+    /**
+     * 获取数据源类型
+     *
+     * @return 数据源类型
+     */
+    DataSourceType getDataSourceType();
+
+}

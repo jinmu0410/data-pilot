@@ -1,0 +1,20 @@
+package cn.datapilot.common.component;
+
+/**
+ * 〈一句话功能简述〉<br>
+ * 〈〉
+ *
+ * @author jinmu
+ * @date 2026/1/5
+ * @since 1.0.0
+ */
+public interface LimitAdjuster {
+
+    /**
+     * 限制数量
+     *
+     * @return 限制数量
+     */
+    long limit();
+
+}
