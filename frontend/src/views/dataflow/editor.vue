@@ -1,69 +1,149 @@
 <template>
-  <div class="editor">
+  <div ref="editorRef" class="editor">
     <div class="editor-header">
       <div class="header-left">
-        <el-button link :icon="ArrowLeft" @click="goBack">返回</el-button>
-        <span class="title">{{ detail?.name || '任务流画布' }}</span>
+        <el-button class="back-button" link :icon="ArrowLeft" @click="goBack">返回列表</el-button>
+        <span class="header-divider"></span>
+        <div class="flow-heading">
+          <div class="flow-title-row">
+            <span class="title">{{ detail?.name || '任务流画布' }}</span>
+            <span class="flow-status" :class="`is-${flowStatusTone}`">{{ flowStatusText }}</span>
+          </div>
+          <div class="flow-subtitle">
+            <span>{{ detail?.code || 'DAG WORKFLOW' }}</span>
+            <span class="subtitle-dot"></span>
+            <span>{{ graphStats.nodes }} 个任务 · {{ graphStats.edges }} 条依赖</span>
+          </div>
+        </div>
       </div>
       <div class="header-right">
-        <el-tooltip content="缩小" placement="bottom">
-          <el-button :icon="ZoomOut" circle @click="zoomOut" />
-        </el-tooltip>
-        <el-tooltip content="放大" placement="bottom">
-          <el-button :icon="ZoomIn" circle @click="zoomIn" />
-        </el-tooltip>
-        <el-tooltip content="适应画布" placement="bottom">
-          <el-button :icon="FullScreen" circle @click="fitView" />
-        </el-tooltip>
-        <el-button plain @click="autoLayout">自动布局</el-button>
-        <el-button type="success" plain :loading="running" @click="handleRun">运行</el-button>
-        <el-button :loading="saving" @click="handleSave(true)">保存</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSave(false)">发布</el-button>
+        <el-button :icon="VideoPlay" plain :loading="running" @click="handleRun">运行</el-button>
+        <el-button :icon="DocumentChecked" :loading="saving" @click="handleSave(true)">保存草稿</el-button>
+        <el-button type="primary" :icon="Upload" :loading="saving" @click="handleSave(false)">发布</el-button>
       </div>
     </div>
 
     <div class="editor-body">
       <aside class="palette">
-        <div class="palette-title">组件</div>
-        <div
-          v-for="t in NODE_TYPES"
-          :key="t.type"
-          class="palette-item"
-          draggable="true"
-          @dragstart="onDragStart($event, t.type)"
-          @click="addNode(t.type)"
-        >
-          <span class="palette-icon" :style="{ background: t.color }">{{ t.icon }}</span>
-          <span>{{ t.label }}</span>
+        <div class="panel-heading">
+          <div>
+            <div class="panel-title">任务组件</div>
+            <div class="panel-subtitle">拖拽到画布创建任务</div>
+          </div>
+          <span class="panel-count">{{ NODE_TYPES.length }}</span>
         </div>
-        <div class="palette-hint">点击或拖拽组件到画布</div>
+        <el-input v-model="paletteKeyword" class="palette-search" :prefix-icon="Search" placeholder="搜索任务类型" clearable />
+        <div v-for="group in paletteGroups" :key="group.key" class="palette-group">
+          <div class="palette-group-title">{{ group.label }}</div>
+          <div
+            v-for="t in group.items"
+            :key="t.type"
+            class="palette-item"
+            draggable="true"
+            @dragstart="onDragStart($event, t.type)"
+            @click="addNode(t.type)"
+          >
+            <span class="palette-icon" :style="{ color: t.color, background: `${t.color}14` }">{{ t.icon }}</span>
+            <span class="palette-item-meta">
+              <span class="palette-item-name">{{ t.label }}</span>
+              <span class="palette-item-type">{{ t.type }}</span>
+            </span>
+            <el-icon class="palette-drag"><Rank /></el-icon>
+          </div>
+        </div>
+        <div v-if="!paletteGroups.length" class="palette-empty">没有匹配的任务组件</div>
+        <div class="palette-hint">
+          <span class="hint-icon">i</span>
+          点击组件可快速添加，拖拽可指定位置
+        </div>
       </aside>
 
       <div class="canvas-wrap" @dragover.prevent @drop.prevent="onDrop">
+        <div class="canvas-toolbar">
+          <div class="tool-group">
+            <el-tooltip content="撤销 Ctrl/⌘ Z" placement="bottom"><button class="tool-button" aria-label="撤销" @click="undo"><el-icon><RefreshLeft /></el-icon></button></el-tooltip>
+            <el-tooltip content="重做 Ctrl/⌘ Shift Z" placement="bottom"><button class="tool-button" aria-label="重做" @click="redo"><el-icon><RefreshRight /></el-icon></button></el-tooltip>
+          </div>
+          <span class="tool-divider"></span>
+          <div class="tool-group">
+            <el-tooltip content="缩小" placement="bottom"><button class="tool-button" aria-label="缩小画布" @click="zoomOut"><el-icon><ZoomOut /></el-icon></button></el-tooltip>
+            <button class="zoom-value" title="重置为 100%" @click="resetZoom">{{ zoomPercent }}%</button>
+            <el-tooltip content="放大" placement="bottom"><button class="tool-button" aria-label="放大画布" @click="zoomIn"><el-icon><ZoomIn /></el-icon></button></el-tooltip>
+          </div>
+          <span class="tool-divider"></span>
+          <div class="tool-group">
+            <el-tooltip content="适应画布" placement="bottom"><button class="tool-button" aria-label="适应画布" @click="fitView"><el-icon><Aim /></el-icon></button></el-tooltip>
+            <el-tooltip content="自动布局" placement="bottom"><button class="tool-button tool-button-wide" @click="autoLayout"><el-icon><MagicStick /></el-icon><span>自动布局</span></button></el-tooltip>
+            <el-tooltip content="全屏画布" placement="bottom"><button class="tool-button" aria-label="全屏画布" @click="toggleFullscreen"><el-icon><FullScreen /></el-icon></button></el-tooltip>
+          </div>
+        </div>
+        <div v-if="graphStats.nodes === 0" class="canvas-empty">
+          <div class="empty-visual"><el-icon><Connection /></el-icon></div>
+          <div class="empty-title">开始编排你的任务流</div>
+          <div class="empty-text">从左侧拖入任务组件，然后拖动节点锚点建立依赖关系</div>
+          <el-button type="primary" plain @click="addNode('DATAX')">添加 DataX 同步任务</el-button>
+        </div>
         <div ref="canvasRef" class="canvas"></div>
+        <div class="canvas-statusbar">
+          <span class="status-ready"><i></i>画布就绪</span>
+          <span>任务 {{ graphStats.nodes }}</span>
+          <span>依赖 {{ graphStats.edges }}</span>
+          <span class="status-shortcut">Ctrl/⌘ S 保存 · Delete 删除 · 0 适应画布</span>
+        </div>
       </div>
 
       <aside class="config">
+        <div class="panel-heading config-heading">
+          <div>
+            <div class="panel-title">流程配置</div>
+            <div class="panel-subtitle">调度与依赖关系</div>
+          </div>
+          <el-icon class="config-heading-icon"><Operation /></el-icon>
+        </div>
         <template v-if="selectedEdgeId">
-          <div class="config-title">连线配置</div>
-          <el-form label-position="top">
+          <div class="section-label">依赖配置</div>
+          <div class="edge-card">
+            <div class="edge-node">
+              <span class="edge-dot source"></span>
+              <div><small>上游任务</small><strong>{{ selectedEdgeInfo.source }}</strong></div>
+            </div>
+            <div class="edge-line"><span></span><el-icon><ArrowRight /></el-icon></div>
+            <div class="edge-node">
+              <span class="edge-dot target"></span>
+              <div><small>下游任务</small><strong>{{ selectedEdgeInfo.target }}</strong></div>
+            </div>
+          </div>
+          <el-form label-position="top" class="edge-form">
             <el-form-item label="执行顺序（越小越先执行）">
               <el-input-number v-model="edgeOrder" :min="0" :step="1" style="width: 100%" />
             </el-form-item>
           </el-form>
-          <el-button type="danger" plain style="width: 100%" @click="deleteSelectedEdge">
+          <el-button type="danger" plain :icon="Delete" style="width: 100%" @click="deleteSelectedEdge">
             删除连线
           </el-button>
+          <div class="config-help">连线表示任务依赖。仅当所有上游任务完成后，下游任务才会进入执行队列。</div>
         </template>
 
         <div v-else class="config-schedule">
-          <div class="config-title">调度配置</div>
+          <div class="overview-card">
+            <div class="overview-icon"><el-icon><Connection /></el-icon></div>
+            <div>
+              <strong>{{ detail?.name || '未命名任务流' }}</strong>
+              <span>{{ graphStats.nodes }} 个任务，{{ graphStats.edges }} 条依赖</span>
+            </div>
+          </div>
+          <div class="metric-grid">
+            <div class="metric-item"><strong>{{ graphStats.nodes }}</strong><span>任务节点</span></div>
+            <div class="metric-item"><strong>{{ graphStats.edges }}</strong><span>依赖关系</span></div>
+            <div class="metric-item"><strong>{{ configuredCount }}</strong><span>已配置</span></div>
+          </div>
+          <div class="section-label schedule-label">调度设置</div>
           <el-form label-position="top">
-            <el-form-item label="Cron 表达式（留空 = 仅手动运行）">
+            <el-form-item label="Cron 表达式">
               <div class="cron-row">
                 <el-input
                   v-model="flowCron"
-                  placeholder="0 0 1 * * ?"
+                  placeholder="留空表示仅手动运行"
                   clearable
                   @blur="checkFlowCron"
                 />
@@ -76,7 +156,10 @@
               <div v-else-if="flowCronResult.valid === false" class="cron-invalid">{{ flowCronResult.message }}</div>
             </el-form-item>
           </el-form>
-          <div class="config-schedule-hint">点击节点在弹窗中编辑参数，点击空白处回到此处配置调度</div>
+          <div class="config-tip">
+            <div class="config-tip-title">画布操作</div>
+            <div>单击节点配置参数，拖动锚点创建依赖，单击连线可设置执行顺序。</div>
+          </div>
         </div>
       </aside>
     </div>
@@ -270,7 +353,25 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut, FullScreen } from '@element-plus/icons-vue'
+import {
+  Aim,
+  ArrowLeft,
+  ArrowRight,
+  Connection,
+  Delete,
+  DocumentChecked,
+  FullScreen,
+  MagicStick,
+  Operation,
+  Rank,
+  RefreshLeft,
+  RefreshRight,
+  Search,
+  Upload,
+  VideoPlay,
+  ZoomIn,
+  ZoomOut
+} from '@element-plus/icons-vue'
 import LogicFlow, { HtmlNode, HtmlNodeModel } from '@logicflow/core'
 import '@logicflow/core/dist/index.css'
 import { NODE_TYPES, getNodeType, buildDefaultConfig, type NodeConfig, type FieldMappingRow, type FieldDef } from './nodes'
@@ -289,11 +390,15 @@ import { cronValid, cronNexts } from '../../api/cron'
 const route = useRoute()
 const router = useRouter()
 
+const editorRef = ref<HTMLElement>()
 const canvasRef = ref<HTMLElement>()
 const detail = ref<DataFlowDetail | null>(null)
 const datasources = ref<{ id: number; code: string; name: string; type: string }[]>([])
 const saving = ref(false)
 const running = ref(false)
+const paletteKeyword = ref('')
+const graphRevision = ref(0)
+const zoomPercent = ref(100)
 
 let lf: LogicFlow | null = null
 const nodeConfigs = reactive<Record<string, NodeConfig>>({})
@@ -460,6 +565,74 @@ const selectedConfig = computed(() =>
   selectedNodeId.value ? nodeConfigs[selectedNodeId.value] : null
 )
 const selectedNodeType = computed(() => getNodeType(selectedConfig.value?.__type ?? ''))
+const flowStatusText = computed(() => {
+  const status = detail.value?.status?.toUpperCase()
+  if (status === 'ONLINE' || status === 'PUBLISHED') return '已发布'
+  if (status === 'RUNNING') return '运行中'
+  if (status === 'PAUSE' || status === 'PAUSED' || status === 'STOP' || status === 'STOPPED') return '已暂停'
+  if (status === 'WAIT_PUBLISH' || status === 'PENDING') return '待发布'
+  return '草稿'
+})
+const flowStatusTone = computed(() => {
+  if (flowStatusText.value === '已发布') return 'success'
+  if (flowStatusText.value === '运行中') return 'running'
+  if (flowStatusText.value === '已暂停' || flowStatusText.value === '待发布') return 'warning'
+  return 'draft'
+})
+
+const PALETTE_GROUPS = [
+  { key: 'sync', label: '数据同步', types: ['DATAX', 'SEATUNNEL'] },
+  { key: 'process', label: '数据处理', types: ['SQL'] },
+  { key: 'script', label: '脚本任务', types: ['PYTHON', 'SHELL'] }
+]
+
+const paletteGroups = computed(() => {
+  const keyword = paletteKeyword.value.trim().toLowerCase()
+  return PALETTE_GROUPS.map((group) => ({
+    ...group,
+    items: NODE_TYPES.filter((item) =>
+      group.types.includes(item.type) &&
+      (!keyword || item.label.toLowerCase().includes(keyword) || item.type.toLowerCase().includes(keyword))
+    )
+  })).filter((group) => group.items.length > 0)
+})
+
+const graphStats = computed(() => {
+  graphRevision.value
+  if (!lf) return { nodes: 0, edges: 0 }
+  const graph = lf.getGraphData() as { nodes?: unknown[]; edges?: unknown[] }
+  return { nodes: graph.nodes?.length ?? 0, edges: graph.edges?.length ?? 0 }
+})
+
+function hasConfigValue(value: unknown) {
+  if (Array.isArray(value)) return value.length > 0
+  return value !== undefined && value !== null && String(value).trim() !== ''
+}
+
+function isNodeConfigured(config: NodeConfig | undefined) {
+  if (!config) return false
+  const def = getNodeType(config.__type ?? '')
+  return Boolean(config.name?.trim()) && (def?.fields ?? []).filter((field) => field.required).every((field) => hasConfigValue(config[field.key]))
+}
+
+const configuredCount = computed(() => {
+  graphRevision.value
+  if (!lf) return 0
+  const graph = lf.getGraphData() as { nodes?: { id: string; properties?: NodeConfig }[] }
+  return (graph.nodes ?? []).filter((node) => isNodeConfigured(nodeConfigs[node.id] ?? node.properties)).length
+})
+
+const selectedEdgeInfo = computed(() => {
+  graphRevision.value
+  if (!selectedEdgeId.value || !lf) return { source: '-', target: '-' }
+  const edge = lf.getEdgeModelById(selectedEdgeId.value)
+  const sourceId = edge?.sourceNodeId ?? ''
+  const targetId = edge?.targetNodeId ?? ''
+  return {
+    source: nodeConfigs[sourceId]?.name || sourceId || '-',
+    target: nodeConfigs[targetId]?.name || targetId || '-'
+  }
+})
 
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
@@ -475,8 +648,8 @@ function registerNodes() {
       type: t.type,
       model: class FlowNodeModel extends HtmlNodeModel {
         setAttributes() {
-          this.width = 180
-          this.height = 64
+          this.width = 220
+          this.height = 76
         }
       },
       view: class FlowNodeView extends HtmlNode {
@@ -485,13 +658,16 @@ function registerNodes() {
           const model = this.props.model as unknown as { type: string; properties: NodeConfig }
           const def = getNodeType(model.type)
           const name = model.properties?.name ?? ''
+          const configured = isNodeConfigured(model.properties)
           el.innerHTML = `
-            <div class="flow-node" style="border-color:${def?.color ?? '#ccc'}">
+            <div class="flow-node" style="--node-color:${def?.color ?? '#64748b'}">
+              <span class="flow-node-accent"></span>
               <span class="flow-node-icon">${def?.icon ?? '📦'}</span>
               <div class="flow-node-meta">
                 <div class="flow-node-name">${escapeHtml(name)}</div>
-                <div class="flow-node-type" style="color:${def?.color ?? '#999'}">${def?.label ?? model.type}</div>
+                <div class="flow-node-type">${def?.label ?? model.type} · ${model.type}</div>
               </div>
+              <span class="flow-node-state ${configured ? 'is-ready' : ''}"><i></i>${configured ? '已配置' : '待配置'}</span>
             </div>
           `
         }
@@ -545,11 +721,12 @@ function layoutNodes(
   })
 
   const pos = new Map<string, { x: number; y: number }>()
-  const X_GAP = 240
-  const Y_GAP = 120
+  const X_GAP = 300
+  const Y_GAP = 132
   byLevel.forEach((ids, lv) => {
     ids.forEach((id, i) => {
-      pos.set(id, { x: 60 + lv * X_GAP, y: 60 + i * Y_GAP })
+      const columnOffset = Math.max(0, (ids.length - 1) * Y_GAP) / 2
+      pos.set(id, { x: 160 + lv * X_GAP, y: 240 - columnOffset + i * Y_GAP })
     })
   })
   return pos
@@ -577,15 +754,16 @@ function renderDesign(design: DataFlowDetail['design']) {
     properties: { order: e.properties?.order ?? 0 }
   }))
   lf!.render({ nodes, edges })
+  refreshGraphState()
 }
 
 function buildDesign() {
   const graphData = lf!.getGraphData() as {
-    nodes: { id: string; type: string }[]
+    nodes: { id: string; type: string; properties?: NodeConfig }[]
     edges: { id: string; sourceNodeId: string; targetNodeId: string; properties?: { order?: number } }[]
   }
   const nodes = graphData.nodes.map((n) => {
-    const cfg = { ...nodeConfigs[n.id] }
+    const cfg = { ...(nodeConfigs[n.id] ?? n.properties ?? {}) }
     delete cfg.__type
     return { id: n.id, type: n.type, properties: cfg }
   })
@@ -635,6 +813,7 @@ function addNode(type: string, x?: number, y?: number) {
     y,
     properties: config
   })
+  refreshGraphState()
   selectNode(id)
 }
 
@@ -689,16 +868,63 @@ function toggleFieldCollapse(key: string) {
   collapsedFields[key] = !collapsedFields[key]
 }
 
+function refreshGraphState() {
+  graphRevision.value += 1
+  updateZoomPercent()
+}
+
+function updateZoomPercent() {
+  if (!lf) return
+  zoomPercent.value = Math.round(lf.getTransform().SCALE_X * 100)
+}
+
+function syncNodeConfigsFromGraph() {
+  if (!lf) return
+  const graph = lf.getGraphData() as { nodes?: { id: string; type: string; properties?: NodeConfig }[] }
+  for (const node of graph.nodes ?? []) {
+    if (!nodeConfigs[node.id]) {
+      const properties = node.properties ?? ({} as NodeConfig)
+      nodeConfigs[node.id] = { ...properties, name: properties.name || getNodeType(node.type)?.label || node.type, __type: node.type }
+    }
+  }
+}
+
+function undo() {
+  lf?.undo()
+  window.setTimeout(() => {
+    syncNodeConfigsFromGraph()
+    refreshGraphState()
+  })
+}
+
+function redo() {
+  lf?.redo()
+  window.setTimeout(() => {
+    syncNodeConfigsFromGraph()
+    refreshGraphState()
+  })
+}
+
 function zoomIn() {
-  lf?.zoom(true)
+  const nextScale = Math.min(2, (lf?.getTransform().SCALE_X ?? 1) + 0.1)
+  const scale = lf?.zoom(nextScale)
+  if (scale) zoomPercent.value = Math.round(Number.parseFloat(scale))
 }
 
 function zoomOut() {
-  lf?.zoom(false)
+  const nextScale = Math.max(0.4, (lf?.getTransform().SCALE_X ?? 1) - 0.1)
+  const scale = lf?.zoom(nextScale)
+  if (scale) zoomPercent.value = Math.round(Number.parseFloat(scale))
+}
+
+function resetZoom() {
+  lf?.resetZoom()
+  zoomPercent.value = 100
 }
 
 function fitView() {
   lf?.fitView()
+  window.requestAnimationFrame(updateZoomPercent)
 }
 
 function autoLayout() {
@@ -713,6 +939,19 @@ function autoLayout() {
     lf!.getNodeModelById(id)?.moveTo(p.x, p.y, true)
   })
   lf.translateCenter()
+  updateZoomPercent()
+  ElMessage.success('已完成自动布局')
+}
+
+async function toggleFullscreen() {
+  if (!editorRef.value) return
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen()
+    else await editorRef.value.requestFullscreen()
+    window.setTimeout(() => lf?.resize())
+  } catch {
+    ElMessage.warning('当前浏览器不支持全屏画布')
+  }
 }
 
 function deleteSelectedNode() {
@@ -721,12 +960,45 @@ function deleteSelectedNode() {
   delete nodeConfigs[selectedNodeId.value]
   selectedNodeId.value = ''
   nodeDialogVisible.value = false
+  refreshGraphState()
 }
 
 function deleteSelectedEdge() {
   if (!selectedEdgeId.value) return
   lf!.deleteEdge(selectedEdgeId.value)
   selectedEdgeId.value = ''
+  refreshGraphState()
+}
+
+function onEditorKeydown(event: KeyboardEvent) {
+  const target = event.target as HTMLElement | null
+  const isEditing = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable
+  const modifier = event.metaKey || event.ctrlKey
+
+  if (modifier && event.key.toLowerCase() === 's') {
+    event.preventDefault()
+    handleSave(true)
+    return
+  }
+  if (isEditing || nodeDialogVisible.value) return
+  if (modifier && event.key.toLowerCase() === 'z') {
+    event.preventDefault()
+    event.shiftKey ? redo() : undo()
+  } else if (event.key === 'Delete' || event.key === 'Backspace') {
+    if (selectedEdgeId.value) {
+      event.preventDefault()
+      deleteSelectedEdge()
+    }
+  } else if (event.key === '0') {
+    event.preventDefault()
+    fitView()
+  } else if (event.key === '+' || event.key === '=') {
+    event.preventDefault()
+    zoomIn()
+  } else if (event.key === '-') {
+    event.preventDefault()
+    zoomOut()
+  }
 }
 
 async function handleSave(isDraft: boolean) {
@@ -788,6 +1060,8 @@ function goBack() {
 }
 
 onMounted(async () => {
+  window.addEventListener('keydown', onEditorKeydown)
+  document.addEventListener('fullscreenchange', refreshGraphState)
   try {
     const [d, ds] = await Promise.all([
       getDataFlowDetail(flowId),
@@ -804,12 +1078,27 @@ onMounted(async () => {
 
   lf = new LogicFlow({
     container: canvasRef.value!,
-    grid: true,
+    grid: {
+      size: 20,
+      visible: true,
+      type: 'dot',
+      config: { color: '#d9dee8', thickness: 1 }
+    },
     edgeType: 'polyline',
     isSilentMode: false,
     stopZoomGraph: false,
     stopMoveGraph: false
   })
+  lf.setTheme({
+    polyline: { stroke: '#94a3b8', strokeWidth: 2 },
+    arrow: { offset: 9, verticalLength: 4, fill: '#94a3b8', stroke: '#94a3b8' },
+    anchor: { r: 4, fill: '#ffffff', stroke: '#6366f1', strokeWidth: 2 },
+    anchorLine: { stroke: '#6366f1', strokeWidth: 2, strokeDasharray: '4 4' },
+    outline: { stroke: '#6366f1', strokeWidth: 2 },
+    edgeOutline: { stroke: '#6366f1', strokeWidth: 8, strokeOpacity: 0.12 }
+  } as never)
+  lf.setZoomMiniSize(0.4)
+  lf.setZoomMaxSize(2)
   registerNodes()
   renderDesign(detail.value?.design ?? null)
 
@@ -828,6 +1117,16 @@ onMounted(async () => {
     selectedEdgeId.value = ''
     nodeDialogVisible.value = false
   })
+  lf.on('node:add', refreshGraphState)
+  lf.on('node:delete', refreshGraphState)
+  lf.on('edge:add', refreshGraphState)
+  lf.on('edge:delete', refreshGraphState)
+  lf.on('graph:transform', updateZoomPercent)
+  lf.on('history:change', () => {
+    syncNodeConfigsFromGraph()
+    refreshGraphState()
+  })
+  refreshGraphState()
 })
 
 watch(
@@ -835,6 +1134,7 @@ watch(
   (cfg) => {
     if (cfg && lf) {
       lf.setProperties(selectedNodeId.value, { ...cfg })
+      refreshGraphState()
     }
   },
   { deep: true }
@@ -893,6 +1193,8 @@ watch(edgeOrder, (order) => {
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onEditorKeydown)
+  document.removeEventListener('fullscreenchange', refreshGraphState)
   lf?.destroy?.()
   lf = null
 })
@@ -903,61 +1205,201 @@ onBeforeUnmount(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  overflow: hidden;
+  background: #f5f7fb;
+  color: #1f2937;
 }
 
 .editor-header {
-  height: 56px;
+  height: 68px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  border-bottom: 1px solid #eef0f4;
+  gap: 24px;
+  padding: 0 20px;
+  border-bottom: 1px solid #e7eaf0;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  z-index: 20;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  min-width: 0;
+}
+
+.back-button {
+  color: #64748b;
+}
+
+.header-divider {
+  width: 1px;
+  height: 28px;
+  margin: 0 16px 0 10px;
+  background: #e5e7eb;
+}
+
+.flow-heading {
+  min-width: 0;
+}
+
+.flow-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .title {
   font-size: 16px;
+  font-weight: 650;
+  color: #172033;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flow-status {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-size: 11px;
   font-weight: 600;
-  color: #303133;
+}
+
+.flow-status.is-draft {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+.flow-status.is-success {
+  color: #15803d;
+  background: #ecfdf3;
+}
+
+.flow-status.is-running {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.flow-status.is-warning {
+  color: #b45309;
+  background: #fffbeb;
+}
+
+.flow-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.subtitle-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .editor-body {
   flex: 1;
   display: flex;
+  min-height: 0;
   overflow: hidden;
 }
 
 .palette {
-  width: 160px;
-  border-right: 1px solid #eef0f4;
-  padding: 12px;
+  width: 220px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-right: 1px solid #e7eaf0;
+  padding: 18px 14px;
   overflow-y: auto;
+  background: #fff;
+  z-index: 10;
 }
 
-.palette-title {
-  font-size: 13px;
-  color: #909399;
-  margin-bottom: 8px;
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.panel-title {
+  color: #172033;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.panel-subtitle {
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.panel-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  color: #6366f1;
+  background: #eef2ff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.palette-search {
+  margin-bottom: 18px;
+}
+
+.palette-search :deep(.el-input__wrapper) {
+  border-radius: 7px;
+  box-shadow: 0 0 0 1px #e5e7eb inset;
+  background: #f8fafc;
+}
+
+.palette-group {
+  margin-bottom: 18px;
+}
+
+.palette-group-title {
+  margin: 0 4px 8px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
 }
 
 .palette-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  margin-bottom: 6px;
-  border: 1px solid #eef0f4;
-  border-radius: 6px;
+  gap: 10px;
+  min-height: 52px;
+  box-sizing: border-box;
+  padding: 8px 9px;
+  margin-bottom: 7px;
+  border: 1px solid #e8ebf0;
+  border-radius: 8px;
   cursor: grab;
-  font-size: 13px;
-  color: #303133;
-  transition: all 0.15s;
+  background: #fff;
+  transition: border-color 0.16s, box-shadow 0.16s, transform 0.16s;
 }
 
 .palette-item:active {
@@ -965,30 +1407,86 @@ onBeforeUnmount(() => {
 }
 
 .palette-item:hover {
-  border-color: var(--el-color-primary);
-  background: #f7f6ff;
+  border-color: #a5b4fc;
+  box-shadow: 0 5px 16px rgba(79, 70, 229, 0.09);
+  transform: translateY(-1px);
 }
 
 .palette-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  color: #fff;
+  font-size: 16px;
+}
+
+.palette-item-meta {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.palette-item-name {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.palette-item-type {
+  color: #a0aec0;
+  font-size: 10px;
+}
+
+.palette-drag {
+  flex-shrink: 0;
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+.palette-empty {
+  padding: 28px 8px;
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: center;
 }
 
 .palette-hint {
-  margin-top: 12px;
-  font-size: 12px;
-  color: #c0c4cc;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 7px;
+  color: #8491a6;
+  background: #f8fafc;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.hint-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  font-size: 9px;
 }
 
 .canvas-wrap {
   flex: 1;
+  min-width: 0;
   position: relative;
+  overflow: hidden;
+  background: #f7f8fc;
 }
 
 .canvas {
@@ -996,25 +1494,358 @@ onBeforeUnmount(() => {
   height: 100%;
 }
 
-.config {
-  width: 280px;
-  border-left: 1px solid #eef0f4;
-  padding: 12px;
-  overflow-y: auto;
+.canvas-toolbar {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 42px;
+  padding: 0 8px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(30, 41, 59, 0.1);
+  transform: translateX(-50%);
+  backdrop-filter: blur(8px);
 }
 
-.config-title {
-  font-size: 14px;
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.tool-divider {
+  width: 1px;
+  height: 20px;
+  background: #e5e7eb;
+}
+
+.tool-button,
+.zoom-value {
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.tool-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  font-size: 16px;
+}
+
+.tool-button-wide {
+  width: auto;
+  gap: 5px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.tool-button:hover,
+.zoom-value:hover {
+  color: #4f46e5;
+  background: #eef2ff;
+}
+
+.zoom-value {
+  width: 48px;
+  padding: 0;
+  color: #475569;
+  font-size: 11px;
   font-weight: 600;
-  color: #303133;
-  margin-bottom: 12px;
 }
 
-.config-empty {
-  color: #c0c4cc;
-  font-size: 13px;
+.canvas-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 6;
+  display: flex;
+  width: 360px;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -52%);
   text-align: center;
-  margin-top: 40px;
+  pointer-events: none;
+}
+
+.canvas-empty :deep(.el-button) {
+  pointer-events: auto;
+}
+
+.empty-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  margin-bottom: 16px;
+  border: 1px solid #dfe3ff;
+  border-radius: 20px;
+  color: #6366f1;
+  background: linear-gradient(145deg, #fff, #eef2ff);
+  box-shadow: 0 14px 32px rgba(79, 70, 229, 0.12);
+  font-size: 30px;
+}
+
+.empty-title {
+  color: #334155;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.empty-text {
+  margin: 8px 0 18px;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.canvas-statusbar {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  left: 14px;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 7px;
+  color: #8491a6;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+  font-size: 10px;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+}
+
+.status-ready {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+}
+
+.status-ready i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px #dcfce7;
+}
+
+.status-shortcut {
+  margin-left: auto;
+  color: #a7b0bf;
+}
+
+.config {
+  width: 300px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-left: 1px solid #e7eaf0;
+  padding: 18px 16px;
+  overflow-y: auto;
+  background: #fff;
+  z-index: 10;
+}
+
+.config-heading {
+  padding-bottom: 14px;
+  border-bottom: 1px solid #eef0f4;
+}
+
+.config-heading-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: #6366f1;
+  background: #eef2ff;
+}
+
+.section-label {
+  margin: 20px 0 12px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.overview-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid #e7eaf0;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #fff, #f8faff);
+}
+
+.overview-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  color: #fff;
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  font-size: 18px;
+}
+
+.overview-card > div:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.overview-card strong {
+  overflow: hidden;
+  color: #334155;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-card span {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.metric-item {
+  display: flex;
+  align-items: center;
+  padding: 9px 4px;
+  border-radius: 7px;
+  flex-direction: column;
+  background: #f8fafc;
+}
+
+.metric-item strong {
+  color: #334155;
+  font-size: 15px;
+}
+
+.metric-item span {
+  margin-top: 2px;
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+.schedule-label {
+  margin-bottom: 8px;
+}
+
+.edge-card {
+  padding: 13px;
+  border: 1px solid #e7eaf0;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.edge-node {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.edge-node > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.edge-node small {
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+.edge-node strong {
+  overflow: hidden;
+  color: #334155;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edge-dot {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border: 3px solid #e0e7ff;
+  border-radius: 50%;
+  background: #6366f1;
+}
+
+.edge-dot.target {
+  border-color: #dcfce7;
+  background: #22c55e;
+}
+
+.edge-line {
+  display: flex;
+  width: 15px;
+  height: 24px;
+  margin-left: 4px;
+  align-items: center;
+  flex-direction: column;
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+.edge-line span {
+  width: 1px;
+  height: 15px;
+  background: #cbd5e1;
+}
+
+.edge-line .el-icon {
+  transform: rotate(90deg);
+}
+
+.edge-form {
+  margin-top: 18px;
+}
+
+.config-help,
+.config-tip {
+  margin-top: 14px;
+  padding: 11px 12px;
+  border-radius: 7px;
+  color: #8491a6;
+  background: #f8fafc;
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.config-tip-title {
+  margin-bottom: 3px;
+  color: #64748b;
+  font-weight: 650;
 }
 
 .field-mapping {
@@ -1044,13 +1875,6 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-.config-schedule-hint {
-  margin-top: 16px;
-  font-size: 12px;
-  color: #c0c4cc;
-  line-height: 1.6;
-}
-
 .cron-row {
   display: flex;
   gap: 8px;
@@ -1059,15 +1883,15 @@ onBeforeUnmount(() => {
 .cron-nexts {
   margin-top: 8px;
   padding: 8px 10px;
-  background: #f7f8fa;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #606266;
+  border-radius: 6px;
+  color: #64748b;
+  background: #f8fafc;
+  font-size: 10px;
 }
 
 .cron-nexts-title {
   font-weight: 600;
-  color: #303133;
+  color: #475569;
   margin-bottom: 4px;
 }
 
@@ -1119,44 +1943,139 @@ onBeforeUnmount(() => {
   border-top: 1px solid #eef0f4;
   background: #fff;
 }
+
+@media (max-width: 1200px) {
+  .palette {
+    width: 190px;
+  }
+
+  .config {
+    width: 270px;
+  }
+
+  .status-shortcut {
+    display: none;
+  }
+}
 </style>
 
 <style>
 /* 非 scoped：LogicFlow 的 HTML 节点内容由 innerHTML 注入，需全局样式 */
 .flow-node {
+  position: relative;
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 12px;
+  gap: 11px;
+  padding: 0 10px 0 14px;
   background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid #dfe3ea;
+  border-radius: 9px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
   box-sizing: border-box;
+  overflow: hidden;
+  transition: border-color 0.16s, box-shadow 0.16s, transform 0.16s;
+}
+
+.flow-node:hover {
+  border-color: color-mix(in srgb, var(--node-color) 55%, #fff);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
+}
+
+.flow-node-accent {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  background: var(--node-color);
 }
 
 .flow-node-icon {
-  font-size: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  color: var(--node-color);
+  background: color-mix(in srgb, var(--node-color) 9%, #fff);
+  font-size: 17px;
 }
 
 .flow-node-meta {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
 }
 
 .flow-node-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #303133;
+  color: #273449;
+  font-size: 12px;
+  font-weight: 650;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .flow-node-type {
-  font-size: 11px;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 9px;
   white-space: nowrap;
+}
+
+.flow-node-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 10px;
+  padding: 3px 6px;
+  border-radius: 8px;
+  color: #d97706;
+  background: #fffbeb;
+  font-size: 8px;
+}
+
+.flow-node-state i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.flow-node-state.is-ready {
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+.lf-node-selected .flow-node {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12), 0 8px 22px rgba(15, 23, 42, 0.12);
+}
+
+.lf-anchor {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.lf-node:hover .lf-anchor,
+.lf-node-selected .lf-anchor {
+  opacity: 1;
+}
+
+.lf-edge-selected path,
+.lf-edge:hover path {
+  stroke: #6366f1;
+}
+
+.lf-graph {
+  background: #f7f8fc;
 }
 
 /* 节点编辑弹窗：表单区限高滚动，保证底部按钮始终可见 */
