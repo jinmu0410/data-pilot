@@ -93,8 +93,8 @@ public class SyncTaskRunner implements TaskRunner {
         SyncEngineContext ctx = new SyncEngineContext();
         if ("DATAX".equalsIgnoreCase(taskType) && StrUtil.isNotBlank(params.getSqlText())) {
             // DataX SQL 语句模式（DolphinScheduler 风格）
-            ctx.setSource(this.toEndpoint(source, null, null));
-            ctx.setTarget(this.toEndpoint(target, null, params.getTargetTable()));
+            ctx.setSource(this.toEndpoint(source, params.getSourceSchema(), params.getSourceTable()));
+            ctx.setTarget(this.toEndpoint(target, params.getTargetSchema(), params.getTargetTable()));
             ctx.setQuerySql(params.getSqlText());
             ctx.setPreSql(params.getPreSql());
             ctx.setPostSql(params.getPostSql());
@@ -106,20 +106,26 @@ public class SyncTaskRunner implements TaskRunner {
             if (params.getChannel() != null) {
                 ctx.setChannel(params.getChannel());
             }
+            this.applyFieldMappings(ctx, params);
         } else {
             // SeaTunnel / 表同步模式
             ctx.setSource(this.toEndpoint(source, params.getSourceSchema(), params.getSourceTable()));
             ctx.setTarget(this.toEndpoint(target, params.getTargetSchema(), params.getTargetTable()));
-            if (params.getFieldMapping() != null && !params.getFieldMapping().isEmpty()) {
-                ctx.setFieldMappings(params.getFieldMapping().stream().map(f -> {
-                    SyncEngineContext.FieldMapping fm = new SyncEngineContext.FieldMapping();
-                    fm.setSource(f.getSource());
-                    fm.setTarget(f.getTarget());
-                    return fm;
-                }).toList());
-            }
+            this.applyFieldMappings(ctx, params);
         }
         return ctx;
+    }
+
+    private void applyFieldMappings(SyncEngineContext ctx, SyncTaskParams params) {
+        if (params.getFieldMapping() == null || params.getFieldMapping().isEmpty()) {
+            return;
+        }
+        ctx.setFieldMappings(params.getFieldMapping().stream().map(field -> {
+            SyncEngineContext.FieldMapping mapping = new SyncEngineContext.FieldMapping();
+            mapping.setSource(field.getSource());
+            mapping.setTarget(field.getTarget());
+            return mapping;
+        }).toList());
     }
 
     private SyncEngineContext.Endpoint toEndpoint(DataSource ds, String schema, String table) {

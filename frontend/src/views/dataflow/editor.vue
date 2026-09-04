@@ -81,7 +81,17 @@
       </aside>
     </div>
 
+    <DataXTaskDialog
+      v-if="selectedConfig && selectedNodeType?.type === 'DATAX'"
+      v-model="nodeDialogVisible"
+      :config="selectedConfig"
+      :datasources="datasources"
+      @delete="deleteSelectedNode"
+      @closed="onNodeDialogClosed"
+    />
+
     <el-dialog
+      v-else
       v-model="nodeDialogVisible"
       :title="`${selectedNodeType?.label ?? ''} 配置`"
       width="720px"
@@ -265,6 +275,7 @@ import LogicFlow, { HtmlNode, HtmlNodeModel } from '@logicflow/core'
 import '@logicflow/core/dist/index.css'
 import { NODE_TYPES, getNodeType, buildDefaultConfig, type NodeConfig, type FieldMappingRow, type FieldDef } from './nodes'
 import SqlEditor from '../../components/SqlEditor.vue'
+import DataXTaskDialog from './DataXTaskDialog.vue'
 import {
   getDataFlowDetail,
   updateDataFlow,
@@ -834,6 +845,7 @@ watch(
   () => (selectedNodeId.value ? nodeConfigs[selectedNodeId.value] : null),
   (cfg) => {
     if (!cfg || !cfg.__type) return
+    if (cfg.__type === 'DATAX') return
     const def = getNodeType(cfg.__type)
     for (const field of def?.fields ?? []) {
       if (!field.dependsOn) continue

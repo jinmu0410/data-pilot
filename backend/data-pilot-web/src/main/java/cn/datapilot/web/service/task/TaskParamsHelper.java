@@ -50,9 +50,13 @@ public class TaskParamsHelper {
             case DATAX -> {
                 SyncTaskParams p = new SyncTaskParams();
                 p.setSourceDataSourceCode(node.getSourceDataSourceCode());
+                p.setSourceSchema(node.getSourceSchema());
+                p.setSourceTable(node.getSourceTable());
                 p.setSqlText(node.getSqlText());
                 p.setTargetDataSourceCode(node.getTargetDataSourceCode());
+                p.setTargetSchema(node.getTargetSchema());
                 p.setTargetTable(node.getTargetTable());
+                p.setFieldMapping(node.getFieldMapping());
                 p.setPreSql(node.getPreSql());
                 p.setPostSql(node.getPostSql());
                 p.setJobSpeedByte(node.getJobSpeedByte());
