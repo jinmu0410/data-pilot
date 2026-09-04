@@ -18,6 +18,7 @@ const props = defineProps<{
   modelValue: string
   height?: string
   dialect?: SqlLanguage
+  language?: 'sql' | 'python' | 'shell'
 }>()
 
 const emit = defineEmits<{
@@ -30,7 +31,7 @@ let editor: monaco.editor.IStandaloneCodeEditor | null = null
 onMounted(() => {
   editor = monaco.editor.create(container.value!, {
     value: props.modelValue,
-    language: 'sql',
+    language: props.language ?? 'sql',
     theme: 'vs-dark',
     minimap: { enabled: false },
     automaticLayout: true,
@@ -51,6 +52,14 @@ watch(
     if (editor && val !== editor.getValue()) {
       editor.setValue(val)
     }
+  }
+)
+
+watch(
+  () => props.language,
+  (language) => {
+    const model = editor?.getModel()
+    if (model) monaco.editor.setModelLanguage(model, language ?? 'sql')
   }
 )
 

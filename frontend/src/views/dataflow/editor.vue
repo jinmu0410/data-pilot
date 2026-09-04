@@ -173,6 +173,16 @@
       @closed="onNodeDialogClosed"
     />
 
+    <CodeTaskDialog
+      v-else-if="selectedConfig && ['SQL', 'PYTHON', 'SHELL'].includes(selectedNodeType?.type ?? '')"
+      v-model="nodeDialogVisible"
+      :type="selectedNodeType?.type ?? 'SQL'"
+      :config="selectedConfig"
+      :datasources="datasources"
+      @delete="deleteSelectedNode"
+      @closed="onNodeDialogClosed"
+    />
+
     <el-dialog
       v-else
       v-model="nodeDialogVisible"
@@ -377,6 +387,7 @@ import '@logicflow/core/dist/index.css'
 import { NODE_TYPES, getNodeType, buildDefaultConfig, type NodeConfig, type FieldMappingRow, type FieldDef } from './nodes'
 import SqlEditor from '../../components/SqlEditor.vue'
 import DataXTaskDialog from './DataXTaskDialog.vue'
+import CodeTaskDialog from './CodeTaskDialog.vue'
 import {
   getDataFlowDetail,
   updateDataFlow,
