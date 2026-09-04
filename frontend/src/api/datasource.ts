@@ -1,6 +1,6 @@
 import request from './request'
 
-export const DATASOURCE_TYPES = ['MySQL', 'Doris', 'Kafka', 'Elastic', 'PostgreSQL'] as const
+export const DATASOURCE_TYPES = ['MySQL', 'TiDB', 'Doris', 'PostgreSQL', 'Kafka', 'Elastic'] as const
 
 export interface DataSourceListRequest {
   name?: string

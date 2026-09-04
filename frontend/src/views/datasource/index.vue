@@ -1,191 +1,99 @@
 <template>
-  <div>
-    <el-card shadow="never">
-      <div class="toolbar">
-        <el-form inline :model="query" @submit.prevent>
-          <el-form-item label="名称">
-            <el-input v-model="query.name" placeholder="数据源名称" clearable style="width: 170px" @keyup.enter="handleSearch" />
-          </el-form-item>
-          <el-form-item label="类型">
-            <el-select v-model="query.type" placeholder="全部" clearable style="width: 140px">
-              <el-option v-for="t in DATASOURCE_TYPES" :key="t" :label="t" :value="t" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="query.status" placeholder="全部" clearable style="width: 110px">
-              <el-option label="启用" value="ENABLE" />
-              <el-option label="禁用" value="DISABLE" />
-            </el-select>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
-            <el-button type="success" :icon="Plus" @click="openAdd">新增数据源</el-button>
-          </el-form-item>
-        </el-form>
+  <div class="datasource-page">
+    <section class="page-hero">
+      <div>
+        <span class="page-eyebrow">DATA CONNECTIONS</span>
+        <h2>数据源管理</h2>
+        <p>集中管理数据库、消息队列与搜索引擎连接，为任务开发和数据同步提供统一入口。</p>
       </div>
+      <div class="hero-stats">
+        <div><strong>{{ page.total }}</strong><span>连接总数</span></div>
+        <div><strong>{{ enabledCount }}</strong><span>当前页启用</span></div>
+        <div><strong>{{ activeTypeCount }}</strong><span>接入类型</span></div>
+      </div>
+      <el-button type="primary" :icon="Plus" size="large" @click="openAdd">新增数据源</el-button>
+    </section>
 
-      <el-table v-loading="loading" :data="list" border>
-        <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="name" label="名称" min-width="130" />
-        <el-table-column prop="code" label="编码" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="type" label="类型" width="100" />
-        <el-table-column prop="url" label="连接地址" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="username" label="用户名" width="100" />
-        <el-table-column label="状态" width="80">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'ENABLE' ? 'success' : 'info'">
-              {{ row.status === 'ENABLE' ? '启用' : '禁用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="160" />
-        <el-table-column label="操作" width="220" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="success" @click="openMeta(row)">元数据</el-button>
-            <el-button link type="warning" @click="handleTest(row)">测试</el-button>
-            <el-button link type="info" @click="handleCopy(row)">复制</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <el-pagination
-        v-model:current-page="page.current"
-        v-model:page-size="page.size"
-        class="pager"
-        layout="total, prev, pager, next, sizes"
-        :total="page.total"
-        :page-sizes="[10, 20, 50]"
-        @change="load"
-      />
+    <el-card shadow="never" class="filter-card">
+      <el-form inline :model="query" @submit.prevent>
+        <el-form-item label="数据源名称"><el-input v-model="query.name" placeholder="输入名称搜索" clearable style="width: 200px" @keyup.enter="handleSearch" /></el-form-item>
+        <el-form-item label="类型"><el-select v-model="query.type" placeholder="全部类型" clearable style="width: 150px"><el-option v-for="item in TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
+        <el-form-item label="状态"><el-select v-model="query.status" placeholder="全部状态" clearable style="width: 130px"><el-option label="启用" value="ENABLE" /><el-option label="禁用" value="DISABLE" /></el-select></el-form-item>
+        <el-form-item><el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button><el-button :icon="Refresh" @click="resetSearch">重置</el-button></el-form-item>
+      </el-form>
     </el-card>
 
-    <!-- 新建/编辑 -->
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑数据源' : '新增数据源'" width="620px" top="6vh">
-      <el-form :model="form" label-width="110px">
-        <el-form-item label="名称" required>
-          <el-input v-model="form.name" maxlength="32" placeholder="数据源名称" />
-        </el-form-item>
-        <el-form-item label="类型" required>
-          <el-select v-model="form.type" style="width: 100%" @change="onTypeChange">
-            <el-option v-for="t in DATASOURCE_TYPES" :key="t" :label="t" :value="t" />
-          </el-select>
-        </el-form-item>
+    <el-card shadow="never" class="list-card">
+      <div class="list-heading"><div><h3>连接列表</h3><span>已接入 {{ page.total }} 个数据源</span></div><span class="support-tip">支持 MySQL / TiDB / Doris / PostgreSQL / Kafka / Elasticsearch</span></div>
+      <el-table v-loading="loading" :data="list" class="datasource-table">
+        <el-table-column label="数据源" min-width="220"><template #default="{ row }"><div class="source-cell"><span class="source-logo" :class="typeClass(row.type)">{{ typeMeta(row.type).abbr }}</span><div><strong>{{ row.name }}</strong><small>{{ row.code }}</small></div></div></template></el-table-column>
+        <el-table-column label="类型" width="135"><template #default="{ row }"><span class="type-badge" :class="typeClass(row.type)">{{ typeMeta(row.type).label }}</span></template></el-table-column>
+        <el-table-column label="连接信息" min-width="240"><template #default="{ row }"><div class="connection-cell"><strong>{{ row.url || '-' }}</strong><small>{{ row.username || '无账号认证' }}</small></div></template></el-table-column>
+        <el-table-column label="健康检查" width="105"><template #default="{ row }"><span class="health-status" :class="{ enabled: row.healthCheck === 'ENABLE' }"><i></i>{{ row.healthCheck === 'ENABLE' ? '已开启' : '未开启' }}</span></template></el-table-column>
+        <el-table-column label="状态" width="90"><template #default="{ row }"><span class="status-badge" :class="{ enabled: row.status === 'ENABLE' }"><i></i>{{ row.status === 'ENABLE' ? '启用' : '禁用' }}</span></template></el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="165" />
+        <el-table-column label="操作" width="240" fixed="right"><template #default="{ row }"><el-button link type="primary" @click="openEdit(row)">编辑</el-button><el-button link type="success" :disabled="!supportsMetadata(row.type)" @click="openMeta(row)">元数据</el-button><el-button link type="warning" @click="handleTest(row)">测试</el-button><el-dropdown trigger="click"><el-button link>更多</el-button><template #dropdown><el-dropdown-menu><el-dropdown-item @click="handleCopy(row)">复制配置</el-dropdown-item><el-dropdown-item divided class="danger-menu-item" @click="handleDelete(row)">删除数据源</el-dropdown-item></el-dropdown-menu></template></el-dropdown></template></el-table-column>
+      </el-table>
+      <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" class="pager" layout="total, prev, pager, next, sizes" :total="page.total" :page-sizes="[10, 20, 50]" @change="load" />
+    </el-card>
 
-        <template v-if="isJdbc">
-          <el-form-item label="JDBC URL" required>
-            <el-input v-model="form.url" placeholder="jdbc:mysql://host:3306/db" />
-          </el-form-item>
-          <el-form-item label="驱动类">
-            <el-input v-model="form.driver" :placeholder="driverPlaceholder" />
-          </el-form-item>
-        </template>
-        <template v-else>
-          <el-form-item :label="form.type === 'Kafka' ? 'Bootstrap Servers' : '连接地址'" required>
-            <el-input v-model="form.url" :placeholder="form.type === 'Kafka' ? 'host1:9092,host2:9092' : 'http://host:9200'" />
-          </el-form-item>
-        </template>
+    <el-dialog v-model="dialogVisible" width="min(1080px, calc(100vw - 40px))" top="4vh" append-to-body destroy-on-close :close-on-click-modal="false" class="datasource-config-dialog">
+      <template #header><div class="dialog-heading"><span class="dialog-logo" :class="typeClass(form.type)">{{ currentType.abbr }}</span><div><div class="dialog-title">{{ editingId ? '编辑数据源' : '创建数据源' }}</div><div class="dialog-subtitle">配置连接参数并在保存前完成可用性验证</div></div><span class="dialog-mode">{{ editingId ? 'EDIT' : 'NEW CONNECTION' }}</span></div></template>
+      <div class="config-shell">
+        <aside class="type-sidebar">
+          <span class="sidebar-label">选择数据源类型</span>
+          <button v-for="item in TYPE_OPTIONS" :key="item.value" type="button" class="type-option" :class="[{ active: form.type === item.value }, typeClass(item.value)]" @click="selectType(item.value)"><span>{{ item.abbr }}</span><div><strong>{{ item.label }}</strong><small>{{ item.category }}</small></div><i>✓</i></button>
+          <div class="connection-summary"><span>当前配置</span><strong>{{ form.name || '未命名数据源' }}</strong><p>{{ currentType.protocol }}</p><div><i :class="{ ready: form.url }"></i>{{ form.url ? '连接地址已填写' : '等待填写连接地址' }}</div></div>
+        </aside>
 
-        <el-form-item label="用户名">
-          <el-input v-model="form.username" />
-        </el-form-item>
-        <el-form-item label="密码">
-          <el-input v-model="form.password" type="password" show-password :placeholder="editingId ? '留空则不修改密码' : ''" />
-        </el-form-item>
+        <main class="config-content">
+          <section class="form-section">
+            <div class="section-heading"><div><span class="section-index">01</span><div><h3>基本信息</h3><p>用于在平台内识别和管理这条连接</p></div></div></div>
+            <div class="form-grid basic-grid">
+              <div class="field wide-field"><label>数据源名称 <em>*</em></label><el-input v-model="form.name" maxlength="32" show-word-limit placeholder="例如：生产订单库" size="large" /></div>
+              <div class="field"><label>运行状态</label><el-segmented v-model="form.status" :options="statusOptions" block /></div>
+              <div class="field wide-field"><label>描述</label><el-input v-model="form.description" type="textarea" :rows="2" maxlength="300" placeholder="说明用途、所属系统或负责人（可选）" /></div>
+            </div>
+          </section>
 
-        <el-form-item v-if="isJdbc" label="连接池大小">
-          <el-input-number v-model="form.maxPoolSize" :min="1" :max="200" style="width: 100%" />
-        </el-form-item>
+          <section class="form-section">
+            <div class="section-heading"><div><span class="section-index">02</span><div><h3>连接配置</h3><p>{{ currentType.description }}</p></div></div><button type="button" class="recommend-button" @click="applyRecommendedConfig">使用推荐配置</button></div>
+            <div class="connection-form-card">
+              <div class="endpoint-strip"><span class="source-logo" :class="typeClass(form.type)">{{ currentType.abbr }}</span><div><strong>{{ currentType.label }}</strong><small>{{ currentType.protocol }}</small></div><span>{{ isJdbc ? 'JDBC' : currentType.value === 'Kafka' ? 'BROKER' : 'HTTP' }}</span></div>
+              <div class="form-grid">
+                <div class="field full-field"><label>{{ connectionLabel }} <em>*</em></label><el-input v-model="form.url" :placeholder="currentType.urlPlaceholder" size="large"><template #prepend>{{ connectionPrefix }}</template></el-input><small>{{ currentType.urlHint }}</small></div>
+                <div v-if="isJdbc" class="field full-field"><label>驱动类 <em>*</em></label><el-input v-model="form.driver" :placeholder="currentType.driver" /><small>平台已内置推荐驱动，一般无需修改。</small></div>
+                <div class="field"><label>用户名</label><el-input v-model="form.username" autocomplete="off" placeholder="未启用认证可留空" /></div>
+                <div class="field"><label>密码</label><el-input v-model="form.password" type="password" show-password autocomplete="new-password" :placeholder="editingId ? '留空则保持原密码' : '请输入连接密码'" /></div>
+              </div>
+              <div v-if="form.type === 'Doris'" class="extra-config"><div class="extra-title"><strong>Doris 节点配置</strong><span>用于 FE 管理与 BE 数据写入</span></div><div class="form-grid"><div class="field"><label>FE 节点</label><el-input v-model="form.feNodes" placeholder="fe-1:8030,fe-2:8030" /></div><div class="field"><label>BE 节点</label><el-input v-model="form.beNodes" placeholder="be-1:8040,be-2:8040" /></div></div></div>
+              <div v-if="form.type === 'Kafka'" class="config-hint"><span>i</span><p>支持多个 Broker，使用英文逗号分隔。填写账号密码时，将按 SASL/SSL + PLAIN 方式建立连接。</p></div>
+              <div v-if="form.type === 'Elastic'" class="config-hint"><span>i</span><p>支持单节点或集群代理地址，建议使用 HTTPS 并通过最小权限账号访问 Elasticsearch。</p></div>
+            </div>
+          </section>
 
-        <template v-if="form.type === 'Doris'">
-          <el-form-item label="FE 节点">
-            <el-input v-model="form.feNodes" placeholder="逗号分隔，如 host1:8030,host2:8030" />
-          </el-form-item>
-          <el-form-item label="BE 节点">
-            <el-input v-model="form.beNodes" placeholder="逗号分隔，如 host1:8040,host2:8040" />
-          </el-form-item>
-        </template>
-
-        <el-form-item v-if="form.type === 'PostgreSQL'" label="分表规则">
-          <el-input v-model="form.partitioningAlgorithm" placeholder="分表规则（可选）" />
-        </el-form-item>
-
-        <el-form-item label="健康检查">
-          <el-radio-group v-model="form.healthCheck">
-            <el-radio value="ENABLE">开启</el-radio>
-            <el-radio value="DISABLE">关闭</el-radio>
-          </el-radio-group>
-        </el-form-item>
-
-        <el-form-item label="状态">
-          <el-radio-group v-model="form.status">
-            <el-radio value="ENABLE">启用</el-radio>
-            <el-radio value="DISABLE">禁用</el-radio>
-          </el-radio-group>
-        </el-form-item>
-
-        <el-form-item label="描述">
-          <el-input v-model="form.description" type="textarea" :rows="2" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button :loading="testing" @click="handleTestInForm">测试连接</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
-      </template>
+          <section class="form-section settings-section">
+            <div class="section-heading"><div><span class="section-index">03</span><div><h3>运行设置</h3><p>控制连接池、健康探测及高级路由</p></div></div></div>
+            <div class="settings-grid">
+              <div v-if="isJdbc" class="setting-card"><div><strong>连接池大小</strong><small>并发任务可用的最大 JDBC 连接数</small></div><el-input-number v-model="form.maxPoolSize" :min="1" :max="200" controls-position="right" /></div>
+              <div class="setting-card"><div><strong>健康检查</strong><small>定期探测连接并更新可用状态</small></div><el-switch v-model="form.healthCheck" active-value="ENABLE" inactive-value="DISABLE" /></div>
+              <div v-if="supportsPartitioning(form.type)" class="setting-card full-setting"><div><strong>分表规则</strong><small>可选，用于分库分表场景下的实际表路由</small></div><el-input v-model="form.partitioningAlgorithm" placeholder="例如：orders_${id % 16}" /></div>
+            </div>
+          </section>
+        </main>
+      </div>
+      <template #footer><div class="dialog-footer"><span class="footer-tip">保存前建议先测试连接，避免任务运行时失败。</span><el-button @click="dialogVisible = false">取消</el-button><el-button :loading="testing" @click="handleTestInForm">测试连接</el-button><el-button type="primary" :loading="submitting" @click="handleSubmit">{{ editingId ? '保存修改' : '创建数据源' }}</el-button></div></template>
     </el-dialog>
 
-    <!-- 元数据浏览 -->
-    <el-dialog v-model="metaVisible" :title="`元数据 - ${metaName}`" width="860px" top="6vh">
+    <el-dialog v-model="metaVisible" width="min(1000px, calc(100vw - 40px))" top="5vh" append-to-body class="metadata-dialog">
+      <template #header><div class="dialog-heading"><span class="dialog-logo metadata-logo">META</span><div><div class="dialog-title">元数据浏览</div><div class="dialog-subtitle">{{ metaName }} · 查看库表、字段与索引结构</div></div></div></template>
       <div class="meta-body">
-        <div class="meta-tree">
-          <el-tree
-            v-loading="metaTreeLoading"
-            :data="metaTree"
-            node-key="key"
-            :props="{ label: 'label', children: 'children' }"
-            highlight-current
-            :expand-on-click-node="false"
-            @node-click="onMetaNodeClick"
-          />
-        </div>
-        <div class="meta-detail">
-          <template v-if="metaDetailLoading">
-            <el-skeleton :rows="8" animated />
-          </template>
-          <template v-else-if="metaDetail">
-            <div class="meta-detail-head">
-              <span class="meta-table-name">{{ metaTable }}</span>
-              <span v-if="metaDetail.comment" class="meta-table-comment">{{ metaDetail.comment }}</span>
-            </div>
-            <el-table :data="metaDetail.columns" border size="small" max-height="280">
-              <el-table-column prop="name" label="字段名" min-width="130" />
-              <el-table-column prop="type" label="类型" width="120" />
-              <el-table-column label="主键" width="60">
-                <template #default="{ row }">
-                  <el-tag v-if="row.primaryKey" type="danger" size="small">PK</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="可空" width="60">
-                <template #default="{ row }">{{ row.notNull ? '否' : '是' }}</template>
-              </el-table-column>
-              <el-table-column prop="defaultValue" label="默认值" width="100" show-overflow-tooltip />
-              <el-table-column prop="comment" label="注释" min-width="120" show-overflow-tooltip />
-            </el-table>
-            <div v-if="metaDetail.indexes?.length" class="meta-index-title">索引</div>
-            <el-table v-if="metaDetail.indexes?.length" :data="metaDetail.indexes" border size="small" max-height="160">
-              <el-table-column prop="name" label="索引名" min-width="140" />
-              <el-table-column label="唯一" width="70">
-                <template #default="{ row }">{{ row.unique ? '是' : '否' }}</template>
-              </el-table-column>
-              <el-table-column label="字段" min-width="160">
-                <template #default="{ row }">{{ row.columns?.join(', ') }}</template>
-              </el-table-column>
-            </el-table>
-          </template>
-          <div v-else class="meta-empty">点击左侧表查看结构</div>
-        </div>
+        <aside class="meta-tree-panel"><div class="meta-panel-title"><strong>库表目录</strong><span>{{ metaTree.length }} 个 Schema</span></div><el-tree v-loading="metaTreeLoading" :data="metaTree" node-key="key" :props="{ label: 'label', children: 'children' }" highlight-current :expand-on-click-node="false" @node-click="onMetaNodeClick" /></aside>
+        <main class="meta-detail">
+          <el-skeleton v-if="metaDetailLoading" :rows="8" animated />
+          <template v-else-if="metaDetail"><div class="meta-detail-head"><div><span>TABLE</span><strong>{{ metaTable }}</strong></div><p>{{ metaDetail.comment || '暂无表注释' }}</p></div><div class="meta-block-title"><strong>字段结构</strong><span>{{ metaDetail.columns.length }} 个字段</span></div><el-table :data="metaDetail.columns" border size="small" max-height="285"><el-table-column prop="name" label="字段名" min-width="140" /><el-table-column prop="type" label="类型" width="125" /><el-table-column label="约束" width="95"><template #default="{ row }"><el-tag v-if="row.primaryKey" type="danger" size="small">PK</el-tag><span v-else>{{ row.notNull ? 'NOT NULL' : '-' }}</span></template></el-table-column><el-table-column prop="defaultValue" label="默认值" width="110" show-overflow-tooltip /><el-table-column prop="comment" label="注释" min-width="140" show-overflow-tooltip /></el-table><template v-if="metaDetail.indexes?.length"><div class="meta-block-title index-title"><strong>索引</strong><span>{{ metaDetail.indexes.length }} 个索引</span></div><el-table :data="metaDetail.indexes" border size="small" max-height="155"><el-table-column prop="name" label="索引名" min-width="150" /><el-table-column label="唯一" width="75"><template #default="{ row }">{{ row.unique ? '是' : '否' }}</template></el-table-column><el-table-column label="字段" min-width="180"><template #default="{ row }">{{ row.columns?.join(', ') }}</template></el-table-column></el-table></template></template>
+          <div v-else class="meta-empty"><span>▦</span><strong>选择一张数据表</strong><p>从左侧库表目录中选择数据表查看详细结构</p></div>
+        </main>
       </div>
     </el-dialog>
   </div>
@@ -194,58 +102,36 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus } from '@element-plus/icons-vue'
-import {
-  DATASOURCE_TYPES,
-  listDataSource,
-  getDataSourceDetail,
-  addDataSource,
-  updateDataSource,
-  deleteDataSource,
-  testDataSource,
-  listSchemaTable,
-  tableDetail,
-  type DataSourceItem,
-  type DataSourceForm,
-  type SchemaTableMap,
-  type TableDetail
-} from '../../api/datasource'
+import { Plus, Refresh, Search } from '@element-plus/icons-vue'
+import { addDataSource, deleteDataSource, getDataSourceDetail, listDataSource, listSchemaTable, tableDetail, testDataSource, updateDataSource, type DataSourceForm, type DataSourceItem, type SchemaTableMap, type TableDetail } from '../../api/datasource'
+
+interface TypeOption { value: string; label: string; abbr: string; category: string; protocol: string; description: string; urlPlaceholder: string; urlHint: string; driver?: string }
+
+const TYPE_OPTIONS: TypeOption[] = [
+  { value: 'MySQL', label: 'MySQL', abbr: 'MY', category: '关系型数据库', protocol: 'MySQL JDBC', description: '通过标准 JDBC 连接 MySQL 数据库', urlPlaceholder: 'jdbc:mysql://db-host:3306/database', urlHint: '格式：jdbc:mysql://主机:端口/数据库', driver: 'com.mysql.cj.jdbc.Driver' },
+  { value: 'TiDB', label: 'TiDB', abbr: 'TI', category: '分布式 SQL', protocol: 'MySQL Compatible', description: '使用 MySQL 协议连接 TiDB 集群', urlPlaceholder: 'jdbc:mysql://tidb-host:4000/database', urlHint: 'TiDB 默认 SQL 端口为 4000', driver: 'com.mysql.cj.jdbc.Driver' },
+  { value: 'Doris', label: 'Doris', abbr: 'DO', category: '分析型数据库', protocol: 'MySQL / FE / BE', description: '连接 Doris FE 查询端点并配置集群节点', urlPlaceholder: 'jdbc:mysql://fe-host:9030/database', urlHint: 'Doris FE 查询端口默认为 9030', driver: 'com.mysql.cj.jdbc.Driver' },
+  { value: 'PostgreSQL', label: 'PostgreSQL', abbr: 'PG', category: '关系型数据库', protocol: 'PostgreSQL JDBC', description: '通过标准 JDBC 连接 PostgreSQL 数据库', urlPlaceholder: 'jdbc:postgresql://db-host:5432/database', urlHint: '格式：jdbc:postgresql://主机:端口/数据库', driver: 'org.postgresql.Driver' },
+  { value: 'Kafka', label: 'Kafka', abbr: 'KF', category: '消息队列', protocol: 'Kafka Brokers', description: '连接 Kafka Broker 集群并验证管理端可用性', urlPlaceholder: 'broker-1:9092,broker-2:9092', urlHint: '多个 Broker 使用英文逗号分隔' },
+  { value: 'Elastic', label: 'Elasticsearch', abbr: 'ES', category: '搜索引擎', protocol: 'Elasticsearch HTTP', description: '通过 REST 地址连接 Elasticsearch 集群', urlPlaceholder: 'http://es-host:9200', urlHint: '支持 http:// 或 https:// 地址' }
+]
 
 const loading = ref(false)
 const list = ref<DataSourceItem[]>([])
 const query = reactive({ name: '', type: '', status: '' })
 const page = reactive({ current: 1, size: 10, total: 0 })
-
+const enabledCount = computed(() => list.value.filter((item) => item.status === 'ENABLE').length)
+const activeTypeCount = computed(() => new Set(list.value.map((item) => item.type)).size)
 const dialogVisible = ref(false)
 const submitting = ref(false)
 const testing = ref(false)
 const editingId = ref(0)
-const form = reactive<DataSourceForm>({
-  name: '',
-  type: 'MySQL',
-  url: '',
-  driver: '',
-  username: '',
-  password: '',
-  maxPoolSize: 10,
-  status: 'ENABLE',
-  feNodes: '',
-  beNodes: '',
-  partitioningAlgorithm: '',
-  healthCheck: 'ENABLE',
-  description: ''
-})
-
-const isJdbc = computed(() => ['MySQL', 'Doris', 'PostgreSQL'].includes(form.type))
-const driverPlaceholder = computed(
-  () =>
-    ({
-      MySQL: 'com.mysql.cj.jdbc.Driver',
-      Doris: 'com.mysql.cj.jdbc.Driver',
-      PostgreSQL: 'org.postgresql.Driver'
-    })[form.type] ?? ''
-)
-
+const form = reactive<DataSourceForm>(defaultForm())
+const currentType = computed(() => typeMeta(form.type))
+const isJdbc = computed(() => ['MySQL', 'TiDB', 'Doris', 'PostgreSQL'].includes(form.type))
+const connectionLabel = computed(() => form.type === 'Kafka' ? 'Bootstrap Servers' : form.type === 'Elastic' ? '集群地址' : 'JDBC URL')
+const connectionPrefix = computed(() => form.type === 'Kafka' ? 'BROKER' : form.type === 'Elastic' ? 'HTTP' : 'JDBC')
+const statusOptions = [{ label: '启用', value: 'ENABLE' }, { label: '禁用', value: 'DISABLE' }]
 const metaVisible = ref(false)
 const metaName = ref('')
 const metaId = ref(0)
@@ -255,278 +141,68 @@ const metaDetailLoading = ref(false)
 const metaDetail = ref<TableDetail | null>(null)
 const metaTable = ref('')
 
-async function load() {
-  loading.value = true
-  try {
-    const res = await listDataSource(
-      { name: query.name || undefined, type: query.type || undefined, status: query.status || undefined },
-      page.current,
-      page.size
-    )
-    list.value = res.records
-    page.total = res.total
-  } finally {
-    loading.value = false
-  }
-}
+function defaultForm(): DataSourceForm { return { name: '', type: 'MySQL', url: '', driver: 'com.mysql.cj.jdbc.Driver', username: '', password: '', maxPoolSize: 10, status: 'ENABLE', feNodes: '', beNodes: '', partitioningAlgorithm: '', healthCheck: 'ENABLE', description: '' } }
+function typeMeta(type: string): TypeOption { return TYPE_OPTIONS.find((item) => item.value === type) ?? { ...TYPE_OPTIONS[0], value: type, label: type, abbr: type.slice(0, 2).toUpperCase() } }
+function typeClass(type: string) { return `type-${type.toLowerCase().replace(/[^a-z0-9]/g, '')}` }
+function supportsMetadata(type: string) { return ['MySQL', 'TiDB', 'Doris', 'PostgreSQL'].includes(type) }
+function supportsPartitioning(type: string) { return ['MySQL', 'TiDB', 'PostgreSQL'].includes(type) }
 
-function handleSearch() {
-  page.current = 1
-  load()
-}
+async function load() { loading.value = true; try { const res = await listDataSource({ name: query.name || undefined, type: query.type || undefined, status: query.status || undefined }, page.current, page.size); list.value = res.records; page.total = res.total } finally { loading.value = false } }
+function handleSearch() { page.current = 1; load() }
+function resetSearch() { Object.assign(query, { name: '', type: '', status: '' }); handleSearch() }
+function resetForm() { Object.assign(form, defaultForm()) }
+function selectType(type: string) { if (form.type === type) return; form.type = type; form.url = ''; form.driver = typeMeta(type).driver ?? ''; form.feNodes = ''; form.beNodes = ''; form.partitioningAlgorithm = '' }
+function applyRecommendedConfig() { form.driver = currentType.value.driver ?? ''; if (!form.url) form.url = currentType.value.urlPlaceholder; if (isJdbc.value && !form.maxPoolSize) form.maxPoolSize = 10; ElMessage.success('已应用推荐连接参数，请替换示例主机和数据库名') }
+function openAdd() { editingId.value = 0; resetForm(); dialogVisible.value = true }
 
-function resetForm() {
-  Object.assign(form, {
-    name: '',
-    type: 'MySQL',
-    url: '',
-    driver: '',
-    username: '',
-    password: '',
-    maxPoolSize: 10,
-    status: 'ENABLE',
-    feNodes: '',
-    beNodes: '',
-    partitioningAlgorithm: '',
-    healthCheck: 'ENABLE',
-    description: ''
-  })
-}
-
-function onTypeChange() {
-  form.url = ''
-  form.driver = ''
-  form.feNodes = ''
-  form.beNodes = ''
-  form.partitioningAlgorithm = ''
-}
-
-function openAdd() {
-  editingId.value = 0
-  resetForm()
-  dialogVisible.value = true
-}
-
-async function openEdit(row: DataSourceItem) {
-  editingId.value = row.id
-  resetForm()
-  const d = await getDataSourceDetail(row.id)
-  Object.assign(form, {
-    name: d.name,
-    type: d.type,
-    url: d.url,
-    driver: d.driver,
-    username: d.username,
-    password: '',
-    maxPoolSize: d.maxPoolSize,
-    status: d.status,
-    feNodes: d.feNodes,
-    beNodes: d.beNodes,
-    partitioningAlgorithm: d.partitioningAlgorithm,
-    healthCheck: d.healthCheck || 'DISABLE',
-    description: d.description
-  })
-  dialogVisible.value = true
-}
-
-async function handleCopy(row: DataSourceItem) {
-  editingId.value = 0
-  resetForm()
-  const d = await getDataSourceDetail(row.id)
-  Object.assign(form, {
-    name: `${d.name}_copy`,
-    type: d.type,
-    url: d.url,
-    driver: d.driver,
-    username: d.username,
-    password: '',
-    maxPoolSize: d.maxPoolSize,
-    status: d.status,
-    feNodes: d.feNodes,
-    beNodes: d.beNodes,
-    partitioningAlgorithm: d.partitioningAlgorithm,
-    healthCheck: d.healthCheck || 'DISABLE',
-    description: d.description
-  })
-  dialogVisible.value = true
-  ElMessage.info('已复制配置，密码请重新填写')
-}
-
-function buildTestPayload(): DataSourceForm {
-  return {
-    name: form.name || 'test',
-    type: form.type,
-    url: form.url,
-    driver: form.driver || '-',
-    username: form.username,
-    password: form.password,
-    status: form.status
-  }
-}
-
-async function handleTestInForm() {
-  if (!form.url) {
-    ElMessage.warning('请先填写连接地址')
-    return
-  }
-  testing.value = true
-  try {
-    await testDataSource(buildTestPayload())
-    ElMessage.success('连接成功')
-  } finally {
-    testing.value = false
-  }
-}
-
-async function handleTest(row: DataSourceItem) {
-  const d = await getDataSourceDetail(row.id)
-  testing.value = true
-  try {
-    await testDataSource({
-      name: d.name,
-      type: d.type,
-      url: d.url,
-      driver: d.driver || '-',
-      username: d.username,
-      password: d.password,
-      status: d.status
-    })
-    ElMessage.success(`「${d.name}」连接成功`)
-  } finally {
-    testing.value = false
-  }
-}
-
-async function handleSubmit() {
-  if (!form.name) {
-    ElMessage.warning('请填写名称')
-    return
-  }
-  if (!form.url) {
-    ElMessage.warning('请填写连接地址')
-    return
-  }
-  submitting.value = true
-  try {
-    if (editingId.value) {
-      await updateDataSource({ ...form, id: editingId.value })
-      ElMessage.success('更新成功')
-    } else {
-      await addDataSource({ ...form })
-      ElMessage.success('新增成功')
-    }
-    dialogVisible.value = false
-    load()
-  } finally {
-    submitting.value = false
-  }
-}
-
-async function handleDelete(row: DataSourceItem) {
-  await ElMessageBox.confirm(`确认删除数据源「${row.name}」？`, '提示', { type: 'warning' })
-  await deleteDataSource(row.id)
-  ElMessage.success('删除成功')
-  load()
-}
-
-async function openMeta(row: DataSourceItem) {
-  metaName.value = row.name
-  metaId.value = row.id
-  metaTable.value = ''
-  metaDetail.value = null
-  metaVisible.value = true
-  metaTreeLoading.value = true
-  try {
-    const res = await listSchemaTable(row.id)
-    metaTree.value = res.map((item) => ({
-      key: item.key,
-      label: `${item.label}${item.tag ? ` (${item.tag})` : ''}`,
-      tag: item.tag,
-      children: (item.children ?? []).map((c) => ({
-        key: `${c.schema}.${c.key}`,
-        label: c.label || c.key,
-        schema: c.schema,
-        table: c.key
-      }))
-    }))
-  } finally {
-    metaTreeLoading.value = false
-  }
-}
-
-async function onMetaNodeClick(data: { schema?: string; table?: string; key: string }) {
-  if (!data.schema || !data.table) return
-  metaTable.value = data.table
-  metaDetailLoading.value = true
-  try {
-    metaDetail.value = await tableDetail(metaId.value, data.schema, data.table)
-  } finally {
-    metaDetailLoading.value = false
-  }
-}
-
+async function openEdit(row: DataSourceItem) { editingId.value = row.id; resetForm(); const d = await getDataSourceDetail(row.id); Object.assign(form, { name: d.name, type: d.type, url: d.url, driver: d.driver, username: d.username, password: '', maxPoolSize: d.maxPoolSize, status: d.status, feNodes: d.feNodes, beNodes: d.beNodes, partitioningAlgorithm: d.partitioningAlgorithm, healthCheck: d.healthCheck || 'DISABLE', description: d.description }); dialogVisible.value = true }
+async function handleCopy(row: DataSourceItem) { editingId.value = 0; resetForm(); const d = await getDataSourceDetail(row.id); Object.assign(form, { name: `${d.name}_copy`, type: d.type, url: d.url, driver: d.driver, username: d.username, password: '', maxPoolSize: d.maxPoolSize, status: d.status, feNodes: d.feNodes, beNodes: d.beNodes, partitioningAlgorithm: d.partitioningAlgorithm, healthCheck: d.healthCheck || 'DISABLE', description: d.description }); dialogVisible.value = true; ElMessage.info('已复制连接配置，请重新填写密码') }
+function buildTestPayload(): DataSourceForm { return { id: editingId.value || undefined, name: form.name || 'connection-test', type: form.type, url: form.url, driver: form.driver || '-', username: form.username, password: form.password, status: form.status } }
+function validateForm() { if (!form.name?.trim()) return '请填写数据源名称'; if (!form.url?.trim()) return `请填写${connectionLabel.value}`; if (isJdbc.value && !form.driver?.trim()) return '请填写 JDBC 驱动类'; if (['MySQL', 'TiDB', 'Doris'].includes(form.type) && !form.url.startsWith('jdbc:mysql://')) return `${currentType.value.label} 需要使用 jdbc:mysql:// 开头的连接地址`; if (form.type === 'PostgreSQL' && !form.url.startsWith('jdbc:postgresql://')) return 'PostgreSQL 需要使用 jdbc:postgresql:// 开头的连接地址'; if (form.type === 'Elastic' && !/^https?:\/\//i.test(form.url)) return 'Elasticsearch 地址需要以 http:// 或 https:// 开头'; return '' }
+async function handleTestInForm() { const message = validateForm(); if (message) { ElMessage.warning(message); return }; testing.value = true; try { await testDataSource(buildTestPayload()); ElMessage.success('连接测试成功') } finally { testing.value = false } }
+async function handleTest(row: DataSourceItem) { const d = await getDataSourceDetail(row.id); testing.value = true; try { await testDataSource({ id: d.id, name: d.name, type: d.type, url: d.url, driver: d.driver || '-', username: d.username, password: d.password, status: d.status }); ElMessage.success(`「${d.name}」连接成功`) } finally { testing.value = false } }
+async function handleSubmit() { const message = validateForm(); if (message) { ElMessage.warning(message); return }; submitting.value = true; try { if (editingId.value) { await updateDataSource({ ...form, id: editingId.value }); ElMessage.success('数据源更新成功') } else { await addDataSource({ ...form }); ElMessage.success('数据源创建成功') }; dialogVisible.value = false; load() } finally { submitting.value = false } }
+async function handleDelete(row: DataSourceItem) { await ElMessageBox.confirm(`确认删除数据源「${row.name}」？删除后无法恢复。`, '删除数据源', { type: 'warning', confirmButtonText: '确认删除', cancelButtonText: '取消' }); await deleteDataSource(row.id); ElMessage.success('数据源已删除'); load() }
+async function openMeta(row: DataSourceItem) { if (!supportsMetadata(row.type)) { ElMessage.info(`${typeMeta(row.type).label} 暂不提供关系型库表元数据`); return }; metaName.value = row.name; metaId.value = row.id; metaTable.value = ''; metaDetail.value = null; metaVisible.value = true; metaTreeLoading.value = true; try { const res = await listSchemaTable(row.id); metaTree.value = res.map((item) => ({ key: item.key, label: item.label, tag: item.tag, children: (item.children ?? []).map((child) => ({ key: `${child.schema}.${child.key}`, label: child.label || child.key, schema: child.schema, table: child.key })) })) } finally { metaTreeLoading.value = false } }
+async function onMetaNodeClick(data: { schema?: string; table?: string; key: string }) { if (!data.schema || !data.table) return; metaTable.value = data.table; metaDetailLoading.value = true; try { metaDetail.value = await tableDetail(metaId.value, data.schema, data.table) } finally { metaDetailLoading.value = false } }
 onMounted(load)
 </script>
 
 <style scoped>
-.toolbar {
-  margin-bottom: 12px;
+.datasource-page { display: grid; gap: 14px; }
+.page-hero { min-height: 116px; display: flex; align-items: center; gap: 28px; padding: 22px 25px; border: 1px solid #e7e9f1; border-radius: 12px; background: linear-gradient(135deg, #fbfbff, #f5f7fc); }
+.page-hero > div:first-child { min-width: 280px; flex: 1; }.page-eyebrow { color: #7669ef; font-size: 9px; font-weight: 800; letter-spacing: 1.7px; }.page-hero h2 { margin: 5px 0 6px; color: #20283a; font-size: 22px; }.page-hero p { margin: 0; color: #8992a3; font-size: 11px; }.hero-stats { display: flex; align-items: center; }.hero-stats > div { min-width: 84px; padding: 3px 20px; border-left: 1px solid #e0e3ea; text-align: center; }.hero-stats strong, .hero-stats span { display: block; }.hero-stats strong { color: #30394c; font-size: 21px; }.hero-stats span { margin-top: 3px; color: #9aa2b1; font-size: 9px; }
+.filter-card :deep(.el-card__body) { padding: 16px 18px 0; }.filter-card :deep(.el-form-item) { margin-bottom: 16px; }.list-card :deep(.el-card__body) { padding: 0; }.list-heading { height: 67px; display: flex; align-items: center; justify-content: space-between; padding: 0 19px; border-bottom: 1px solid #edf0f4; }.list-heading h3 { display: inline; margin: 0; color: #2c3548; font-size: 14px; }.list-heading > div > span { margin-left: 10px; color: #9aa2b1; font-size: 10px; }.support-tip { padding: 5px 9px; border-radius: 5px; color: #6e7790; background: #f4f5f8; font-size: 9px; }.datasource-table { width: 100%; }
+.source-cell { display: flex; align-items: center; gap: 11px; min-width: 0; }.source-logo, .dialog-logo { display: grid; place-items: center; flex: 0 0 auto; color: #fff; background: linear-gradient(145deg, #3b82f6, #6366f1); font-weight: 800; }.source-logo { width: 34px; height: 34px; border-radius: 9px; font-size: 9px; }.source-cell > div, .connection-cell { min-width: 0; }.source-cell strong, .source-cell small, .connection-cell strong, .connection-cell small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.source-cell strong { color: #344054; font-size: 11px; }.source-cell small { margin-top: 4px; color: #a0a7b5; font-size: 8px; }.connection-cell strong { color: #536075; font-size: 10px; font-weight: 500; }.connection-cell small { margin-top: 4px; color: #a0a7b5; font-size: 9px; }
+.type-badge { display: inline-flex; padding: 4px 8px; border-radius: 5px; color: #305fbd; background: #edf4ff; font-size: 9px; font-weight: 650; }.status-badge, .health-status { display: inline-flex; align-items: center; gap: 6px; color: #929aaa; font-size: 9px; }.status-badge i, .health-status i { width: 6px; height: 6px; border-radius: 50%; background: #b9bec8; }.status-badge.enabled, .health-status.enabled { color: #079669; }.status-badge.enabled i, .health-status.enabled i { background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, .1); }.pager { justify-content: flex-end; padding: 16px 18px; border-top: 1px solid #edf0f4; }
+.type-mysql, .type-tidb { background: linear-gradient(145deg, #2f80ed, #49a3ff); }.type-doris { background: linear-gradient(145deg, #7357e8, #9b6ff3); }.type-postgresql { background: linear-gradient(145deg, #336791, #4c8fbd); }.type-kafka { background: linear-gradient(145deg, #283342, #566273); }.type-elastic { background: linear-gradient(145deg, #00a9a5, #e7b63f); }.type-badge.type-mysql, .type-badge.type-tidb { color: #2765c7; background: #edf4ff; }.type-badge.type-doris { color: #7049cc; background: #f3edff; }.type-badge.type-postgresql { color: #326a94; background: #edf6fb; }.type-badge.type-kafka { color: #475569; background: #f0f2f4; }.type-badge.type-elastic { color: #087f7b; background: #eaf9f7; }
+.type-option.type-mysql > span, .type-option.type-tidb > span { background: linear-gradient(145deg, #2f80ed, #49a3ff); }.type-option.type-doris > span { background: linear-gradient(145deg, #7357e8, #9b6ff3); }.type-option.type-postgresql > span { background: linear-gradient(145deg, #336791, #4c8fbd); }.type-option.type-kafka > span { background: linear-gradient(145deg, #283342, #566273); }.type-option.type-elastic > span { background: linear-gradient(145deg, #00a9a5, #e7b63f); }
+.dialog-heading { display: flex; align-items: center; gap: 12px; padding-right: 38px; }.dialog-logo { width: 40px; height: 40px; border-radius: 11px; font-size: 9px; box-shadow: 0 8px 18px rgba(59, 130, 246, .2); }.dialog-title { color: #172033; font-size: 17px; font-weight: 700; }.dialog-subtitle { margin-top: 3px; color: #8a94a6; font-size: 12px; }.dialog-mode { margin-left: auto; padding: 5px 9px; border: 1px solid #dedaff; border-radius: 999px; color: #6758e8; background: #f0efff; font-size: 9px; }
+.config-shell { height: min(610px, calc(92vh - 150px)); min-height: 500px; display: grid; grid-template-columns: 220px minmax(0, 1fr); overflow: hidden; border: 1px solid #e7e9f0; border-radius: 12px; background: #fafbfc; }.type-sidebar { display: flex; flex-direction: column; padding: 17px 13px; border-right: 1px solid #e7e9f0; background: #fbfbfd; }.sidebar-label { margin: 0 7px 9px; color: #9aa2b1; font-size: 9px; font-weight: 700; letter-spacing: .8px; }.type-option { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 8px; border: 1px solid transparent; border-radius: 8px; color: #687286; text-align: left; background: transparent; cursor: pointer; transition: .18s ease; }.type-option:hover { background: #f2f3f7; }.type-option.active { border-color: #d9d5ff; background: #f0eeff; }.type-option > span { width: 30px; height: 30px; display: grid; place-items: center; flex-shrink: 0; border-radius: 8px; color: #fff; font-size: 8px; font-weight: 800; }.type-option div { min-width: 0; flex: 1; }.type-option strong, .type-option small { display: block; }.type-option strong { color: #3b4558; font-size: 10px; }.type-option small { margin-top: 3px; color: #9ba3b1; font-size: 8px; }.type-option > i { display: none; color: #635bff; font-size: 11px; font-style: normal; }.type-option.active > i { display: block; }
+.connection-summary { margin-top: auto; padding: 13px; border: 1px solid #e6e8ef; border-radius: 9px; background: #fff; }.connection-summary > span { color: #9aa2b1; font-size: 8px; letter-spacing: .8px; }.connection-summary > strong { display: block; overflow: hidden; margin-top: 6px; color: #364154; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }.connection-summary p { margin: 5px 0 10px; color: #8e97a7; font-size: 8px; }.connection-summary div { display: flex; align-items: center; gap: 6px; color: #9aa2b1; font-size: 8px; }.connection-summary div i { width: 6px; height: 6px; border-radius: 50%; background: #c0c5cf; }.connection-summary div i.ready { background: #10b981; }
+.config-content { min-width: 0; overflow-y: auto; padding: 24px 27px; background: #fff; }.form-section + .form-section { margin-top: 25px; padding-top: 23px; border-top: 1px solid #eceef3; }.section-heading { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }.section-heading > div { display: flex; align-items: flex-start; gap: 10px; }.section-index { width: 25px; height: 25px; display: grid; place-items: center; flex-shrink: 0; border-radius: 7px; color: #635bff; background: #eeecff; font-size: 8px; font-weight: 800; }.section-heading h3 { margin: 0; color: #293247; font-size: 13px; }.section-heading p { margin: 4px 0 0; color: #929aaa; font-size: 9px; }.recommend-button { padding: 5px 8px; border: 1px solid #dfe2e9; border-radius: 5px; color: #667085; background: #fff; font-size: 9px; cursor: pointer; }.recommend-button:hover { color: #635bff; border-color: #bdb7f8; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }.basic-grid { grid-template-columns: 1.5fr .8fr; }.field { min-width: 0; }.field label { display: block; margin-bottom: 7px; color: #4f596c; font-size: 10px; font-weight: 650; }.field label em { color: #ef5361; font-style: normal; }.field > small { display: block; margin-top: 5px; color: #9aa2b1; font-size: 8px; }.wide-field, .full-field { grid-column: 1 / -1; }.connection-form-card { padding: 17px; border: 1px solid #e6e8ef; border-radius: 10px; background: #fff; }.endpoint-strip { display: flex; align-items: center; gap: 10px; margin-bottom: 17px; padding-bottom: 13px; border-bottom: 1px solid #edf0f4; }.endpoint-strip div { flex: 1; }.endpoint-strip strong, .endpoint-strip small { display: block; }.endpoint-strip strong { color: #344054; font-size: 11px; }.endpoint-strip small { margin-top: 3px; color: #9aa2b1; font-size: 8px; }.endpoint-strip > span:last-child { padding: 3px 6px; border-radius: 4px; color: #7669ef; background: #f0eeff; font-size: 8px; font-weight: 700; }
+.extra-config { margin-top: 16px; padding: 13px; border-radius: 8px; background: #f7f8fb; }.extra-title { display: flex; justify-content: space-between; margin-bottom: 12px; }.extra-title strong { color: #4b5568; font-size: 10px; }.extra-title span { color: #969ead; font-size: 8px; }.config-hint { display: flex; align-items: flex-start; gap: 9px; margin-top: 15px; padding: 10px 12px; border-radius: 7px; color: #667085; background: #f5f7fb; }.config-hint span { width: 17px; height: 17px; display: grid; place-items: center; flex-shrink: 0; border-radius: 50%; color: #fff; background: #7b72e8; font-size: 9px; font-weight: 700; }.config-hint p { margin: 1px 0 0; font-size: 9px; line-height: 1.55; }
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }.setting-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 14px; border: 1px solid #e8eaf0; border-radius: 8px; background: #fafbfc; }.setting-card > div { min-width: 0; }.setting-card strong, .setting-card small { display: block; }.setting-card strong { color: #4b5568; font-size: 10px; }.setting-card small { margin-top: 4px; color: #969ead; font-size: 8px; }.full-setting { grid-column: 1 / -1; }.full-setting :deep(.el-input) { width: 48%; }.dialog-footer { width: 100%; display: flex; align-items: center; }.footer-tip { margin-right: auto; color: #8f98a8; font-size: 9px; }
+.metadata-logo { font-size: 7px; background: linear-gradient(145deg, #0ea5a4, #3b82f6); }.meta-body { height: 520px; display: grid; grid-template-columns: 270px minmax(0, 1fr); overflow: hidden; border: 1px solid #e7e9f0; border-radius: 10px; }.meta-tree-panel { min-width: 0; padding: 15px 11px; overflow-y: auto; border-right: 1px solid #e7e9f0; background: #fafbfc; }.meta-panel-title { display: flex; justify-content: space-between; padding: 0 7px 12px; }.meta-panel-title strong { color: #404a5d; font-size: 11px; }.meta-panel-title span { color: #9aa2b1; font-size: 8px; }.meta-detail { min-width: 0; overflow-y: auto; padding: 19px; }.meta-detail-head { display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 14px; border-bottom: 1px solid #eceef3; }.meta-detail-head > div { display: flex; align-items: center; gap: 8px; }.meta-detail-head span { padding: 3px 5px; border-radius: 4px; color: #087f7b; background: #eaf9f7; font-size: 8px; font-weight: 800; }.meta-detail-head strong { color: #30394c; font-size: 14px; }.meta-detail-head p { margin: 0; color: #929aaa; font-size: 9px; }.meta-block-title { display: flex; justify-content: space-between; margin: 16px 0 9px; }.meta-block-title strong { color: #475166; font-size: 10px; }.meta-block-title span { color: #9aa2b1; font-size: 8px; }.index-title { margin-top: 18px; }.meta-empty { height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #9aa2b1; }.meta-empty > span { width: 45px; height: 45px; display: grid; place-items: center; border-radius: 11px; background: #f1f2f6; font-size: 20px; }.meta-empty strong { margin-top: 10px; color: #606a7e; font-size: 11px; }.meta-empty p { margin: 5px 0 0; font-size: 9px; }
+@media (max-width: 900px) { .page-hero { align-items: flex-start; flex-wrap: wrap; }.hero-stats { order: 3; width: 100%; }.hero-stats > div:first-child { border-left: 0; }.config-shell { grid-template-columns: 185px minmax(0, 1fr); }.config-content { padding: 21px 18px; }.form-grid, .basic-grid { grid-template-columns: 1fr; }.wide-field, .full-field { grid-column: auto; }.settings-grid { grid-template-columns: 1fr; }.full-setting { grid-column: auto; }.full-setting :deep(.el-input) { width: 100%; } }
+@media (max-width: 680px) {
+  .page-hero { gap: 16px; padding: 18px; }.page-hero > div:first-child { min-width: 0; width: 100%; }.page-hero p, .support-tip { display: none; }.hero-stats > div { min-width: 0; flex: 1; padding: 3px 9px; }.list-heading { padding: 0 14px; }
+  .dialog-heading { gap: 9px; padding-right: 28px; }.dialog-logo { width: 34px; height: 34px; border-radius: 9px; }.dialog-subtitle, .dialog-mode { display: none; }.dialog-title { font-size: 15px; white-space: nowrap; }
+  .config-shell { height: calc(92vh - 135px); min-height: 0; display: block; overflow-y: auto; }.type-sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 12px; border-right: 0; border-bottom: 1px solid #e7e9f0; }.sidebar-label { grid-column: 1 / -1; }.type-option { min-width: 0; padding: 7px 6px; }.type-option > span { width: 25px; height: 25px; }.type-option small { display: none; }.connection-summary { display: none; }.config-content { overflow: visible; padding: 18px 13px; }.footer-tip { display: none; }
+  .meta-body { height: calc(92vh - 120px); grid-template-columns: 1fr; overflow-y: auto; }.meta-tree-panel { max-height: 220px; border-right: 0; border-bottom: 1px solid #e7e9f0; }.meta-detail { min-height: 330px; overflow: visible; }
 }
+</style>
 
-.pager {
-  margin-top: 16px;
-  justify-content: flex-end;
-}
-
-.meta-body {
-  display: flex;
-  height: 480px;
-  border: 1px solid #eef0f4;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.meta-tree {
-  width: 260px;
-  border-right: 1px solid #eef0f4;
-  padding: 8px;
-  overflow-y: auto;
-}
-
-.meta-detail {
-  flex: 1;
-  padding: 12px;
-  overflow-y: auto;
-}
-
-.meta-detail-head {
-  margin-bottom: 10px;
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-
-.meta-table-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.meta-table-comment {
-  font-size: 12px;
-  color: #909399;
-}
-
-.meta-index-title {
-  margin: 12px 0 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.meta-empty {
-  color: #c0c4cc;
-  text-align: center;
-  margin-top: 120px;
+<style>
+.datasource-config-dialog.el-dialog, .metadata-dialog.el-dialog { overflow: hidden; border-radius: 14px; }
+.datasource-config-dialog .el-dialog__header, .metadata-dialog .el-dialog__header { margin-right: 0; padding: 18px 22px 14px; border-bottom: 1px solid #edf0f4; }
+.datasource-config-dialog .el-dialog__body, .metadata-dialog .el-dialog__body { padding: 16px 20px; }
+.datasource-config-dialog .el-dialog__footer, .metadata-dialog .el-dialog__footer { padding: 13px 20px 17px; border-top: 1px solid #edf0f4; }
+.danger-menu-item { color: #dc4452 !important; }
+@media (max-width: 680px) {
+  .datasource-config-dialog .el-dialog__header, .metadata-dialog .el-dialog__header { padding: 14px 13px 11px; }
+  .datasource-config-dialog .el-dialog__body, .metadata-dialog .el-dialog__body { padding: 10px; }
+  .datasource-config-dialog .el-dialog__footer, .metadata-dialog .el-dialog__footer { padding: 10px 12px 12px; }
 }
 </style>

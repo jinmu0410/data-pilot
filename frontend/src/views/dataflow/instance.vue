@@ -93,6 +93,7 @@
       top="4vh"
       append-to-body
       destroy-on-close
+      :close-on-click-modal="false"
       class="instance-detail-dialog"
       @close="stopPolling"
     >
@@ -457,7 +458,7 @@ onBeforeUnmount(() => {
 .dialog-heading-copy { min-width: 0; }
 .dialog-title { color: #172033; font-size: 17px; font-weight: 700; }
 .dialog-subtitle { margin-top: 3px; color: #8a94a6; font-size: 12px; }
-.detail-shell { min-height: 570px; color: #344054; }
+.detail-shell { min-height: 500px; max-height: calc(92vh - 150px); overflow-y: auto; color: #344054; }
 .instance-overview { display: grid; grid-template-columns: minmax(220px, .85fr) minmax(0, 1.6fr); gap: 18px; padding: 20px; border: 1px solid #e7e9f1; border-radius: 12px; background: linear-gradient(135deg, #fbfbff, #f7f8fc); }
 .flow-identity { display: flex; min-width: 0; flex-direction: column; justify-content: center; padding: 3px 7px; }
 .identity-topline { display: flex; align-items: center; gap: 9px; }

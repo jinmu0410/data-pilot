@@ -246,7 +246,7 @@
               <el-select v-model="config.writeMode" size="large">
                 <el-option v-for="mode in writeModeOptions" :key="mode.value" :label="mode.label" :value="mode.value" />
               </el-select>
-              <div v-if="!targetIsMySql" class="performance-tip">
+              <div v-if="!targetSupportsConflictMode" class="performance-tip">
                 {{ targetDatasource?.type || '当前目标端' }} 的 DataX Writer 仅开放 Insert 模式。
               </div>
               <div v-if="requiresConflictKey" class="conflict-card" :class="{ invalid: !conflictReady }">
@@ -267,7 +267,7 @@
                       >{{ column }}</el-tag>
                     </div>
                   </div>
-                  <p>MySQL 根据主键或唯一索引自动判断冲突；至少保证一组约束字段全部参与映射。</p>
+                  <p>{{ targetDatasource?.type }} 根据主键或唯一索引自动判断冲突；至少保证一组约束字段全部参与映射。</p>
                 </template>
                 <p v-else>目标表没有主键或唯一索引，{{ config.writeMode }} 无法判断需要更新或替换的记录。</p>
               </div>
@@ -361,8 +361,8 @@ const loading = reactive({ sourceTree: false, targetTree: false, sourceColumns: 
 
 const sourceDatasource = computed(() => props.datasources.find((item) => item.code === props.config.sourceDataSourceCode))
 const targetDatasource = computed(() => props.datasources.find((item) => item.code === props.config.targetDataSourceCode))
-const targetIsMySql = computed(() => targetDatasource.value?.type?.toLowerCase() === 'mysql')
-const writeModeOptions = computed(() => targetIsMySql.value
+const targetSupportsConflictMode = computed(() => ['mysql', 'tidb'].includes(targetDatasource.value?.type?.toLowerCase() ?? ''))
+const writeModeOptions = computed(() => targetSupportsConflictMode.value
   ? [
       { label: 'Insert · 直接插入，冲突时报错', value: 'insert' },
       { label: 'Replace · 按主键/唯一键替换整行', value: 'replace' },
@@ -378,7 +378,7 @@ const mappingRows = computed<FieldMappingRow[]>(() => {
 })
 const completeMappings = computed(() => mappingRows.value.filter((item) => item.source && item.target))
 const mappedTargetColumns = computed(() => new Set(completeMappings.value.map((item) => item.target)))
-const requiresConflictKey = computed(() => targetIsMySql.value && ['replace', 'update'].includes(props.config.writeMode))
+const requiresConflictKey = computed(() => targetSupportsConflictMode.value && ['replace', 'update'].includes(props.config.writeMode))
 const conflictConstraints = computed(() => {
   const result: { name: string; label: string; columns: string[] }[] = []
   const primaryColumns = targetColumns.value.filter((column) => column.primaryKey).map((column) => column.name)

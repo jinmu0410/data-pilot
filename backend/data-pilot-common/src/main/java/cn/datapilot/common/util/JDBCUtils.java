@@ -27,7 +27,7 @@ public class JDBCUtils {
     @SneakyThrows
     public static void setSchema(DataSourceType type, Connection conn, String schema) {
         switch (type) {
-            case MYSQL, DORIS -> {
+            case MYSQL, TIDB, DORIS -> {
                 // MySQL切换schema时，如果和当前schema相同则忽略
                 if (conn instanceof ConnectionImpl connection) {
                     if (Objects.equals(connection.getDatabase(), schema)) {
@@ -63,7 +63,7 @@ public class JDBCUtils {
     @SneakyThrows
     public static String getSchema(DataSourceType type, Connection conn) {
         switch (type) {
-            case MYSQL, DORIS -> {
+            case MYSQL, TIDB, DORIS -> {
                 return conn.getCatalog();
             }
             case POSTGRESQL -> {

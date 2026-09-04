@@ -109,6 +109,19 @@ public class DataSourceServiceImpl extends ServiceImpl<DataSourceMapper, DataSou
                 sqlDataSource.setMaxPoolSize(dataSource.getMaxPoolSize());
                 this.sourceManager.addSource(dataSource.getWorkspaceCode(), sqlDataSource);
                 break;
+            case TIDB:
+                TiDBDataSource tiDBDataSource = new TiDBDataSource();
+                tiDBDataSource.setName(dataSource.getName());
+                tiDBDataSource.setCode(dataSource.getCode());
+                tiDBDataSource.setUrl(dataSource.getUrl());
+                tiDBDataSource.setUsername(dataSource.getUsername());
+                tiDBDataSource.setPassword(password);
+                tiDBDataSource.setDriverClassName(dataSource.getDriver());
+                tiDBDataSource.setPartitioningAlgorithm(dataSource.getPartitioningAlgorithm());
+                tiDBDataSource.setIsEnableHealth(Objects.equals(dataSource.getHealthCheck(), Status.ENABLE.name()));
+                tiDBDataSource.setMaxPoolSize(dataSource.getMaxPoolSize());
+                this.sourceManager.addSource(dataSource.getWorkspaceCode(), tiDBDataSource);
+                break;
             case DORIS:
                 DorisDataSource dorisDataSource = new DorisDataSource();
                 dorisDataSource.setName(dataSource.getName());

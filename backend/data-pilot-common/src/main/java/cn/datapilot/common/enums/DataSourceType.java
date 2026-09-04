@@ -23,6 +23,7 @@ public enum DataSourceType {
      * MySQL等
      */
     MYSQL("MySQL", MySQLDataSource.class),
+    TIDB("TiDB", TiDBDataSource.class),
     DORIS("Doris", DorisDataSource.class),
     KAFKA("Kafka", KafkaDataSource.class),
     ELASTIC("Elastic", ElasticDataSource.class),

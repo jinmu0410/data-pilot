@@ -229,6 +229,9 @@ public class DataSourceServiceImpl extends ServiceImpl<DataSourceMapper, DataSou
                 // 加密后存储
                 dataSourceUpdateRequest.setPassword(this.passwordEncAndDecService.encrypt(dataSourceUpdateRequest.getPassword()));
             }
+        } else {
+            // 编辑页面留空表示沿用原密码，避免对象映射时用空字符串覆盖密文
+            dataSourceUpdateRequest.setPassword(dataSource.getPassword());
         }
         this.orikaMapper.map(dataSourceUpdateRequest, dataSource);
         dataSource.setMaskColumn(JSON.toJSONString(dataSourceUpdateRequest.getMaskColumn()));
@@ -310,8 +313,8 @@ public class DataSourceServiceImpl extends ServiceImpl<DataSourceMapper, DataSou
             if (dataSource == null) {
                 throw new ApiException("数据源不存在");
             }
-            // 详情返回的加密后的密码
-            if (StrUtil.isNotBlank(dataSourceTestRequest.getPassword()) &&
+            // 编辑页面留空或直接使用详情密文时，统一还原数据库中保存的密码
+            if (StrUtil.isBlank(dataSourceTestRequest.getPassword()) ||
                     Objects.equals(dataSourceTestRequest.getPassword(), dataSource.getPassword())) {
                 String decrypt = this.passwordEncAndDecService.decrypt(dataSource.getPassword());
                 dataSourceTestRequest.setPassword(decrypt);
