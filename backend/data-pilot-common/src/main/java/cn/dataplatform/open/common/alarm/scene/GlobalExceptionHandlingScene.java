@@ -9,7 +9,7 @@ import java.io.Serial;
 /**
  * 全局未知异常处理
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/2/22
  * @since 1.0.0
  */

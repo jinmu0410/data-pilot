@@ -9,7 +9,7 @@ import java.io.Serial;
 /**
  * 服务下线通知
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/2/23
  * @since 1.0.0
  */

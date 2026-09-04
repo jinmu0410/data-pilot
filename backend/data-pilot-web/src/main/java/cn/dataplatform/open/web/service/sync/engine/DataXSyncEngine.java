@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 /**
  * DataX 同步引擎：生成 DataX job JSON
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Component
 public class DataXSyncEngine implements SyncEngine {

@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * 表达式语句转换器，检查方法调用、静态方法调用和构造器调用
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/6/18
  * @since 1.0.0
  */

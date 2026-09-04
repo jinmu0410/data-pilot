@@ -5,7 +5,7 @@ package cn.dataplatform.open.common.util;
  * 〈一句话功能简述〉<br>
  * 〈〉
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2021/2/1
  * @since 1.0.0
  */

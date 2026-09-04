@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 统一任务实例详情
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class TaskInstanceDetailResponse {

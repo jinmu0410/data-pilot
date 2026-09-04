@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 同步引擎工厂：按引擎标识查找实现
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Component
 public class SyncEngineFactory {

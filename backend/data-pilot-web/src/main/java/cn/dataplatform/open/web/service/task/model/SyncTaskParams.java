@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * 数据同步任务参数（DATAX/SEATUNNEL）
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class SyncTaskParams {

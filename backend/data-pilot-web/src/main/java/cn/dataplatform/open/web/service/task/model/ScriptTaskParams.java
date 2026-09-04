@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * 脚本任务参数（PYTHON/SHELL）
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class ScriptTaskParams {

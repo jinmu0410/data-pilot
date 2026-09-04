@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * 数据集成-同步运行实例列表查询
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class SyncTaskLogListRequest {

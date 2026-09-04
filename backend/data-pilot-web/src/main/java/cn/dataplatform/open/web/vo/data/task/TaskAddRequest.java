@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 统一任务新增（按 taskType 填对应字段，其余留空）
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class TaskAddRequest {

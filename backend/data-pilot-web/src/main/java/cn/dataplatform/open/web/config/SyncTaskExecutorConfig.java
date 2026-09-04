@@ -9,7 +9,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * 数据集成-同步任务执行线程池
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Configuration
 public class SyncTaskExecutorConfig {

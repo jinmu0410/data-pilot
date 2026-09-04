@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 〈一句话功能简述〉<br>
  * 〈〉
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/3/9
  * @since 1.0.0
  */

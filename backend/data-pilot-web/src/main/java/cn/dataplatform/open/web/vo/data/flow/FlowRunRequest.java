@@ -6,7 +6,7 @@ import lombok.Data;
 /**
  * 手动运行任务流请求
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class FlowRunRequest {

@@ -14,7 +14,7 @@ import java.util.Set;
 /**
  * 脚本任务执行器（PYTHON/SHELL）
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Slf4j
 @Component

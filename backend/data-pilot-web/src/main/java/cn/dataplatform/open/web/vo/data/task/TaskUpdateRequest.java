@@ -7,7 +7,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 统一任务更新
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

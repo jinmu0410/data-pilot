@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 数据集成-同步任务详情
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class SyncTaskDetailResponse {

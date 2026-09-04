@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * 同步引擎上下文：已解析的源/目标连接信息
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class SyncEngineContext {

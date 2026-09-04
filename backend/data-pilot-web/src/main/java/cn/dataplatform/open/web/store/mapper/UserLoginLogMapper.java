@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * 〈一句话功能简述〉<br>
  * 〈〉
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/3/1
  * @since 1.0.0
  */

@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 /**
  * 在MySQL中存储模式历史的{@link SchemaHistory}实现。
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/6/8
  * @since 1.0.0
  */

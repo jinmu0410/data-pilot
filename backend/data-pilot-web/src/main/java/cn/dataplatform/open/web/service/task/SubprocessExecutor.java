@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * 通用子进程执行器：写文件 + subprocess 执行 + 采集日志
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Slf4j
 @Service

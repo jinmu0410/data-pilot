@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 按任务类型分发执行器
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Component
 public class TaskRunnerFactory {

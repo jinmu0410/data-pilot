@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * 同步引擎抽象：DataX / SeaTunnel 等底层引擎的统一入口
  *
- * @author dingqianwen
+ * @author jinmu
  */
 public interface SyncEngine {
 

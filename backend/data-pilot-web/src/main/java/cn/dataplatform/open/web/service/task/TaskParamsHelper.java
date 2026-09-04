@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 /**
  * 任务流节点参数与 DAG 公共逻辑（从 TaskServiceImpl 抽离，供任务流复用）
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Component
 public class TaskParamsHelper {

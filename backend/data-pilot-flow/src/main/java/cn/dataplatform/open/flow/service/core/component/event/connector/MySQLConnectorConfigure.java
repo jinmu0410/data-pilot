@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
  * FLUSH PRIVILEGES;
  * SHOW GRANTS FOR 'dp_test'@'%';
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/6/27
  * @since 1.0.0
  */

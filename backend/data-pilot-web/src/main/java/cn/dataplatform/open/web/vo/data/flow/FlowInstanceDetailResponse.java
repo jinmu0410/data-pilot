@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 任务流实例详情（内联各节点的 task_instance 记录）
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class FlowInstanceDetailResponse {

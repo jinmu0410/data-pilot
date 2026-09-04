@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 /**
  * 数据集成-同步任务
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/1/4
  * @since 1.0.0
  */

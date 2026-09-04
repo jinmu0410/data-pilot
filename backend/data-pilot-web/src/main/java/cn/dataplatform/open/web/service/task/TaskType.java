@@ -6,7 +6,7 @@ import cn.hutool.core.util.StrUtil;
 /**
  * 统一任务类型
  *
- * @author dingqianwen
+ * @author jinmu
  */
 public enum TaskType {
 

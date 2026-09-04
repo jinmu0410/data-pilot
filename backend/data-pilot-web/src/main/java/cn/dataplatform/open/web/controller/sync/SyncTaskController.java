@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 数据集成-同步任务
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @RestController
 @RequestMapping("/sync/task")

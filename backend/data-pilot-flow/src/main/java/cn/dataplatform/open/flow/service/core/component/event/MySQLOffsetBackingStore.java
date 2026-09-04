@@ -25,7 +25,7 @@ import java.util.Set;
 /**
  * 基于MySQL的偏移后备存储的实现
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/6/8
  * @since 1.0.0
  */

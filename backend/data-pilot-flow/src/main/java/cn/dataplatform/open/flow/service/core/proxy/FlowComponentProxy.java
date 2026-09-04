@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * 〈FlowComponentProxy〉
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/2/26 1:23
  * @since 1.0.0
  */

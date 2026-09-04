@@ -51,7 +51,7 @@ import java.util.concurrent.*;
 /**
  * 〈 <a href="https://debezium.io/documentation/reference/3.0/connectors/mysql.html">debezium documentation</a>〉
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/1/7
  * @since 1.0.0
  */

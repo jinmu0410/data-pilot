@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * 同步字段映射项 source -> target
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class SyncFieldMapping {

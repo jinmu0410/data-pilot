@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * o.s.beans.factory.support.DisposableBeanAdapter -[]- Invocation of destroy method failed on bean with name 'serverManager': org.springframework.amqp.AmqpApplicationContextClosedException:
  * The ApplicationContext is closed and the ConnectionFactory can no longer create connections.
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/1/26
  * @since 1.0.0
  */

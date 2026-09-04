@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 /**
  * 数据集成-同步运行实例详情
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class SyncTaskLogDetailResponse {

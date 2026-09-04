@@ -5,7 +5,7 @@ import java.util.Set;
 /**
  * 统一任务执行器（类比 DolphinScheduler task plugin）
  *
- * @author dingqianwen
+ * @author jinmu
  */
 public interface TaskRunner {
 

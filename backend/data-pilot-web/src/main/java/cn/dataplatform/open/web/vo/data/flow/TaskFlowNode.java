@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * 任务流节点参数（design JSON 中 node.properties，扁平化，按 type 填对应字段）
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class TaskFlowNode {

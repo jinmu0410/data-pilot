@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * SQL 任务参数
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class SqlTaskParams {

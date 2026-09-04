@@ -25,7 +25,7 @@ import java.util.Objects;
 /**
  * 工作空间权限校验,并把当前工作空间设置到上下文中
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/1/19
  * @since 1.0.0
  */

@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 /**
  * 数据集成-同步任务
  *
- * @author dingqianwen
+ * @author jinmu
  */
 public interface SyncTaskService extends IService<SyncTask> {
 

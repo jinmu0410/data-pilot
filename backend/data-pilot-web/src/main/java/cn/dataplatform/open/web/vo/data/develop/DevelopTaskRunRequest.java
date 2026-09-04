@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * 数据研发-SQL 任务运行（id 优先；无 id 时为临时运行）
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/1/4
  * @since 1.0.0
  */

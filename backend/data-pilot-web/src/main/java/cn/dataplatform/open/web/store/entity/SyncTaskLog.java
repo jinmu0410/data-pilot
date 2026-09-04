@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 /**
  * 数据集成-同步运行实例
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/1/4
  * @since 1.0.0
  */

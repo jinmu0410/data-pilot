@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 /**
  * MySQL写入表组件
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/1/5
  * @since 1.0.0
  */

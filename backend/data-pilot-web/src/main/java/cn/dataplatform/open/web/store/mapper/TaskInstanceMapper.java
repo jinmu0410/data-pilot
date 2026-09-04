@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 /**
  * 统一任务实例
  *
- * @author dingqianwen
+ * @author jinmu
  */
 public interface TaskInstanceMapper extends BaseMapper<TaskInstance> {
 }

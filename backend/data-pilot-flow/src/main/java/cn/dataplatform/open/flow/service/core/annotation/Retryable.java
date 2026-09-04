@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * 哪些组件需要重试，后续可以考虑页面配置，这里暂时注解方式
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/9/1
  * @since 1.0.0
  */

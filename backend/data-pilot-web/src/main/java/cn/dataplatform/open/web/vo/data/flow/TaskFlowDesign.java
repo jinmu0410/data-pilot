@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * 任务流设计（data_flow.design JSON 结构）
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class TaskFlowDesign {

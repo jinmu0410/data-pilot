@@ -23,7 +23,7 @@ import java.util.Set;
 /**
  * 数据同步任务执行器（DATAX/SEATUNNEL）
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Slf4j
 @Component

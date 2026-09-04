@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 /**
  * 数据集成-同步任务实现
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Slf4j
 @Service

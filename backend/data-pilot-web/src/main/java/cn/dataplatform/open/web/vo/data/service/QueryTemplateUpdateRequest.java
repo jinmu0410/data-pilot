@@ -8,7 +8,7 @@ import lombok.Data;
 /**
  * 数据服务-查询模板更新
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/2/2
  * @since 1.0.0
  */

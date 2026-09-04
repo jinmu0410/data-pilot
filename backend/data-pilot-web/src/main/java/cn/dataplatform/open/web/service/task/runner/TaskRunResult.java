@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * 任务执行结果
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class TaskRunResult {

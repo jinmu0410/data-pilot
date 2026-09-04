@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 /**
  * 数据服务-对外调用接口（靠 secret 自校验，无登录态）
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/2/2
  * @since 1.0.0
  */

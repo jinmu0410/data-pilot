@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * 数据服务-SQL 执行结果（测试/预览与对外调用共用）
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2025/2/2
  * @since 1.0.0
  */

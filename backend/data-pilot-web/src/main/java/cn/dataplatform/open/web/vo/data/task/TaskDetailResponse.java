@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 统一任务详情（扁平化，按 taskType 填充对应字段）
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Data
 public class TaskDetailResponse {

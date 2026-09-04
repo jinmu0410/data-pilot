@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * SeaTunnel 同步引擎：生成 SeaTunnel HOCON 配置
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Component
 public class SeaTunnelSyncEngine implements SyncEngine {

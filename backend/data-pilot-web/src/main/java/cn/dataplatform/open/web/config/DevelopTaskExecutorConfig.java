@@ -9,7 +9,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * 数据研发-SQL 任务执行线程池
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Configuration
 public class DevelopTaskExecutorConfig {

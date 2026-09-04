@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 /**
  * 任务流执行实现：Kahn 拓扑排序，按层级串行、层内并行执行节点
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @Slf4j
 @Service

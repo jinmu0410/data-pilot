@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 /**
  * 任务流实例（append-only，createTime 手动 set）
  *
- * @author dingqianwen
+ * @author jinmu
  */
 @TableName("flow_instance")
 @Data

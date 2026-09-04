@@ -18,7 +18,7 @@ import java.lang.annotation.Annotation;
  * 〈objectMapper 支持脱敏〉<br>
  * 〈〉
  *
- * @author dingqianwen
+ * @author jinmu
  * @date 2024/9/19
  * @see Mask
  * @since 1.0.0
