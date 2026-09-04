@@ -26,7 +26,9 @@ export const useAuthStore = defineStore('auth', {
       this.user = user
       const workspaces = await myWorkspaces()
       this.workspaces = workspaces ?? []
-      this.workspace = this.workspaces[0] ?? null
+      // 优先恢复上次选择的工作空间，否则默认第一个
+      const savedId = Number(localStorage.getItem(WORKSPACE_KEY))
+      this.workspace = this.workspaces.find((w) => w.id === savedId) ?? this.workspaces[0] ?? null
       if (this.workspace) {
         localStorage.setItem(WORKSPACE_KEY, String(this.workspace.id))
       }
