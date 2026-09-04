@@ -1,0 +1,68 @@
+version: '1.0'
+name: data-pilot-support
+displayName: support
+triggers:
+  trigger: auto
+  push:
+    tags:
+      prefix:
+        - 2
+    paths:
+      include:
+        - ^data-pilot-support/.*$
+variables:
+  APPLICATION: data-pilot-support
+  REGISTRY_NAMESPACE: shaiwz-public
+  SOURCE_DIR: data-pilot-support
+stages:
+  - name: scan
+    displayName: 扫描
+    strategy: naturally
+    trigger: auto
+    executor: [ ]
+    steps:
+      - step: sc@opensca
+        name: open_sca
+        displayName: OpenSCA 检测
+        detectPath: ./${SOURCE_DIR}/
+        notify: [ ]
+        strategy:
+          retry: '0'
+  - name: build
+    displayName: 构建
+    strategy: naturally
+    trigger: auto
+    executor: []
+    steps:
+      - step: build@docker
+        name: build_docker
+        displayName: 构建镜像
+        type: cert
+        certificate: aliyun-cr-shaiwz-public
+        tag: ${REGISTRY_NAMESPACE}/${APPLICATION}:${GITEE_BRANCH}
+        dockerfile: Dockerfile
+        context: .
+        artifacts: []
+        isCache: false
+        parameter:
+          SOURCE_DIR: ${SOURCE_DIR}
+        notify: []
+        strategy:
+          retry: '0'
+          timeout: 20
+      - step: build@docker
+        name: docker_build
+        displayName: 镜像构建
+        type: cert
+        certificate: aliyun-cr-shaiwz-public
+        tag: ${REGISTRY_NAMESPACE}/${APPLICATION}:latest
+        dockerfile: Dockerfile
+        context: .
+        artifacts: []
+        isCache: false
+        parameter:
+          SOURCE_DIR: ${SOURCE_DIR}
+        notify: []
+        strategy:
+          retry: '0'
+          timeout: 20

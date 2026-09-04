@@ -6,8 +6,8 @@
 
 ```
 data-pilot/
-├── backend/    # Java 21 + Spring Boot 3 后端（二次开发自 data-platform-open，多模块）
-│   └── data-platform-open-web/   # 主运行模块（端口 8080，context-path /dp-web）
+├── backend/    # Java 21 + Spring Boot 3 后端（二次开发自开源项目 data-platform-open，多模块）
+│   └── data-pilot-web/   # 主运行模块（端口 8080，context-path /dp-web）
 ├── frontend/   # Vue3 + TypeScript + Element Plus 前端
 └── docker/     # 见 backend/docker/ 部署编排
 ```
@@ -25,14 +25,14 @@ data-pilot/
 cd backend
 # 需 JDK 21
 export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
-mvn -pl data-platform-open-web -am package -DskipTests
+mvn -pl data-pilot-web -am package -DskipTests
 
 # 依赖 MySQL/Redis/RabbitMQ，可用 docker 编排（backend/docker）
 DB_URL='jdbc:mysql://localhost:3306/data_platform' \
 DB_USERNAME=root DB_PASSWORD=dp123456 \
 REDIS_HOST=localhost REDIS_PASSWORD=dp123456 \
 RABBITMQ_HOST=localhost \
-java -jar data-platform-open-web/target/data-platform-open-web-1.0.jar
+java -jar data-pilot-web/target/data-pilot-web-1.0.jar
 ```
 
 ### 前端

@@ -7,7 +7,7 @@
 ### 本项目已申请外观专利+发明专利，未经明确书面授权，任何单位或个人不得对本软件进行抄袭、复制、修改、分发、逆向工程、商业用途等任何形式的非法使用。违者将面临人民币 100 万元的法定罚款及可能的法律追责。举报侵权行为可获得实际罚款金额 40% 的现金奖励。
 
 官网：https://shaiwz.com/home <br>
-前端代码地址：https://gitee.com/shaiwz/data-platform-front-open <br>
+前端代码地址：https://gitee.com/shaiwz/data-pilot-front-open <br>
 
 ##### 举报、咨询联系方式：
 

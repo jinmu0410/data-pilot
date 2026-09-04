@@ -87,7 +87,7 @@ loki.process "extract_custom_fields" {
   }
 
   stage.match {
-    // selector = "{namespace=\"dp\", application=\"data-platform-flow\"}"
+    // selector = "{namespace=\"dp\", application=\"data-pilot-flow\"}"
     selector = "{namespace=\"dp\", framework=\"spring-boot\"}"
 
     stage.regex {

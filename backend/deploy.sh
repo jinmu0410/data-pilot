@@ -382,10 +382,10 @@ create_dir() {
   log_info "准备创建 logs 目录..."
   local log_dirs=(
     "${DP_DIR}/logs"
-    "${DP_DIR}/logs/data-platform-web"
-    "${DP_DIR}/logs/data-platform-flow"
-    "${DP_DIR}/logs/data-platform-query"
-    "${DP_DIR}/logs/data-platform-support"
+    "${DP_DIR}/logs/data-pilot-web"
+    "${DP_DIR}/logs/data-pilot-flow"
+    "${DP_DIR}/logs/data-pilot-query"
+    "${DP_DIR}/logs/data-pilot-support"
   )
 
   for i in "${!log_dirs[@]}"; do
@@ -587,11 +587,11 @@ prepare_image() {
   done
 
   images=(
-    "data-platform-web"
-    "data-platform-flow"
-    # "data-platform-query"
-    "data-platform-support"
-    "data-platform-front"
+    "data-pilot-web"
+    "data-pilot-flow"
+    # "data-pilot-query"
+    "data-pilot-support"
+    "data-pilot-front"
     )
   # 遍历镜像列表
   for image in "${images[@]}"; do
