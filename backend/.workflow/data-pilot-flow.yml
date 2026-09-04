@@ -12,7 +12,7 @@ triggers:
         - ^data-pilot-flow/.*$
 variables:
   APPLICATION: data-pilot-flow
-  REGISTRY_NAMESPACE: shaiwz-public
+  REGISTRY_NAMESPACE: jinmu-public
   SOURCE_DIR: data-pilot-flow
 stages:
   - name: scan
@@ -38,7 +38,7 @@ stages:
         name: build_docker
         displayName: 构建镜像
         type: cert
-        certificate: aliyun-cr-shaiwz-public
+        certificate: aliyun-cr-jinmu-public
         tag: ${REGISTRY_NAMESPACE}/${APPLICATION}:${GITEE_BRANCH}
         dockerfile: Dockerfile
         context: .
@@ -54,7 +54,7 @@ stages:
         name: docker_build
         displayName: 镜像构建
         type: cert
-        certificate: aliyun-cr-shaiwz-public
+        certificate: aliyun-cr-jinmu-public
         tag: ${REGISTRY_NAMESPACE}/${APPLICATION}:latest
         dockerfile: Dockerfile
         context: .

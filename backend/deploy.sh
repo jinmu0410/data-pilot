@@ -614,9 +614,9 @@ pull_image() {
   if [ -z "${DP_REGISTRY_NAMESPACE}" ]; then
     log_error "Registry Namespace 未设置，请检查 ${ENV_FILE} 文件中的配置！"
   fi
-  # 如果 DP_REGISTRY_NAMESPACE = "shaiwz-public"，则不需要登录
-  if [ "${DP_REGISTRY_NAMESPACE}" = "shaiwz-public" ]; then
-    log_debug "Registry Namespace 为 shaiwz-public，无需登录！"
+  # 如果 DP_REGISTRY_NAMESPACE = "jinmu-public"，则不需要登录
+  if [ "${DP_REGISTRY_NAMESPACE}" = "jinmu-public" ]; then
+    log_debug "Registry Namespace 为 jinmu-public，无需登录！"
   else
     # 尝试登录 Docker Registry
     log_info "尝试登录 Docker Registry：${DP_DOCKER_REGISTRY} ..."
