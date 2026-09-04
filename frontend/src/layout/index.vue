@@ -66,15 +66,15 @@
             <el-icon><Connection /></el-icon>
             <span>数据集成</span>
           </template>
-          <el-menu-item index="/datasource">数据源管理</el-menu-item>
+          <el-menu-item index="/datasource">数据源</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="development">
           <template #title>
             <el-icon><EditPen /></el-icon>
             <span>数据研发</span>
           </template>
-          <el-menu-item index="/dataflow">任务流编排</el-menu-item>
-          <el-menu-item index="/dataflow/instance">运行实例</el-menu-item>
+          <el-menu-item index="/dataflow">任务流</el-menu-item>
+          <el-menu-item index="/dataflow/instance">任务实例</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="service">
           <template #title>
@@ -207,9 +207,9 @@ const commandKeyword = ref('')
 
 const commands = [
   { name: '工作台', group: '概览', path: '/dashboard' },
-  { name: '数据源管理', group: '数据集成', path: '/datasource' },
-  { name: '任务流编排', group: '数据研发', path: '/dataflow' },
-  { name: '运行实例', group: '数据研发', path: '/dataflow/instance' },
+  { name: '数据源', group: '数据集成', path: '/datasource' },
+  { name: '任务流', group: '数据研发', path: '/dataflow' },
+  { name: '任务实例', group: '数据研发', path: '/dataflow/instance' },
   { name: 'API 服务', group: '数据服务', path: '/service/api' },
   { name: '用户管理', group: '系统管理', path: '/system/user' },
   { name: '角色管理', group: '系统管理', path: '/system/role' },

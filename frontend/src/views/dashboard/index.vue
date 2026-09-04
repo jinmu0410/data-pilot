@@ -157,14 +157,14 @@ const stats = computed(() => [
   { label: '数据源', value: totals.value.datasource, hint: '统一连接与元数据管理', icon: Coin, tone: 'blue' },
   { label: '任务流', value: totals.value.flow, hint: '可视化编排执行流程', icon: Operation, tone: 'purple' },
   { label: 'API 服务', value: totals.value.service, hint: '安全发布数据能力', icon: Link, tone: 'cyan' },
-  { label: '运行实例', value: totals.value.instance, hint: '全链路执行可观测', icon: Timer, tone: 'orange' }
+  { label: '任务实例', value: totals.value.instance, hint: '全链路执行可观测', icon: Timer, tone: 'orange' }
 ])
 
 const quickActions = [
-  { title: '数据源管理', description: '连接数据库并浏览元数据', path: '/datasource', icon: Connection, tone: 'blue' },
-  { title: '任务流编排', description: '拖拽节点构建数据任务', path: '/dataflow', icon: Operation, tone: 'purple' },
+  { title: '数据源', description: '连接数据库并浏览元数据', path: '/datasource', icon: Connection, tone: 'blue' },
+  { title: '任务流', description: '拖拽节点构建数据任务', path: '/dataflow', icon: Operation, tone: 'purple' },
   { title: 'API 服务', description: '将查询能力快速服务化', path: '/service/api', icon: DataAnalysis, tone: 'cyan' },
-  { title: '运行实例', description: '追踪节点状态与执行日志', path: '/dataflow/instance', icon: Files, tone: 'orange' }
+  { title: '任务实例', description: '追踪节点状态与执行日志', path: '/dataflow/instance', icon: Files, tone: 'orange' }
 ]
 
 const instanceStatus = computed(() => {
