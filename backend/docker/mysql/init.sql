@@ -1,0 +1,1305 @@
+SET NAMES utf8mb4;
+
+CREATE DATABASE IF NOT EXISTS `data_platform` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+
+USE `data_platform`;
+
+create table alarm_log
+(
+    id             bigint auto_increment
+        primary key,
+    request_id     varchar(50) null,
+    robot_code     varchar(50) not null comment '机器人编码',
+    scene_code     varchar(50) null,
+    status         varchar(50) not null,
+    template_code  varchar(50) not null comment '模板编码',
+    error_message  varchar(2000) null,
+    server_name    varchar(50) not null comment '应用名',
+    instance_id    varchar(50) not null comment '告警发出服务IP：端口',
+    workspace_code varchar(50) not null comment '数据所在工作空间',
+    parameter      text null,
+    create_time    datetime null,
+    update_time    datetime null,
+    deleted        tinyint null comment '0未删除 1已删除'
+) comment '告警日志';
+
+create index alarm_log_create_time_index
+    on alarm_log (create_time);
+
+create index request_id_idx
+    on alarm_log (request_id);
+
+create table alarm_robot
+(
+    id                bigint auto_increment
+        primary key,
+    code              varchar(50) not null,
+    name              varchar(50) not null,
+    category          varchar(20) not null,
+    dispatch_strategy varchar(20) not null,
+    receives          json        not null,
+    silent            json        not null,
+    status            varchar(10) not null,
+    record_log_switch varchar(10) not null,
+    workspace_code    varchar(50) not null,
+    description       varchar(500) null,
+    create_user_id    bigint null,
+    create_time       datetime null,
+    update_time       datetime null,
+    deleted           tinyint null comment '0未删除 1已删除'
+) comment '告警机器人';
+
+create index alarm_robot_workspace_code_code_index
+    on alarm_robot (workspace_code, code);
+
+create table alarm_scene
+(
+    id             bigint auto_increment
+        primary key,
+    code           varchar(50) null,
+    name           varchar(100) null,
+    server_name    varchar(200) null comment '服务名称',
+    scene          varchar(200) null comment '场景',
+    robot_code     varchar(50) null comment '机器人编码',
+    template_code  varchar(50) null comment '模板编码',
+    status         varchar(50) null comment '启用状态',
+    description    varchar(300) null comment '描述',
+    workspace_code varchar(50) null comment '数据所在工作空间',
+    create_user_id bigint null,
+    create_time    datetime null,
+    update_time    datetime null,
+    deleted        tinyint null comment '0未删除 1已删除'
+) comment '告警场景';
+
+create index wc_sn_s_idx
+    on alarm_scene (workspace_code, server_name, scene);
+
+create table alarm_template
+(
+    id                     bigint auto_increment
+        primary key,
+    name                   varchar(50) null,
+    code                   varchar(50) null comment '编码',
+    mode                   varchar(20) null,
+    type                   varchar(50) null comment '模板类型，短信、邮箱、飞书、钉钉、企业微信',
+    external_template_code varchar(100) null comment '外部系统消息模板编码',
+    status                 varchar(10) null,
+    template_content       text null,
+    description            varchar(300) null,
+    workspace_code         varchar(50) null comment '数据所在工作空间',
+    create_user_id         bigint null,
+    create_time            datetime null,
+    update_time            datetime null,
+    deleted                tinyint null comment '0未删除 1已删除'
+) comment '告警模板';
+
+create index wc_c_idx
+    on alarm_template (workspace_code, code);
+
+create table data_flow
+(
+    id                bigint auto_increment
+        primary key,
+    code              varchar(50)                           not null,
+    name              varchar(200)                          not null,
+    workspace_code    varchar(50)                           not null,
+    status            varchar(10) default 'ENABLE'          not null,
+    description       varchar(500) null,
+    icon              varchar(100) null,
+    current_version   varchar(20) null,
+    design            MEDIUMTEXT null comment '数据流信息',
+    datasource_codes  json null,
+    publish_version   varchar(20) null,
+    enable_alarm      varchar(10) default 'ENABLE' null,
+    enable_monitor    varchar(10) default 'ENABLE' null,
+    run_strategy      varchar(50) default 'ALL_INSTANCES' null comment '运行策略',
+    instance_number   int null comment '运行实例数量',
+    specify_instances json null comment '指定实例',
+    cron              varchar(100) null comment '任务流 cron，空=仅手动',
+    next_exec_time    datetime null comment '下次执行游标',
+    create_user_id    bigint                                not null,
+    create_time       datetime    default CURRENT_TIMESTAMP not null,
+    update_time       datetime    default CURRENT_TIMESTAMP not null,
+    deleted           tinyint     default 0                 not null
+) comment '数据流';
+
+create index wc_c_idx
+    on data_flow (workspace_code, code);
+
+create table data_flow_publish
+(
+    id                  bigint auto_increment
+        primary key,
+    code                varchar(50)                           not null,
+    name                varchar(200)                          not null,
+    workspace_code      varchar(50)                           not null,
+    status              varchar(10) default 'ENABLE'          not null,
+    publish_description varchar(2000) null,
+    description         varchar(500) null,
+    icon                varchar(100) null,
+    design              text null,
+    datasource_codes    json null,
+    version             varchar(10)                           not null,
+    enable_alarm        varchar(10) null,
+    enable_monitor      varchar(10) null,
+    run_strategy        varchar(50) null comment '运行策略',
+    instance_number     int null comment '运行实例数量',
+    specify_instances   json null comment '指定实例',
+    create_user_id      bigint                                not null,
+    create_time         datetime    default CURRENT_TIMESTAMP not null,
+    update_time         datetime    default CURRENT_TIMESTAMP not null,
+    deleted             tinyint     default 0                 not null
+) comment '数据流-已发布';
+
+create index wc_c__idx
+    on data_flow_publish (workspace_code, code);
+
+create table data_permission
+(
+    id                bigint auto_increment
+        primary key,
+    user_id           bigint null,
+    record_type       varchar(20) not null comment '数据流  数据源  数据对齐',
+    record_id         bigint      not null comment '类型对应的数据ID',
+    write_authority   varchar(10) null comment '有写权限',
+    publish_authority varchar(10) null comment '发布权限',
+    create_user_id    int null comment '创建人',
+    create_time       timestamp null,
+    update_time       timestamp null,
+    deleted           tinyint null
+) comment '数据权限表';
+
+create index rt_ri_idx
+    on data_permission (record_type, record_id);
+
+create index user_idx
+    on data_permission (user_id);
+
+create table data_source
+(
+    id                     bigint auto_increment
+        primary key,
+    name                   varchar(50)                  not null,
+    code                   varchar(50)                  not null,
+    workspace_code         varchar(50)                  not null,
+    type                   varchar(50)                  not null,
+    url                    varchar(500)                 not null,
+    username               varchar(50) null,
+    password               varchar(200) null,
+    max_pool_size          int null,
+    driver                 varchar(200) null,
+    status                 varchar(10) default 'ENABLE' not null,
+    create_user_id         bigint                       not null,
+    fe_nodes               varchar(600) null,
+    be_nodes               varchar(600) null,
+    nodes                  varchar(600) null,
+    partitioning_algorithm text null comment '分表算法等',
+    health_check           varchar(50) null comment '是否启用健康检查，ENABLE启用',
+    mask_column            json null comment '敏感字段',
+    description            varchar(500) null,
+    create_time            datetime    default (now())  not null,
+    update_time            datetime    default (now())  not null,
+    deleted                tinyint     default 0        not null comment '0未删除 1已删除'
+) comment '数据源';
+
+create table debezium_save_point
+(
+    id             int auto_increment
+        primary key,
+    workspace_code varchar(50)  not null,
+    flow_code      varchar(100) not null,
+    component_code varchar(100) not null,
+    instance_id    varchar(50)  not null,
+    save_point     varchar(100) not null,
+    `key`          varchar(300) not null,
+    value          text         not null,
+    create_time    timestamp null,
+    expire_time    timestamp null
+);
+
+create index wc_fc_cc_sp_idx
+    on debezium_save_point (workspace_code, flow_code, component_code, save_point);
+
+create table debezium_schema_history
+(
+    id             int auto_increment
+        primary key,
+    workspace_code varchar(50)  not null,
+    flow_code      varchar(100) not null,
+    component_code varchar(100) not null,
+    instance_id    varchar(50)  not null,
+    schema_line    text         not null,
+    create_time    timestamp null,
+    expire_time    timestamp null
+);
+
+create index wc_fc_cc_idx
+    on debezium_schema_history (workspace_code, flow_code, component_code);
+
+create table idempotent_0
+(
+    id             varchar(100) not null comment '消息等ID'
+        primary key,
+    message_id     varchar(100) null,
+    workspace_code varchar(50) null,
+    flow_code      varchar(100) null,
+    component_code varchar(100) null,
+    type           varchar(50)  not null comment 'Kafka、RabbitMQ、RocketMQ',
+    instance_id    varchar(50) null comment '消费实例',
+    request_id     varchar(200) null comment '请求链路ID',
+    create_time    timestamp null comment '消费时间',
+    expire_time    timestamp null comment '过期时间',
+    constraint idempotent_0_id_uindex
+        unique (id)
+) comment '幂等';
+
+create index expire_time_index
+    on idempotent_0 (expire_time);
+
+create index fc_cc_index
+    on idempotent_0 (flow_code, component_code);
+
+create table idempotent_1
+(
+    id             varchar(100) not null comment '消息等ID'
+        primary key,
+    message_id     varchar(100) null,
+    workspace_code varchar(50) null,
+    flow_code      varchar(100) null,
+    component_code varchar(100) null,
+    type           varchar(50)  not null comment 'Kafka、RabbitMQ、RocketMQ',
+    instance_id    varchar(50) null comment '消费实例',
+    request_id     varchar(200) null comment '请求链路ID',
+    create_time    timestamp null comment '消费时间',
+    expire_time    timestamp null comment '过期时间',
+    constraint idempotent_0_id_uindex
+        unique (id)
+) comment '幂等';
+
+create index expire_time_index
+    on idempotent_1 (expire_time);
+
+create index fc_cc_index
+    on idempotent_1 (flow_code, component_code);
+
+create table idempotent_2
+(
+    id             varchar(100) not null comment '消息等ID'
+        primary key,
+    message_id     varchar(100) null,
+    workspace_code varchar(50) null,
+    flow_code      varchar(100) null,
+    component_code varchar(100) null,
+    type           varchar(50)  not null comment 'Kafka、RabbitMQ、RocketMQ',
+    instance_id    varchar(50) null comment '消费实例',
+    request_id     varchar(200) null comment '请求链路ID',
+    create_time    timestamp null comment '消费时间',
+    expire_time    timestamp null comment '过期时间',
+    constraint idempotent_0_id_uindex
+        unique (id)
+) comment '幂等';
+
+create index expire_time_index
+    on idempotent_2 (expire_time);
+
+create index fc_cc_index
+    on idempotent_2 (flow_code, component_code);
+
+create table idempotent_3
+(
+    id             varchar(100) not null comment '消息等ID'
+        primary key,
+    message_id     varchar(100) null,
+    workspace_code varchar(50) null,
+    flow_code      varchar(100) null,
+    component_code varchar(100) null,
+    type           varchar(50)  not null comment 'Kafka、RabbitMQ、RocketMQ',
+    instance_id    varchar(50) null comment '消费实例',
+    request_id     varchar(200) null comment '请求链路ID',
+    create_time    timestamp null comment '消费时间',
+    expire_time    timestamp null comment '过期时间',
+    constraint idempotent_0_id_uindex
+        unique (id)
+) comment '幂等';
+
+create index expire_time_index
+    on idempotent_3 (expire_time);
+
+create index fc_cc_index
+    on idempotent_3 (flow_code, component_code);
+
+create table idempotent_4
+(
+    id             varchar(100) not null comment '消息等ID'
+        primary key,
+    message_id     varchar(100) null,
+    workspace_code varchar(50) null,
+    flow_code      varchar(100) null,
+    component_code varchar(100) null,
+    type           varchar(50)  not null comment 'Kafka、RabbitMQ、RocketMQ',
+    instance_id    varchar(50) null comment '消费实例',
+    request_id     varchar(200) null comment '请求链路ID',
+    create_time    timestamp null comment '消费时间',
+    expire_time    timestamp null comment '过期时间',
+    constraint idempotent_0_id_uindex
+        unique (id)
+) comment '幂等';
+
+create index expire_time_index
+    on idempotent_4 (expire_time);
+
+create index fc_cc_index
+    on idempotent_4 (flow_code, component_code);
+
+create table idempotent_5
+(
+    id             varchar(100) not null comment '消息等ID'
+        primary key,
+    message_id     varchar(100) null,
+    workspace_code varchar(50) null,
+    flow_code      varchar(100) null,
+    component_code varchar(100) null,
+    type           varchar(50)  not null comment 'Kafka、RabbitMQ、RocketMQ',
+    instance_id    varchar(50) null comment '消费实例',
+    request_id     varchar(200) null comment '请求链路ID',
+    create_time    timestamp null comment '消费时间',
+    expire_time    timestamp null comment '过期时间',
+    constraint idempotent_0_id_uindex
+        unique (id)
+) comment '幂等';
+
+create index expire_time_index
+    on idempotent_5 (expire_time);
+
+create index fc_cc_index
+    on idempotent_5 (flow_code, component_code);
+
+create table idempotent_6
+(
+    id             varchar(100) not null comment '消息等ID'
+        primary key,
+    message_id     varchar(100) null,
+    workspace_code varchar(50) null,
+    flow_code      varchar(100) null,
+    component_code varchar(100) null,
+    type           varchar(50)  not null comment 'Kafka、RabbitMQ、RocketMQ',
+    instance_id    varchar(50) null comment '消费实例',
+    request_id     varchar(200) null comment '请求链路ID',
+    create_time    timestamp null comment '消费时间',
+    expire_time    timestamp null comment '过期时间',
+    constraint idempotent_0_id_uindex
+        unique (id)
+) comment '幂等';
+
+create index expire_time_index
+    on idempotent_6 (expire_time);
+
+create index fc_cc_index
+    on idempotent_6 (flow_code, component_code);
+
+create table idempotent_7
+(
+    id             varchar(100) not null comment '消息等ID'
+        primary key,
+    message_id     varchar(100) null,
+    workspace_code varchar(50) null,
+    flow_code      varchar(100) null,
+    component_code varchar(100) null,
+    type           varchar(50)  not null comment 'Kafka、RabbitMQ、RocketMQ',
+    instance_id    varchar(50) null comment '消费实例',
+    request_id     varchar(200) null comment '请求链路ID',
+    create_time    timestamp null comment '消费时间',
+    expire_time    timestamp null comment '过期时间',
+    constraint idempotent_0_id_uindex
+        unique (id)
+) comment '幂等';
+
+create index expire_time_index
+    on idempotent_7 (expire_time);
+
+create index fc_cc_index
+    on idempotent_7 (flow_code, component_code);
+
+create table idempotent_8
+(
+    id             varchar(100) not null comment '消息等ID'
+        primary key,
+    message_id     varchar(100) null,
+    workspace_code varchar(50) null,
+    flow_code      varchar(100) null,
+    component_code varchar(100) null,
+    type           varchar(50)  not null comment 'Kafka、RabbitMQ、RocketMQ',
+    instance_id    varchar(50) null comment '消费实例',
+    request_id     varchar(200) null comment '请求链路ID',
+    create_time    timestamp null comment '消费时间',
+    expire_time    timestamp null comment '过期时间',
+    constraint idempotent_0_id_uindex
+        unique (id)
+) comment '幂等';
+
+create index expire_time_index
+    on idempotent_8 (expire_time);
+
+create index fc_cc_index
+    on idempotent_8 (flow_code, component_code);
+
+create table idempotent_9
+(
+    id             varchar(100) not null comment '消息等ID'
+        primary key,
+    message_id     varchar(100) null,
+    workspace_code varchar(50) null,
+    flow_code      varchar(100) null,
+    component_code varchar(100) null,
+    type           varchar(50)  not null comment 'Kafka、RabbitMQ、RocketMQ',
+    instance_id    varchar(50) null comment '消费实例',
+    request_id     varchar(200) null comment '请求链路ID',
+    create_time    timestamp null comment '消费时间',
+    expire_time    timestamp null comment '过期时间',
+    constraint idempotent_0_id_uindex
+        unique (id)
+) comment '幂等';
+
+create index expire_time_index
+    on idempotent_9 (expire_time);
+
+create index fc_cc_index
+    on idempotent_9 (flow_code, component_code);
+
+create table message
+(
+    id           bigint unsigned auto_increment comment '消息ID'
+        primary key,
+    title        varchar(100)                       not null comment '消息标题',
+    content      text                               not null comment '消息内容',
+    message_type varchar(20)                        not null comment '消息类型：SYSTEM系统消息, NOTICE通知, REMIND提醒',
+    scope_type   varchar(20)                        not null comment '发送范围：ALL全员, WORKSPACE工作空间, SPECIFIC特定用户',
+    sender_id    bigint unsigned                      not null comment '发送者ID（关联user表）',
+    is_urgent    tinyint(1) default 0                 not null comment '是否紧急：0否，1是',
+    status       varchar(20)                        not null comment '状态：PUBLISHED已发布, RECALLED已撤回',
+    create_time  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    deleted      tinyint(1) default 0                 not null comment '是否删除：0否，1是'
+) comment '站内信信息表' collate = utf8mb4_bin;
+
+create index idx_create_time
+    on message (create_time);
+
+create index idx_sender
+    on message (sender_id);
+
+create table message_user
+(
+    id          bigint unsigned auto_increment comment '关联ID'
+        primary key,
+    message_id  bigint unsigned                      not null comment '消息ID（关联message表）',
+    user_id     bigint unsigned                      not null comment '用户ID（关联user表）',
+    is_read     tinyint(1) default 0                 not null comment '是否已读：0未读，1已读',
+    read_time   datetime null comment '阅读时间',
+    create_time datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    deleted     tinyint null,
+    constraint uk_message_user
+        unique (message_id, user_id)
+) comment '站内信与用户关联表' collate = utf8mb4_bin;
+
+create index idx_is_read
+    on message_user (is_read);
+
+create index idx_message
+    on message_user (message_id);
+
+create index idx_user
+    on message_user (user_id);
+
+create table operation_log
+(
+    id             bigint auto_increment
+        primary key,
+    username       varchar(255) null comment '操作人',
+    user_id        bigint null,
+    workspace_code varchar(255) null comment '工作空间编码',
+    workspace_name varchar(255) null,
+    `function`     varchar(255) null,
+    action         varchar(255) null,
+    record_id      bigint null,
+    request_arg    text null,
+    response_arg   text null,
+    request_id     varchar(100) null,
+    class_name     varchar(255) null,
+    method_name    varchar(255) null,
+    exception      varchar(2000) null comment '异常',
+    status         varchar(20) null,
+    cost           bigint null comment '耗时，单位毫秒',
+    create_time    datetime null
+) comment '操作日志';
+
+create index ct_s_idx
+    on operation_log (create_time, status);
+
+create index request_id_idx
+    on operation_log (request_id);
+
+create index user_id_idx
+    on operation_log (user_id);
+
+create index wc_ri_idx
+    on operation_log (workspace_code, record_id);
+
+create table permission
+(
+    id             bigint unsigned auto_increment comment 'id'
+        primary key,
+    code           varchar(64)                           not null comment 'code',
+    name           varchar(64)                           not null comment '名称',
+    status         varchar(20) default 'ENABLE'          not null comment '状态：ENABLE 启用，DISABLE 禁用',
+    create_user_id bigint unsigned                       not null comment '创建用户',
+    create_time    datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time    datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    deleted        tinyint(1)  default 0                 not null comment '是否已被删除：0 否，1 是'
+) comment '@DaoDao 权限' collate = utf8mb4_bin;
+
+create index idx_code
+    on permission (code);
+
+
+create table role
+(
+    id             bigint unsigned auto_increment comment 'id'
+        primary key,
+    code           varchar(64)                           not null comment 'code',
+    name           varchar(64)                           not null comment '名称',
+    status         varchar(20) default 'ENABLE'          not null comment '状态：ENABLE 启用，DISABLE 禁用',
+    create_user_id bigint unsigned                       not null comment '创建用户',
+    create_time    datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time    datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    deleted        tinyint(1)  default 0                 not null comment '是否已被删除：0 否，1 是',
+    key            idx_code (code),
+    key            idx_name (name)
+) comment '@DaoDao 角色' collate = utf8mb4_bin;
+
+create table role_permission
+(
+    id             bigint unsigned auto_increment comment 'id'
+        primary key,
+    role_id        bigint                             not null comment '角色 id',
+    permission_id  bigint                             not null comment '权限 id',
+    create_user_id bigint unsigned                      not null comment '创建用户',
+    create_time    datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time    datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    deleted        tinyint(1) default 0                 not null comment '是否已被删除：0 否，1 是'
+) comment '@DaoDao 角色权限' collate = utf8mb4_bin;
+
+create index idx_permission_id
+    on role_permission (permission_id);
+
+create index idx_role_id
+    on role_permission (role_id);
+
+create index idx_role_id_permission_id
+    on role_permission (role_id, permission_id);
+
+create table user
+(
+    id             bigint unsigned auto_increment comment 'id'
+        primary key,
+    username       varchar(32)                           not null comment '用户名',
+    gender         varchar(10) null,
+    password       varchar(128)                          not null comment '密码',
+    email          varchar(100)                          not null comment '邮箱',
+    phone          varchar(20) null,
+    avatar         varchar(255) null comment '头像',
+    status         varchar(20) default 'ENABLE'          not null comment '状态：ENABLE 启用，DISABLE 禁用',
+    description    varchar(200) null,
+    create_user_id bigint unsigned                       not null comment '创建用户',
+    create_time    datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time    datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    deleted        tinyint(1)  default 0                 not null comment '是否已被删除：0 否，1 是',
+    key            idx_email (email),
+    key            idx_username (username)
+) comment '@DaoDao 用户' collate = utf8mb4_bin;
+
+create table user_login_log
+(
+    id          bigint auto_increment
+        primary key,
+    request_id  varchar(100) null,
+    user_id     bigint      not null,
+    username    varchar(50) null,
+    ip          varchar(50) not null,
+    browser     varchar(1000) null,
+    os          varchar(200) null,
+    user_agent  varchar(2000) null,
+    platform    varchar(100) null,
+    create_time datetime null
+) comment '登录日志';
+
+create index request_id_idx
+    on user_login_log (request_id);
+
+create index user_id_idx
+    on user_login_log (user_id);
+
+create table user_role
+(
+    id             bigint unsigned auto_increment comment 'id'
+        primary key,
+    user_id        bigint                                not null comment '用户 id',
+    role_id        bigint                                not null comment '角色 id',
+    status         varchar(16) default 'ENABLE'          not null comment '状态：ENABLE 启用，DISABLE 禁用',
+    create_user_id bigint unsigned                       not null comment '创建用户',
+    create_time    datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time    datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    deleted        tinyint(1)  default 0                 not null comment '是否已被删除：0 否，1 是'
+) comment '用户角色' collate = utf8mb4_bin;
+
+create index idx_role_id
+    on user_role (role_id);
+
+create index idx_user_id
+    on user_role (user_id);
+
+create index idx_user_id_role_id
+    on user_role (user_id, role_id);
+
+create table user_workspace
+(
+    id             bigint unsigned auto_increment comment 'id'
+        primary key,
+    user_id        bigint                             not null comment '用户 id',
+    workspace_id   bigint                             not null comment '工作空间ID',
+    is_admin       tinyint null comment '1为工作空间管理员',
+    create_user_id bigint unsigned                      not null comment '创建用户',
+    create_time    datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time    datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    deleted        tinyint(1) default 0                 not null comment '是否已被删除：0 否，1 是'
+) comment '用户工作空间' collate = utf8mb4_bin;
+
+create index idx_user_id
+    on user_workspace (user_id);
+
+create index idx_workspace_id
+    on user_workspace (workspace_id);
+
+create table workspace
+(
+    id             bigint unsigned auto_increment comment 'id'
+        primary key,
+    code           varchar(64)                           not null comment 'code',
+    name           varchar(64)                           not null comment '名称',
+    secret         varchar(64)                           not null comment '密钥',
+    status         varchar(20) default 'ENABLE'          not null comment '状态：ENABLE 启用，DISABLE 禁用',
+    create_user_id bigint unsigned                       not null comment '创建用户',
+    create_time    datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time    datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    deleted        tinyint(1)  default 0                 not null comment '是否已被删除：0 否，1 是',
+    key            idx_code (code),
+    key            idx_name (name)
+) comment '工作空间' collate = utf8mb4_bin;
+
+
+
+INSERT INTO `user` (id, username, password, email, create_user_id)
+VALUES (1, 'admin', 'c649d6185032697ada52a13e7ea75bf3', 'admin@dp.test', 1);
+
+INSERT INTO `workspace` (id, code, name, secret, create_user_id)
+VALUES (1, 'test', '测试', '00000000000000000000000000000000', '1');
+
+INSERT INTO `user_workspace` (id, user_id, workspace_id, is_admin, create_user_id)
+VALUES (1, 1, 1, 1, 1);
+
+INSERT INTO `role` (id, code, name, create_user_id)
+VALUES (1, 'admin', '管理员', 1);
+
+INSERT INTO `user_role` (id, user_id, role_id, create_user_id)
+VALUES (1, 1, 1, 1);
+
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (2, 'system:workspace', '工作空间', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (3, 'system:user', '用户', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (4, 'system:role', '角色', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (5, 'system:permission', '权限', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (6, 'system:permission:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (7, 'system:permission:detail', '详情', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (8, 'system:permission:add', '新增', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (9, 'system:permission:update', '修改', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (10, 'system:permission:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (11, 'system:role:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (12, 'system:role:detail', '详情', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (13, 'system:role:add', '新增', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (14, 'system:role:update', '修改', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (15, 'system:role:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (16, 'system:user:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (17, 'system:user:detail', '详情', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (18, 'system:user:add', '新增', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (19, 'system:user:update', '修改', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (20, 'system:user:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (21, 'system:workspace:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (22, 'system:workspace:user-manage', '用户管理', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (23, 'system:workspace:add', '新增', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (24, 'system:workspace:update', '修改', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (25, 'system:workspace:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (26, 'system', '系统管理', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (27, 'data', '数据管理', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (28, 'data:flow', '数据流', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (29, 'data:flow:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (30, 'data:flow:detail', '详情', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (31, 'data:flow:create', '添加', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (32, 'data:flow:update', '修改', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (33, 'data:flow:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (34, 'data:flow:publish', '发布', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (35, 'data:flow:stop', '停止', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (36, 'data:source', '数据源', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (37, 'data:source:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (38, 'data:source:detail', '详情', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (39, 'data:source:add', '添加', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (40, 'data:source:update', '修改', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (41, 'data:source:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (42, 'data:source:test', '测试连接', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (43, 'data:source:console', '控制台', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (44, 'system:user:reset-password', '重置密码', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (45, 'system:user:change-password', '修改密码', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (46, 'data:source:auth', '权限', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (47, 'data:flow:start', '运行', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (48, 'system:message', '站内信', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (49, 'system:message:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (50, 'system:message:send', '发送信息', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (51, 'system:message:recall', '撤回信息', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (52, 'system:message:delete', '删除信息', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (53, 'system:role:auth', '权限', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (54, 'system:workspace:detail', '详情', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (55, 'system:role:detail', '详情', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (56, 'security-audit:operation-log', '操作日志', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (57, 'security-audit:login-log', '登录日志', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (58, 'security-audit', '安全与审计', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (59, 'security-audit:login-log:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (60, 'security-audit:login-log:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (61, 'security-audit:operation-log:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (62, 'security-audit:operation-log:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (63, 'alarm-manage', '告警管理', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (64, 'alarm-manage:scene', '告警场景', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (65, 'alarm-manage:robot', '机器人', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (66, 'alarm-manage:template', '告警模板', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (67, 'alarm-manage:log', '告警日志', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (68, 'alarm-manage:scene:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (69, 'alarm-manage:scene:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (70, 'alarm-manage:scene:update', '修改', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (71, 'alarm-manage:scene:detail', '详情', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (72, 'alarm-manage:scene:add', '新增', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (73, 'alarm-manage:template:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (74, 'alarm-manage:template:add', '新增', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (75, 'alarm-manage:template:update', '修改', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (76, 'alarm-manage:template:detail', '详情', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (77, 'alarm-manage:template:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (78, 'alarm-manage:log:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (79, 'alarm-manage:log:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (80, 'alarm-manage:robot:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (81, 'alarm-manage:robot:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (82, 'alarm-manage:robot:update', '修改', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (83, 'alarm-manage:robot:add', '新增', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (84, 'alarm-manage:robot:detail', '详情', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (85, 'server-manage', '服务管理', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (86, 'server-manage:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (87, 'server-manage:monitor', '监控', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (88, 'query-manage', '查询管理', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (89, 'query-manage:template', '查询模板', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (90, 'query-manage:template:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (91, 'query-manage:template:add', '新增', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (92, 'query-manage:template:update', '修改', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (93, 'query-manage:template:detail', '详情', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (94, 'query-manage:template:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (95, 'query-manage:template:version', '版本', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (96, 'query-manage:template:auth', '权限', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (97, 'query-manage:query-log', '查询日志', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (98, 'query-manage:query-log:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (99, 'query-manage:query-log:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (100, 'data:align', '数据对齐', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (101, 'data:align:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (102, 'data:align:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (103, 'data:align:detail', '详情', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (104, 'data:align:update', '修改', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (105, 'data:align:log', '日志', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (106, 'data:align:auth', '权限', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (107, 'data:align:log:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (108, 'data:align:add', '新增', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (109, 'data:source:log', '日志', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (110, 'data:source:log:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (111, 'data:flow:log', '日志', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (112, 'data:flow:auth', '权限', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (113, 'data:flow:version', '版本', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (114, 'dashboard', '仪表盘', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (115, 'dashboard:flow', '数据流统计', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (116, 'dashboard:query', '查询统计', 1);
+
+create table develop_task
+(
+    id              bigint auto_increment
+        primary key,
+    code            varchar(50)                           not null,
+    name            varchar(200)                          not null,
+    workspace_code  varchar(50)                           not null,
+    datasource_code varchar(50)                           not null,
+    sql_text        MEDIUMTEXT null comment 'SQL 语句',
+    cron            varchar(100) null comment 'cron 表达式，空=仅手动',
+    timeout         int          default 30                null comment '查询超时(秒)',
+    status          varchar(10) default 'ENABLE'          not null,
+    description     varchar(500) null,
+    next_exec_time  datetime null comment '下次调度执行时间',
+    create_user_id  bigint                                 not null,
+    create_time     datetime    default CURRENT_TIMESTAMP not null,
+    update_time     datetime    default CURRENT_TIMESTAMP not null,
+    deleted         tinyint     default 0                 not null
+) comment '数据研发-SQL 任务';
+
+create index develop_task_wc_c_idx
+    on develop_task (workspace_code, code);
+
+create table develop_task_log
+(
+    id             bigint auto_increment
+        primary key,
+    task_id        bigint null,
+    task_code      varchar(50)  null,
+    workspace_code varchar(50)  null,
+    trigger_type   varchar(10)  null comment 'MANUAL/CRON',
+    status         varchar(20)  null comment 'RUNNING/SUCCESS/FAIL',
+    sql_text       MEDIUMTEXT null,
+    start_time     datetime null,
+    end_time       datetime null,
+    duration_ms    bigint null,
+    row_count      bigint null,
+    preview        json null comment '列名+前 N 行',
+    error_msg      text null,
+    create_time    datetime     default CURRENT_TIMESTAMP null
+) comment '数据研发-SQL 运行记录';
+
+create index develop_task_log_task_id_idx
+    on develop_task_log (task_id, id);
+
+create index develop_task_log_wc_idx
+    on develop_task_log (workspace_code, id);
+
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (117, 'develop:task', '数据研发', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (118, 'develop:task:list', '列表', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (119, 'develop:task:detail', '详情', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (120, 'develop:task:add', '新增', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (121, 'develop:task:update', '修改', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (122, 'develop:task:delete', '删除', 1);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (123, 'develop:task:run', '运行', 1);
+
+INSERT INTO `role_permission` (role_id, permission_id, create_user_id)
+SELECT 1, id, 1
+FROM `permission`
+WHERE id NOT IN (SELECT permission_id FROM `role_permission` WHERE role_id = 1)
+SET NAMES utf8mb4;
+USE `data_platform`;
+
+create table if not exists query_template
+(
+    id              bigint auto_increment
+        primary key,
+    name            varchar(200)                          not null,
+    code            varchar(50)                           not null,
+    template        MEDIUMTEXT null comment 'SQL 模板，支持 ${param} 占位符',
+    workspace_code  varchar(50)                           not null,
+    status          varchar(10) default 'ENABLE'          not null,
+    description     varchar(500) null,
+    data_source_code varchar(50)                          not null,
+    timeout         int          default 30               null comment '查询超时(秒)',
+    secret          varchar(128) null comment '对外调用密钥，空=公开',
+    current_version varchar(20) null comment '当前草稿版本',
+    publish_version varchar(20) null comment '已发布版本',
+    create_user_id  bigint                                 not null,
+    create_time     datetime    default CURRENT_TIMESTAMP not null,
+    update_time     datetime    default CURRENT_TIMESTAMP not null,
+    deleted         tinyint     default 0                 not null
+) comment '数据服务-查询模板';
+
+create index query_template_wc_c_idx
+    on query_template (workspace_code, code);
+
+create table if not exists query_template_publish
+(
+    id                    bigint auto_increment
+        primary key,
+    name                  varchar(200)  null,
+    code                  varchar(50)   not null,
+    template              MEDIUMTEXT null,
+    workspace_code        varchar(50)   null,
+    status                varchar(10)   null,
+    description           varchar(500)  null,
+    data_source_code      varchar(50)   null,
+    secret                varchar(128)  null,
+    timeout               int           null,
+    enable_cache          varchar(10)   null comment 'ENABLE/DISABLE',
+    enable_limiting       varchar(10)   null comment 'ENABLE/DISABLE',
+    limit_rate            int           null comment '限流次数',
+    limit_refresh_interval int          null comment '限流周期',
+    limit_time_unit       varchar(10)   null comment 'SECONDS/MINUTES/HOURS',
+    record_log            varchar(10)   null comment 'ENABLE/DISABLE',
+    version               varchar(20)   null comment 'v1/v2...',
+    create_user_id        bigint        null,
+    create_time           datetime      default CURRENT_TIMESTAMP null,
+    update_time           datetime      default CURRENT_TIMESTAMP null,
+    deleted               tinyint       default 0 null
+) comment '数据服务-查询模板发布快照';
+
+create index query_template_publish_code_id_idx
+    on query_template_publish (code, id);
+
+create table if not exists query_log
+(
+    id            bigint auto_increment
+        primary key,
+    workspace_code varchar(50)  null,
+    template_code varchar(50)   null,
+    template_name varchar(200)  null,
+    request_arg   text null comment '请求参数',
+    response_arg  text null comment '响应参数(截2000)',
+    request_id    varchar(64)   null,
+    method        varchar(10)   null comment 'one/count/list/page',
+    exception     text null,
+    cost          bigint null comment '耗时(ms)',
+    number        bigint null comment '查询数量',
+    hit_cache     varchar(10)   null comment 'YES/NO',
+    ip            varchar(50)   null,
+    status        varchar(10)   null comment 'SUCCESS/FAIL',
+    create_time   datetime      default CURRENT_TIMESTAMP null
+) comment '数据服务-调用日志';
+
+create index query_log_template_code_id_idx
+    on query_log (template_code, id);
+
+create index query_log_wc_id_idx
+    on query_log (workspace_code, id);
+
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (124, 'service:api', '数据服务', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (125, 'service:api:list', '列表', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (126, 'service:api:detail', '详情', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (127, 'service:api:add', '新增', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (128, 'service:api:update', '修改', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (129, 'service:api:delete', '删除', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (130, 'service:api:publish', '发布', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (131, 'service:api:log', '调用日志', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+INSERT INTO `role_permission` (role_id, permission_id, create_user_id)
+SELECT 1, id, 1
+FROM `permission`
+WHERE id NOT IN (SELECT permission_id FROM `role_permission` WHERE role_id = 1);
+
+create table if not exists sync_task
+(
+    id                     bigint auto_increment
+        primary key,
+    name                   varchar(200)                           not null,
+    code                   varchar(50)                            not null,
+    workspace_code         varchar(50)                            not null,
+    engine                 varchar(20)                            not null comment 'DATAX/SEATUNNEL',
+    source_data_source_code varchar(50)                           not null,
+    source_schema          varchar(100)                           null,
+    source_table           varchar(200)                           not null,
+    target_data_source_code varchar(50)                           not null,
+    target_schema          varchar(100)                           null,
+    target_table           varchar(200)                           not null,
+    field_mapping          text null comment '字段映射 JSON [{source,target}]，null=全字段',
+    status                 varchar(10) default 'ENABLE'           not null,
+    description            varchar(500)                           null,
+    create_user_id         bigint                                 not null,
+    create_time            datetime    default CURRENT_TIMESTAMP  not null,
+    update_time            datetime    default CURRENT_TIMESTAMP  not null,
+    deleted                tinyint     default 0                  not null
+) comment '数据集成-同步任务';
+
+create index sync_task_wc_c_idx
+    on sync_task (workspace_code, code);
+
+create table if not exists sync_task_log
+(
+    id             bigint auto_increment
+        primary key,
+    task_id        bigint       null,
+    task_code      varchar(50)  null,
+    workspace_code varchar(50)  null,
+    engine         varchar(20)  null comment 'DATAX/SEATUNNEL',
+    status         varchar(10)  null comment 'RUNNING/SUCCESS/FAIL',
+    trigger_type   varchar(10)  null comment 'MANUAL',
+    config_content text null comment '生成的引擎配置快照',
+    log_content    text null comment '执行日志 stdout+stderr',
+    error_msg      varchar(500) null,
+    duration_ms    bigint       null,
+    start_time     datetime     null,
+    end_time       datetime     null,
+    create_time    datetime     default CURRENT_TIMESTAMP null
+) comment '数据集成-同步运行实例';
+
+create index sync_task_log_task_id_idx
+    on sync_task_log (task_id, id);
+
+create index sync_task_log_wc_id_idx
+    on sync_task_log (workspace_code, id);
+
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (132, 'data:sync', '数据同步', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (133, 'data:sync:list', '列表', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (134, 'data:sync:detail', '详情', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (135, 'data:sync:add', '新增', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (136, 'data:sync:update', '修改', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (137, 'data:sync:delete', '删除', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (138, 'data:sync:run', '运行', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (139, 'data:sync:log', '运行记录', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+create table if not exists task_definition
+(
+    id              bigint auto_increment primary key,
+    code            varchar(50)  not null,
+    name            varchar(200) not null,
+    workspace_code  varchar(50)  not null,
+    task_type       varchar(20)  not null comment 'SQL/DATAX/SEATUNNEL/PYTHON/SHELL',
+    task_params     text null comment 'JSON，按 task_type 结构不同',
+    cron            varchar(100) null comment 'cron 表达式，空=仅手动',
+    timeout         int default 30 null comment '超时(秒)',
+    status          varchar(10) default 'ENABLE' not null,
+    description     varchar(500) null,
+    next_exec_time  datetime null,
+    create_user_id  bigint not null,
+    create_time     datetime default CURRENT_TIMESTAMP not null,
+    update_time     datetime default CURRENT_TIMESTAMP not null,
+    deleted         tinyint default 0 not null
+) comment '任务定义';
+create index task_definition_wc_c_idx on task_definition (workspace_code, code);
+create index task_definition_status_cron_idx on task_definition (status, cron);
+
+create table if not exists task_instance
+(
+    id             bigint auto_increment primary key,
+    task_id        bigint null,
+    task_code      varchar(50) null,
+    workspace_code varchar(50) null,
+    task_type      varchar(20) null,
+    trigger_type   varchar(10) null comment 'MANUAL/CRON',
+    status         varchar(20) null comment 'RUNNING/SUCCESS/FAIL',
+    flow_instance_id bigint null comment '所属任务流实例',
+    node_id        varchar(50) null comment '节点 id',
+    node_name      varchar(200) null comment '节点名称',
+    task_params    text null comment '运行时的参数快照',
+    result         longtext null comment 'SQL 结果预览 JSON {columns,rows,truncated}',
+    row_count      bigint null,
+    log_content    text null comment '子进程 stdout/stderr',
+    log_path       varchar(200) null comment '子进程日志文件路径（实时读取）',
+    error_msg      varchar(500) null,
+    duration_ms    bigint null,
+    start_time     datetime null,
+    end_time       datetime null,
+    create_time    datetime default CURRENT_TIMESTAMP null
+) comment '任务实例';
+create index task_instance_task_id_idx on task_instance (task_id, id);
+create index task_instance_wc_idx on task_instance (workspace_code, id);
+
+create table if not exists flow_instance
+(
+    id             bigint auto_increment primary key,
+    flow_id        bigint       not null,
+    flow_code      varchar(50)  not null,
+    workspace_code varchar(50)  not null,
+    trigger_type   varchar(10)  not null comment 'MANUAL/CRON',
+    failure_strategy varchar(20) not null default 'CONTINUE' comment '失败策略 CONTINUE/END',
+    status         varchar(20)  not null comment 'RUNNING/SUCCESS/FAIL',
+    error_msg      varchar(500) null,
+    start_time     datetime     null,
+    end_time       datetime     null,
+    duration_ms    bigint       null,
+    create_time    datetime default CURRENT_TIMESTAMP null
+) comment '任务流实例';
+create index flow_instance_flow_idx on flow_instance (flow_id, id);
+create index flow_instance_wc_idx on flow_instance (workspace_code, id);
+
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (140, 'task', '任务调度', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (141, 'task:list', '列表', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (142, 'task:detail', '详情', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (143, 'task:add', '新增', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (144, 'task:update', '修改', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (145, 'task:delete', '删除', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (146, 'task:run', '运行', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (147, 'task:instance', '任务实例', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (148, 'data:flow:run', '运行', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (149, 'data:flow:instance', '任务流实例', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (150, 'system:file:upload', '文件上传', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+INSERT INTO `role_permission` (role_id, permission_id, create_user_id)
+SELECT 1, id, 1
+FROM `permission`
+WHERE id NOT IN (SELECT permission_id FROM `role_permission` WHERE role_id = 1);

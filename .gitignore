@@ -1,0 +1,26 @@
+# ---- 通用 ----
+.DS_Store
+*.log
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# ---- 后端 (Java / Maven) ----
+backend/**/target/
+backend/*.class
+backend/.classpath
+backend/.project
+backend/.settings/
+*.jar
+!.mvn/wrapper/*.jar
+
+# ---- 前端 (Node / Vite) ----
+frontend/node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
+npm-debug.log*
+
+# ---- 本地环境变量（含密钥，勿提交真实值）----
+# 保留 docker/*/.env 作为开发默认值，生产环境请用独立 secret 管理
+# *.env

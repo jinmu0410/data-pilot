@@ -1,0 +1,93 @@
+version: '1.0'
+name: data-platform-front
+displayName: front
+triggers:
+  trigger: auto
+  push:
+    tags:
+      prefix:
+        - 2
+    paths:
+      include:
+        - ^data-platform-open-front/.*$
+variables:
+  APPLICATION: data-platform-front
+  REGISTRY_NAMESPACE: shaiwz-public
+  SOURCE_DIR: data-platform-open-front
+stages:
+  - name: scan
+    displayName: 扫描
+    strategy: naturally
+    trigger: auto
+    executor: [ ]
+    steps:
+      - step: sc@opensca
+        name: open_sca
+        displayName: OpenSCA 检测
+        detectPath: ./${SOURCE_DIR}/
+        notify: [ ]
+        strategy:
+          retry: '0'
+  - name: compile
+    displayName: 编译
+    strategy: naturally
+    trigger: auto
+    executor: []
+    steps:
+      - step: build@nodejs
+        name: build_nodejs
+        displayName: Nodejs 构建
+        nodeVersion: 20.10.0
+        commands:
+          - cd ${SOURCE_DIR}
+          #- npm config set registry https://registry.npmmirror.com
+          #- npm install
+          #- npm run build
+        artifacts:
+          - name: BUILD_ARTIFACT
+            path:
+              - ./${SOURCE_DIR}/dist
+        caches:
+          - ~/.npm
+          - ~/.yarn
+          - ~/.pnpm
+        notify: []
+        strategy:
+          retry: '0'
+  - name: build
+    displayName: 构建
+    strategy: naturally
+    trigger: auto
+    executor: []
+    steps:
+      - step: build@docker
+        name: build_docker
+        displayName: 构建镜像
+        type: cert
+        certificate: aliyun-cr-shaiwz-public
+        tag: ${REGISTRY_NAMESPACE}/${APPLICATION}:${GITEE_BRANCH}
+        dockerfile: ${SOURCE_DIR}/Dockerfile
+        context: ${SOURCE_DIR}/
+        artifacts:
+          - ${BUILD_ARTIFACT}
+        isCache: false
+        parameter: {}
+        notify: []
+        strategy:
+          retry: '0'
+
+      - step: build@docker
+        name: docker_build
+        displayName: 镜像构建
+        type: cert
+        certificate: aliyun-cr-shaiwz-public
+        tag: ${REGISTRY_NAMESPACE}/${APPLICATION}:latest
+        dockerfile: ${SOURCE_DIR}/Dockerfile
+        context: ${SOURCE_DIR}/
+        artifacts:
+          - ${BUILD_ARTIFACT}
+        isCache: false
+        parameter: {}
+        notify: []
+        strategy:
+          retry: '0'
