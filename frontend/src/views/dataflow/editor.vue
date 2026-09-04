@@ -140,15 +140,121 @@
           <div class="section-label schedule-label">调度设置</div>
           <el-form label-position="top">
             <el-form-item label="Cron 表达式">
-              <div class="cron-row">
-                <el-input
-                  v-model="flowCron"
-                  placeholder="留空表示仅手动运行"
-                  clearable
-                  @blur="checkFlowCron"
-                />
-                <el-button :loading="flowCronResult.loading" @click="checkFlowCron">校验</el-button>
-              </div>
+              <el-popover
+                v-model:visible="cronPickerVisible"
+                placement="left-start"
+                width="380"
+                trigger="manual"
+                popper-class="cron-picker-popover"
+              >
+                <template #reference>
+                  <div class="cron-row">
+                    <el-input
+                      v-model="flowCron"
+                      placeholder="留空表示仅手动运行"
+                      readonly
+                      clearable
+                      @click="openCronPicker"
+                      @clear="clearFlowCron"
+                    >
+                      <template #prefix><el-icon><Calendar /></el-icon></template>
+                    </el-input>
+                    <el-button :icon="Calendar" @click="openCronPicker">选择</el-button>
+                    <el-button :loading="flowCronResult.loading" @click="checkFlowCron">校验</el-button>
+                  </div>
+                </template>
+
+                <div class="cron-picker">
+                  <div class="cron-picker-head">
+                    <div>
+                      <strong>调度周期</strong>
+                      <span>选择后自动生成 Spring Cron 表达式</span>
+                    </div>
+                    <el-button link @click="cronPickerVisible = false">关闭</el-button>
+                  </div>
+
+                  <div class="cron-preset-grid">
+                    <button
+                      v-for="preset in cronPresets"
+                      :key="preset.expression"
+                      class="cron-preset"
+                      type="button"
+                      @click="applyCronPreset(preset.expression)"
+                    >
+                      <strong>{{ preset.label }}</strong>
+                      <span>{{ preset.expression }}</span>
+                    </button>
+                  </div>
+
+                  <div class="cron-picker-section">
+                    <div class="cron-field-label">自定义频率</div>
+                    <el-radio-group v-model="cronDraft.mode" class="cron-mode-group">
+                      <el-radio-button label="interval">按分钟</el-radio-button>
+                      <el-radio-button label="daily">每天</el-radio-button>
+                      <el-radio-button label="weekly">每周</el-radio-button>
+                      <el-radio-button label="monthly">每月</el-radio-button>
+                    </el-radio-group>
+                  </div>
+
+                  <div v-if="cronDraft.mode === 'interval'" class="cron-picker-section">
+                    <div class="cron-field-label">间隔分钟</div>
+                    <el-select v-model="cronDraft.intervalMinutes">
+                      <el-option
+                        v-for="item in cronIntervalOptions"
+                        :key="item"
+                        :label="`${item} 分钟`"
+                        :value="item"
+                      />
+                    </el-select>
+                  </div>
+
+                  <div v-else class="cron-picker-section">
+                    <div class="cron-field-label">执行时间</div>
+                    <el-time-picker
+                      v-model="cronDraft.time"
+                      format="HH:mm"
+                      value-format="HH:mm"
+                      :clearable="false"
+                      style="width: 100%"
+                    />
+                  </div>
+
+                  <div v-if="cronDraft.mode === 'weekly'" class="cron-picker-section">
+                    <div class="cron-field-label">执行星期</div>
+                    <el-checkbox-group v-model="cronDraft.weekdays" class="cron-check-grid">
+                      <el-checkbox-button
+                        v-for="item in cronWeekdayOptions"
+                        :key="item.value"
+                        :label="item.value"
+                      >
+                        {{ item.label }}
+                      </el-checkbox-button>
+                    </el-checkbox-group>
+                  </div>
+
+                  <div v-if="cronDraft.mode === 'monthly'" class="cron-picker-section">
+                    <div class="cron-field-label">每月日期</div>
+                    <el-select v-model="cronDraft.monthDays" multiple collapse-tags collapse-tags-tooltip>
+                      <el-option
+                        v-for="day in cronMonthDayOptions"
+                        :key="day"
+                        :label="`${day} 号`"
+                        :value="day"
+                      />
+                    </el-select>
+                  </div>
+
+                  <div class="cron-preview-card">
+                    <span>生成表达式</span>
+                    <strong>{{ cronPreview }}</strong>
+                  </div>
+
+                  <div class="cron-picker-actions">
+                    <el-button @click="clearFlowCron">仅手动运行</el-button>
+                    <el-button type="primary" @click="applyCronDraft">应用表达式</el-button>
+                  </div>
+                </div>
+              </el-popover>
               <div v-if="flowCronResult.valid === true && flowCronResult.nexts.length" class="cron-nexts">
                 <div class="cron-nexts-title">最近 5 次执行时间</div>
                 <div v-for="(t, i) in flowCronResult.nexts" :key="i" class="cron-next">{{ t }}</div>
@@ -367,6 +473,7 @@ import {
   Aim,
   ArrowLeft,
   ArrowRight,
+  Calendar,
   Connection,
   Delete,
   DocumentChecked,
@@ -569,6 +676,38 @@ const flowCronResult = reactive<{ loading: boolean; valid: boolean | null; nexts
   nexts: [],
   message: ''
 })
+type CronMode = 'interval' | 'daily' | 'weekly' | 'monthly'
+
+const cronPickerVisible = ref(false)
+const cronDraft = reactive({
+  mode: 'daily' as CronMode,
+  intervalMinutes: 5,
+  time: '00:00',
+  weekdays: ['MON'] as string[],
+  monthDays: [1] as number[]
+})
+const cronIntervalOptions = [5, 10, 15, 30]
+const cronMonthDayOptions = Array.from({ length: 31 }, (_, i) => i + 1)
+const cronWeekdayOptions = [
+  { label: '周一', value: 'MON' },
+  { label: '周二', value: 'TUE' },
+  { label: '周三', value: 'WED' },
+  { label: '周四', value: 'THU' },
+  { label: '周五', value: 'FRI' },
+  { label: '周六', value: 'SAT' },
+  { label: '周日', value: 'SUN' }
+]
+const cronPresets = [
+  { label: '每 5 分钟', expression: '0 */5 * * * ?' },
+  { label: '每 15 分钟', expression: '0 */15 * * * ?' },
+  { label: '每小时', expression: '0 0 * * * ?' },
+  { label: '每天 00:00', expression: '0 0 0 * * ?' },
+  { label: '每天 09:00', expression: '0 0 9 * * ?' },
+  { label: '工作日 09:00', expression: '0 0 9 ? * MON-FRI' },
+  { label: '每月 1 号', expression: '0 0 0 1 * ?' },
+  { label: '每月 1/15 号', expression: '0 0 0 1,15 * ?' }
+]
+const cronPreview = computed(() => buildCronFromDraft())
 
 const flowId = Number(route.params.id)
 
@@ -860,6 +999,100 @@ async function checkFlowCron() {
   } finally {
     flowCronResult.loading = false
   }
+}
+
+function parseCronTime(hour: string, minute: string) {
+  const h = Number(hour)
+  const m = Number(minute)
+  if (Number.isNaN(h) || Number.isNaN(m)) return '00:00'
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+function parseDraftTime() {
+  const [hour = '0', minute = '0'] = cronDraft.time.split(':')
+  return {
+    hour: String(Number(hour) || 0),
+    minute: String(Number(minute) || 0)
+  }
+}
+
+function buildCronFromDraft() {
+  if (cronDraft.mode === 'interval') return `0 */${cronDraft.intervalMinutes} * * * ?`
+  const time = parseDraftTime()
+  if (cronDraft.mode === 'weekly') {
+    const weekdays = cronDraft.weekdays.length ? cronDraft.weekdays.join(',') : 'MON'
+    return `0 ${time.minute} ${time.hour} ? * ${weekdays}`
+  }
+  if (cronDraft.mode === 'monthly') {
+    const days = cronDraft.monthDays.length ? [...cronDraft.monthDays].sort((a, b) => a - b).join(',') : '1'
+    return `0 ${time.minute} ${time.hour} ${days} * ?`
+  }
+  return `0 ${time.minute} ${time.hour} * * ?`
+}
+
+function resetCronResult() {
+  flowCronResult.valid = null
+  flowCronResult.nexts = []
+  flowCronResult.message = ''
+}
+
+function syncCronDraft(expression: string) {
+  const parts = expression.trim().split(/\s+/)
+  if (parts.length < 6 || parts[0] !== '0') return
+  const [, minute, hour, day, month, weekday] = parts
+  const intervalMatch = minute.match(/^\*\/(\d+)$/)
+  if (intervalMatch && hour === '*' && day === '*' && month === '*' && weekday === '?') {
+    const interval = Number(intervalMatch[1])
+    if (cronIntervalOptions.includes(interval)) cronDraft.intervalMinutes = interval
+    cronDraft.mode = 'interval'
+    return
+  }
+  if (/^\d+$/.test(hour) && /^\d+$/.test(minute)) {
+    cronDraft.time = parseCronTime(hour, minute)
+    if (day === '*' && month === '*' && weekday === '?') {
+      cronDraft.mode = 'daily'
+      return
+    }
+    if (day === '?' && month === '*' && weekday) {
+      cronDraft.mode = 'weekly'
+      if (weekday === 'MON-FRI') {
+        cronDraft.weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI']
+      } else {
+        const selected = weekday.split(',').filter((item) => cronWeekdayOptions.some((option) => option.value === item))
+        if (selected.length) cronDraft.weekdays = selected
+      }
+      return
+    }
+    if (month === '*' && weekday === '?') {
+      const selectedDays = day.split(',').map(Number).filter((item) => item >= 1 && item <= 31)
+      cronDraft.mode = 'monthly'
+      if (selectedDays.length) cronDraft.monthDays = selectedDays
+    }
+  }
+}
+
+function openCronPicker() {
+  if (flowCron.value.trim()) syncCronDraft(flowCron.value)
+  cronPickerVisible.value = true
+}
+
+function applyCronPreset(expression: string) {
+  flowCron.value = expression
+  syncCronDraft(expression)
+  cronPickerVisible.value = false
+  void checkFlowCron()
+}
+
+function applyCronDraft() {
+  flowCron.value = cronPreview.value
+  cronPickerVisible.value = false
+  void checkFlowCron()
+}
+
+function clearFlowCron() {
+  flowCron.value = ''
+  cronPickerVisible.value = false
+  resetCronResult()
 }
 
 function addMapping(key: string) {
@@ -1889,6 +2122,165 @@ onBeforeUnmount(() => {
 .cron-row {
   display: flex;
   gap: 8px;
+  width: 100%;
+}
+
+.cron-row .el-input {
+  flex: 1;
+}
+
+:global(.cron-picker-popover) {
+  padding: 0 !important;
+  border: 1px solid #e7eaf0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14) !important;
+}
+
+.cron-picker {
+  padding: 14px;
+}
+
+.cron-picker-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eef0f4;
+}
+
+.cron-picker-head > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cron-picker-head strong {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.cron-picker-head span {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.cron-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.cron-preset {
+  display: flex;
+  min-width: 0;
+  height: 58px;
+  padding: 9px 10px;
+  border: 1px solid #e7eaf0;
+  border-radius: 7px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  background: #fff;
+  text-align: left;
+  transition: border-color 0.16s, background 0.16s, box-shadow 0.16s;
+}
+
+.cron-preset:hover {
+  border-color: #c7d2fe;
+  background: #f8faff;
+  box-shadow: 0 8px 18px rgba(99, 102, 241, 0.08);
+}
+
+.cron-preset strong {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.cron-preset span {
+  overflow: hidden;
+  max-width: 100%;
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cron-picker-section {
+  margin-top: 12px;
+}
+
+.cron-field-label {
+  margin-bottom: 7px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.cron-mode-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  width: 100%;
+}
+
+.cron-mode-group :deep(.el-radio-button__inner) {
+  width: 100%;
+  padding-right: 0;
+  padding-left: 0;
+  font-size: 11px;
+}
+
+.cron-check-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.cron-check-grid :deep(.el-checkbox-button__inner) {
+  width: 100%;
+  border: 1px solid #e7eaf0;
+  border-radius: 6px !important;
+  padding: 7px 0;
+  font-size: 11px;
+}
+
+.cron-preview-card {
+  display: flex;
+  margin-top: 12px;
+  padding: 10px 11px;
+  border: 1px solid #e0e7ff;
+  border-radius: 7px;
+  flex-direction: column;
+  gap: 5px;
+  background: #f8faff;
+}
+
+.cron-preview-card span {
+  color: #818cf8;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.cron-preview-card strong {
+  color: #334155;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 650;
+  word-break: break-all;
+}
+
+.cron-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .cron-nexts {
