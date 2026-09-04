@@ -15,14 +15,33 @@
         </transition>
       </div>
 
-      <div v-if="!menuCollapsed || isMobile" class="workspace-card">
-        <span class="workspace-dot" />
-        <div>
-          <small>当前工作空间</small>
-          <strong>{{ workspaceName }}</strong>
+      <el-dropdown
+        v-if="!menuCollapsed || isMobile"
+        trigger="click"
+        class="workspace-switch"
+        @command="handleSwitchWorkspace"
+      >
+        <div class="workspace-card">
+          <span class="workspace-dot" />
+          <div>
+            <small>当前工作空间</small>
+            <strong>{{ workspaceName }}</strong>
+          </div>
+          <el-icon><ArrowRight /></el-icon>
         </div>
-        <el-icon><ArrowRight /></el-icon>
-      </div>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item
+              v-for="ws in authStore.workspaces"
+              :key="ws.id"
+              :command="ws"
+              :class="{ 'is-active': ws.id === authStore.workspace?.id }"
+            >
+              {{ ws.name }}
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
 
       <el-menu
         :default-active="activeMenu"
@@ -173,6 +192,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import { useAuthStore } from '../stores/auth'
+import type { WorkspaceData } from '../api/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -272,6 +292,13 @@ async function handleLogout() {
   await authStore.logout()
   router.push('/login')
 }
+
+function handleSwitchWorkspace(ws: WorkspaceData) {
+  if (ws.id === authStore.workspace?.id) return
+  authStore.switchWorkspace(ws)
+  // 切换后重新加载当前页，以新工作空间重新拉取数据
+  window.location.reload()
+}
 </script>
 
 <style scoped>
@@ -362,6 +389,10 @@ async function handleLogout() {
   letter-spacing: 2.5px;
 }
 
+.workspace-switch {
+  display: block;
+}
+
 .workspace-card {
   display: flex;
   align-items: center;
@@ -372,6 +403,12 @@ async function handleLogout() {
   background: rgba(255, 255, 255, 0.055);
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 9px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.workspace-card:hover {
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .workspace-card > div {

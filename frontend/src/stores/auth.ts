@@ -7,7 +7,8 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: localStorage.getItem(TOKEN_KEY) || '',
     user: null as UserData | null,
-    workspace: null as WorkspaceData | null
+    workspace: null as WorkspaceData | null,
+    workspaces: [] as WorkspaceData[]
   }),
   getters: {
     isLoggedIn: (state) => !!state.token,
@@ -24,10 +25,15 @@ export const useAuthStore = defineStore('auth', {
       const user = await getUserInfo()
       this.user = user
       const workspaces = await myWorkspaces()
-      this.workspace = workspaces?.[0] ?? null
+      this.workspaces = workspaces ?? []
+      this.workspace = this.workspaces[0] ?? null
       if (this.workspace) {
         localStorage.setItem(WORKSPACE_KEY, String(this.workspace.id))
       }
+    },
+    switchWorkspace(workspace: WorkspaceData) {
+      this.workspace = workspace
+      localStorage.setItem(WORKSPACE_KEY, String(workspace.id))
     },
     async logout() {
       try {
@@ -41,6 +47,7 @@ export const useAuthStore = defineStore('auth', {
       this.token = ''
       this.user = null
       this.workspace = null
+      this.workspaces = []
       localStorage.removeItem(TOKEN_KEY)
       localStorage.removeItem(WORKSPACE_KEY)
     }
