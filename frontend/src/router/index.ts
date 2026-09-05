@@ -19,79 +19,79 @@ const router = createRouter({
           path: 'dashboard',
           name: 'dashboard',
           component: () => import('../views/dashboard/index.vue'),
-          meta: { title: '首页' }
+          meta: { title: 'page.dashboard' }
         },
         {
           path: 'datasource',
           name: 'datasource',
           component: () => import('../views/datasource/index.vue'),
-          meta: { title: '数据源' }
+          meta: { title: 'page.datasource' }
         },
         {
           path: 'dataflow',
           name: 'dataflow',
           component: () => import('../views/dataflow/index.vue'),
-          meta: { title: '任务流' }
+          meta: { title: 'page.dataflow' }
         },
         {
           path: 'dataflow/edit/:id',
           name: 'dataflow-editor',
           component: () => import('../views/dataflow/editor.vue'),
-          meta: { title: '任务流画布' }
+          meta: { title: 'page.dataflowEditor' }
         },
         {
           path: 'dataflow/history',
           name: 'dataflow-history',
           component: () => import('../views/dataflow/history.vue'),
-          meta: { title: '发布记录' }
+          meta: { title: 'page.dataflowHistory' }
         },
         {
           path: 'dataflow/instance',
           name: 'dataflow-instance',
           component: () => import('../views/dataflow/instance.vue'),
-          meta: { title: '任务流实例' }
+          meta: { title: 'page.dataflowInstance' }
         },
         {
           path: 'service/api',
           name: 'service-api',
           component: () => import('../views/service/api.vue'),
-          meta: { title: 'API 管理' }
+          meta: { title: 'page.api' }
         },
         {
           path: 'system/user',
           name: 'system-user',
           component: () => import('../views/system/user/index.vue'),
-          meta: { title: '用户管理' }
+          meta: { title: 'page.user' }
         },
         {
           path: 'system/role',
           name: 'system-role',
           component: () => import('../views/system/role/index.vue'),
-          meta: { title: '角色管理' }
+          meta: { title: 'page.role' }
         },
         {
           path: 'system/permission',
           name: 'system-permission',
           component: () => import('../views/system/permission/index.vue'),
-          meta: { title: '权限管理' }
+          meta: { title: 'page.permission' }
         },
         {
           path: 'system/workspace',
           name: 'system-workspace',
           component: () => import('../views/system/workspace/index.vue'),
-          meta: { title: '工作空间' }
+          meta: { title: 'page.workspace' }
         },
         {
           path: 'system/loginlog',
           name: 'system-loginlog',
           component: () => import('../views/system/loginlog/index.vue'),
-          meta: { title: '登录日志' }
+          meta: { title: 'page.loginlog' }
         },
         {
           path: 'system/config',
           name: 'system-config',
           component: () => import('../views/system/config/index.vue'),
-          meta: { title: '配置管理' }
+          meta: { title: 'page.config' }
         }
       ]
     }

@@ -227,7 +227,10 @@ const commands = computed(() => [
   { name: t('menu.config'), group: t('menu.system'), path: '/system/config' }
 ])
 
-const pageTitle = computed(() => String(route.meta.title || t('menu.workspace')))
+const pageTitle = computed(() => {
+  const title = route.meta.title as string
+  return title ? t(title) : t('menu.workspace')
+})
 const parentTitle = computed(() => {
   if (route.path.startsWith('/system')) return t('menu.system')
   if (route.path.startsWith('/service')) return t('menu.service')

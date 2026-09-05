@@ -3,36 +3,36 @@
     <section class="page-hero">
       <div>
         <span class="page-eyebrow">DATA CONNECTIONS</span>
-        <h2>数据源管理</h2>
-        <p>集中管理数据库、消息队列与搜索引擎连接，为任务开发和数据同步提供统一入口。</p>
+        <h2>{{ t('datasource.title') }}</h2>
+        <p>{{ t('datasource.subtitle') }}</p>
       </div>
       <div class="hero-stats">
-        <div><strong>{{ page.total }}</strong><span>连接总数</span></div>
-        <div><strong>{{ enabledCount }}</strong><span>当前页启用</span></div>
-        <div><strong>{{ activeTypeCount }}</strong><span>接入类型</span></div>
+        <div><strong>{{ page.total }}</strong><span>{{ t('datasource.totalConnections') }}</span></div>
+        <div><strong>{{ enabledCount }}</strong><span>{{ t('datasource.enabledThisPage') }}</span></div>
+        <div><strong>{{ activeTypeCount }}</strong><span>{{ t('datasource.activeTypes') }}</span></div>
       </div>
-      <el-button type="primary" :icon="Plus" size="large" @click="openAdd">新增数据源</el-button>
+      <el-button type="primary" :icon="Plus" size="large" @click="openAdd">{{ t('datasource.add') }}</el-button>
     </section>
 
     <el-card shadow="never" class="filter-card">
       <el-form inline :model="query" @submit.prevent>
-        <el-form-item label="数据源名称"><el-input v-model="query.name" placeholder="输入名称搜索" clearable style="width: 200px" @keyup.enter="handleSearch" /></el-form-item>
-        <el-form-item label="类型"><el-select v-model="query.type" placeholder="全部类型" clearable style="width: 150px"><el-option v-for="item in TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
-        <el-form-item label="状态"><el-select v-model="query.status" placeholder="全部状态" clearable style="width: 130px"><el-option label="启用" value="ENABLE" /><el-option label="禁用" value="DISABLE" /></el-select></el-form-item>
-        <el-form-item><el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button><el-button :icon="Refresh" @click="resetSearch">重置</el-button></el-form-item>
+        <el-form-item :label="t('datasource.name')"><el-input v-model="query.name" :placeholder="t('datasource.namePlaceholder')" clearable style="width: 200px" @keyup.enter="handleSearch" /></el-form-item>
+        <el-form-item :label="t('datasource.type')"><el-select v-model="query.type" :placeholder="t('datasource.allTypes')" clearable style="width: 150px"><el-option v-for="item in TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
+        <el-form-item :label="t('datasource.status')"><el-select v-model="query.status" :placeholder="t('datasource.allStatus')" clearable style="width: 130px"><el-option :label="t('datasource.enable')" value="ENABLE" /><el-option :label="t('datasource.disable')" value="DISABLE" /></el-select></el-form-item>
+        <el-form-item><el-button type="primary" :icon="Search" @click="handleSearch">{{ t('common.search') }}</el-button><el-button :icon="Refresh" @click="resetSearch">{{ t('datasource.reset') }}</el-button></el-form-item>
       </el-form>
     </el-card>
 
     <el-card shadow="never" class="list-card">
-      <div class="list-heading"><div><h3>连接列表</h3><span>已接入 {{ page.total }} 个数据源</span></div><span class="support-tip">支持 MySQL / TiDB / Doris / PostgreSQL / Kafka / Elasticsearch</span></div>
+      <div class="list-heading"><div><h3>{{ t('datasource.connectionList') }}</h3><span>{{ t('datasource.connectedCount', { count: page.total }) }}</span></div><span class="support-tip">{{ t('datasource.supportTip') }}</span></div>
       <el-table v-loading="loading" :data="list" class="datasource-table">
-        <el-table-column label="数据源" min-width="220"><template #default="{ row }"><div class="source-cell"><span class="source-logo" :class="typeClass(row.type)">{{ typeMeta(row.type).abbr }}</span><div><strong>{{ row.name }}</strong><small>{{ row.code }}</small></div></div></template></el-table-column>
-        <el-table-column label="类型" width="135"><template #default="{ row }"><span class="type-badge" :class="typeClass(row.type)">{{ typeMeta(row.type).label }}</span></template></el-table-column>
-        <el-table-column label="连接信息" min-width="240"><template #default="{ row }"><div class="connection-cell"><strong>{{ row.url || '-' }}</strong><small>{{ row.username || '无账号认证' }}</small></div></template></el-table-column>
-        <el-table-column label="健康检查" width="105"><template #default="{ row }"><span class="health-status" :class="{ enabled: row.healthCheck === 'ENABLE' }"><i></i>{{ row.healthCheck === 'ENABLE' ? '已开启' : '未开启' }}</span></template></el-table-column>
-        <el-table-column label="状态" width="90"><template #default="{ row }"><span class="status-badge" :class="{ enabled: row.status === 'ENABLE' }"><i></i>{{ row.status === 'ENABLE' ? '启用' : '禁用' }}</span></template></el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="165" />
-        <el-table-column label="操作" width="240" fixed="right"><template #default="{ row }"><el-button link type="primary" @click="openEdit(row)">编辑</el-button><el-button link type="success" :disabled="!supportsMetadata(row.type)" @click="openMeta(row)">元数据</el-button><el-button link type="warning" @click="handleTest(row)">测试</el-button><el-dropdown trigger="click"><el-button link>更多</el-button><template #dropdown><el-dropdown-menu><el-dropdown-item @click="handleCopy(row)">复制配置</el-dropdown-item><el-dropdown-item divided class="danger-menu-item" @click="handleDelete(row)">删除数据源</el-dropdown-item></el-dropdown-menu></template></el-dropdown></template></el-table-column>
+        <el-table-column :label="t('datasource.colSource')" min-width="220"><template #default="{ row }"><div class="source-cell"><span class="source-logo" :class="typeClass(row.type)">{{ typeMeta(row.type).abbr }}</span><div><strong>{{ row.name }}</strong><small>{{ row.code }}</small></div></div></template></el-table-column>
+        <el-table-column :label="t('datasource.type')" width="135"><template #default="{ row }"><span class="type-badge" :class="typeClass(row.type)">{{ typeMeta(row.type).label }}</span></template></el-table-column>
+        <el-table-column :label="t('datasource.colConnection')" min-width="240"><template #default="{ row }"><div class="connection-cell"><strong>{{ row.url || '-' }}</strong><small>{{ row.username || t('datasource.noAuth') }}</small></div></template></el-table-column>
+        <el-table-column :label="t('datasource.colHealth')" width="105"><template #default="{ row }"><span class="health-status" :class="{ enabled: row.healthCheck === 'ENABLE' }"><i></i>{{ row.healthCheck === 'ENABLE' ? t('datasource.healthOn') : t('datasource.healthOff') }}</span></template></el-table-column>
+        <el-table-column :label="t('datasource.status')" width="90"><template #default="{ row }"><span class="status-badge" :class="{ enabled: row.status === 'ENABLE' }"><i></i>{{ row.status === 'ENABLE' ? t('datasource.enable') : t('datasource.disable') }}</span></template></el-table-column>
+        <el-table-column prop="createTime" :label="t('datasource.colCreateTime')" width="165" />
+        <el-table-column :label="t('datasource.colActions')" width="240" fixed="right"><template #default="{ row }"><el-button link type="primary" @click="openEdit(row)">{{ t('common.edit') }}</el-button><el-button link type="success" :disabled="!supportsMetadata(row.type)" @click="openMeta(row)">{{ t('datasource.metadata') }}</el-button><el-button link type="warning" @click="handleTest(row)">{{ t('datasource.test') }}</el-button><el-dropdown trigger="click"><el-button link>{{ t('datasource.more') }}</el-button><template #dropdown><el-dropdown-menu><el-dropdown-item @click="handleCopy(row)">{{ t('datasource.copy') }}</el-dropdown-item><el-dropdown-item divided class="danger-menu-item" @click="handleDelete(row)">{{ t('datasource.delete') }}</el-dropdown-item></el-dropdown-menu></template></el-dropdown></template></el-table-column>
       </el-table>
       <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" class="pager" layout="total, prev, pager, next, sizes" :total="page.total" :page-sizes="[10, 20, 50]" @change="load" />
     </el-card>
@@ -91,7 +91,7 @@
         <aside class="meta-tree-panel"><div class="meta-panel-title"><strong>库表目录</strong><span>{{ metaTree.length }} 个 Schema</span></div><el-tree v-loading="metaTreeLoading" :data="metaTree" node-key="key" :props="{ label: 'label', children: 'children' }" highlight-current :expand-on-click-node="false" @node-click="onMetaNodeClick" /></aside>
         <main class="meta-detail">
           <el-skeleton v-if="metaDetailLoading" :rows="8" animated />
-          <template v-else-if="metaDetail"><div class="meta-detail-head"><div><span>TABLE</span><strong>{{ metaTable }}</strong></div><p>{{ metaDetail.comment || '暂无表注释' }}</p></div><div class="meta-block-title"><strong>字段结构</strong><span>{{ metaDetail.columns.length }} 个字段</span></div><el-table :data="metaDetail.columns" border size="small" max-height="285"><el-table-column prop="name" label="字段名" min-width="140" /><el-table-column prop="type" label="类型" width="125" /><el-table-column label="约束" width="95"><template #default="{ row }"><el-tag v-if="row.primaryKey" type="danger" size="small">PK</el-tag><span v-else>{{ row.notNull ? 'NOT NULL' : '-' }}</span></template></el-table-column><el-table-column prop="defaultValue" label="默认值" width="110" show-overflow-tooltip /><el-table-column prop="comment" label="注释" min-width="140" show-overflow-tooltip /></el-table><template v-if="metaDetail.indexes?.length"><div class="meta-block-title index-title"><strong>索引</strong><span>{{ metaDetail.indexes.length }} 个索引</span></div><el-table :data="metaDetail.indexes" border size="small" max-height="155"><el-table-column prop="name" label="索引名" min-width="150" /><el-table-column label="唯一" width="75"><template #default="{ row }">{{ row.unique ? '是' : '否' }}</template></el-table-column><el-table-column label="字段" min-width="180"><template #default="{ row }">{{ row.columns?.join(', ') }}</template></el-table-column></el-table></template></template>
+          <template v-else-if="metaDetail"><div class="meta-detail-head"><div><span>TABLE</span><strong>{{ metaTable }}</strong></div><p>{{ metaDetail.comment || '暂无表注释' }}</p></div><div class="meta-block-title"><strong>字段结构</strong><span>{{ metaDetail.columns.length }} 个字段</span></div><el-table :data="metaDetail.columns" border size="small" max-height="285"><el-table-column prop="name" label="字段名" min-width="140" /><el-table-column prop="type" :label="t('datasource.type')" width="125" /><el-table-column label="约束" width="95"><template #default="{ row }"><el-tag v-if="row.primaryKey" type="danger" size="small">PK</el-tag><span v-else>{{ row.notNull ? 'NOT NULL' : '-' }}</span></template></el-table-column><el-table-column prop="defaultValue" label="默认值" width="110" show-overflow-tooltip /><el-table-column prop="comment" label="注释" min-width="140" show-overflow-tooltip /></el-table><template v-if="metaDetail.indexes?.length"><div class="meta-block-title index-title"><strong>索引</strong><span>{{ metaDetail.indexes.length }} 个索引</span></div><el-table :data="metaDetail.indexes" border size="small" max-height="155"><el-table-column prop="name" label="索引名" min-width="150" /><el-table-column label="唯一" width="75"><template #default="{ row }">{{ row.unique ? '是' : '否' }}</template></el-table-column><el-table-column label="字段" min-width="180"><template #default="{ row }">{{ row.columns?.join(', ') }}</template></el-table-column></el-table></template></template>
           <div v-else class="meta-empty"><span>▦</span><strong>选择一张数据表</strong><p>从左侧库表目录中选择数据表查看详细结构</p></div>
         </main>
       </div>
@@ -101,9 +101,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Search } from '@element-plus/icons-vue'
 import { addDataSource, deleteDataSource, getDataSourceDetail, listDataSource, listSchemaTable, tableDetail, testDataSource, updateDataSource, type DataSourceForm, type DataSourceItem, type SchemaTableMap, type TableDetail } from '../../api/datasource'
+
+const { t } = useI18n()
 
 interface TypeOption { value: string; label: string; abbr: string; category: string; protocol: string; description: string; urlPlaceholder: string; urlHint: string; driver?: string }
 
