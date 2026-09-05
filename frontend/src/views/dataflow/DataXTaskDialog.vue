@@ -307,7 +307,7 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button type="danger" link @click="emit('delete')">删除节点</el-button>
-        <el-button link @click="preview">预览配置</el-button>
+        <el-button plain @click="preview">预览配置</el-button>
         <span class="footer-spacer"></span>
         <el-button @click="cancelWithoutDone">取消</el-button>
         <el-button v-if="step > 0" @click="step--">上一步</el-button>
@@ -315,21 +315,21 @@
         <el-button v-else type="primary" @click="apply">应用配置</el-button>
       </div>
     </template>
-  </el-dialog>
 
-  <el-dialog
-    v-model="previewVisible"
-    title="最终生成的配置"
-    width="760px"
-    top="6vh"
-    append-to-body
-    :close-on-click-modal="false"
-  >
-    <div class="preview-command">
-      <span>执行命令</span>
-      <code>{{ previewCommand.join(' ') }}</code>
-    </div>
-    <pre class="preview-json">{{ previewContent }}</pre>
+    <el-dialog
+      v-model="previewVisible"
+      title="最终生成的配置"
+      width="760px"
+      top="6vh"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <div class="preview-command">
+        <span>执行命令</span>
+        <code>{{ previewCommand.join(' ') }}</code>
+      </div>
+      <pre class="preview-json">{{ previewContent }}</pre>
+    </el-dialog>
   </el-dialog>
 </template>
 
