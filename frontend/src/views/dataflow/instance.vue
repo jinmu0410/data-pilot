@@ -3,10 +3,10 @@
     <el-card shadow="never">
       <div class="toolbar">
         <el-form inline :model="query" @submit.prevent>
-          <el-form-item label="任务流">
+          <el-form-item :label="t('instance.flow')">
             <el-select
               v-model="query.flowId"
-              placeholder="全部"
+              :placeholder="t('instance.all')"
               clearable
               filterable
               style="width: 200px"
@@ -14,64 +14,64 @@
               <el-option v-for="f in flows" :key="f.id" :label="f.name" :value="f.id" />
             </el-select>
           </el-form-item>
-          <el-form-item label="触发方式">
-            <el-select v-model="query.triggerType" placeholder="全部" clearable style="width: 120px">
-              <el-option label="手动" value="MANUAL" />
-              <el-option label="定时" value="CRON" />
+          <el-form-item :label="t('instance.triggerType')">
+            <el-select v-model="query.triggerType" :placeholder="t('instance.all')" clearable style="width: 120px">
+              <el-option :label="t('instance.manual')" value="MANUAL" />
+              <el-option :label="t('instance.cron')" value="CRON" />
             </el-select>
           </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-              <el-option label="运行中" value="RUNNING" />
-              <el-option label="成功" value="SUCCESS" />
-              <el-option label="失败" value="FAIL" />
+          <el-form-item :label="t('instance.status')">
+            <el-select v-model="query.status" :placeholder="t('instance.all')" clearable style="width: 120px">
+              <el-option :label="t('instance.running')" value="RUNNING" />
+              <el-option :label="t('instance.success')" value="SUCCESS" />
+              <el-option :label="t('instance.fail')" value="FAIL" />
             </el-select>
           </el-form-item>
-          <el-form-item label="关键字">
+          <el-form-item :label="t('instance.keyword')">
             <el-input
               v-model="query.keyword"
-              placeholder="名称/编码"
+              :placeholder="t('instance.keywordPlaceholder')"
               clearable
               style="width: 160px"
               @keyup.enter="handleSearch"
             />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
-            <el-button :icon="Refresh" @click="load">刷新</el-button>
+            <el-button type="primary" :icon="Search" @click="handleSearch">{{ t('common.search') }}</el-button>
+            <el-button :icon="Refresh" @click="load">{{ t('instance.refresh') }}</el-button>
           </el-form-item>
         </el-form>
       </div>
 
       <el-table v-loading="loading" :data="list" border>
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="flowName" label="任务流" min-width="160" show-overflow-tooltip />
-        <el-table-column label="触发方式" width="90">
+        <el-table-column prop="flowName" :label="t('instance.flow')" min-width="160" show-overflow-tooltip />
+        <el-table-column :label="t('instance.triggerType')" width="90">
           <template #default="{ row }">
             {{ TRIGGER_META[row.triggerType] ?? row.triggerType }}
           </template>
         </el-table-column>
-        <el-table-column label="失败策略" width="90">
+        <el-table-column :label="t('instance.colFailureStrategy')" width="90">
           <template #default="{ row }">
-            {{ FAILURE_STRATEGY_META[row.failureStrategy] ?? row.failureStrategy ?? '继续' }}
+            {{ FAILURE_STRATEGY_META[row.failureStrategy] ?? row.failureStrategy ?? t('instance.continue') }}
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="90">
+        <el-table-column :label="t('instance.status')" width="90">
           <template #default="{ row }">
             <el-tag :type="flowStatusMeta(row.status).tag">
               {{ flowStatusMeta(row.status).label }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="耗时" width="100">
+        <el-table-column :label="t('instance.colDuration')" width="100">
           <template #default="{ row }">{{ formatDuration(row.durationMs) }}</template>
         </el-table-column>
-        <el-table-column prop="startTime" label="开始时间" width="170" />
-        <el-table-column prop="endTime" label="结束时间" width="170" />
-        <el-table-column prop="errorMsg" label="错误信息" min-width="160" show-overflow-tooltip />
-        <el-table-column label="操作" width="90" fixed="right">
+        <el-table-column prop="startTime" :label="t('instance.colStartTime')" width="170" />
+        <el-table-column prop="endTime" :label="t('instance.colEndTime')" width="170" />
+        <el-table-column prop="errorMsg" :label="t('instance.colErrorMsg')" min-width="160" show-overflow-tooltip />
+        <el-table-column :label="t('instance.colActions')" width="90" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openDetail(row)">详情</el-button>
+            <el-button link type="primary" @click="openDetail(row)">{{ t('instance.detail') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -101,8 +101,8 @@
         <div class="dialog-heading">
           <span class="dialog-logo">RUN</span>
           <div class="dialog-heading-copy">
-            <div class="dialog-title">任务流实例详情</div>
-            <div class="dialog-subtitle">查看执行轨迹、节点输出与运行日志</div>
+            <div class="dialog-title">{{ t('instance.detailTitle') }}</div>
+            <div class="dialog-subtitle">{{ t('instance.detailSubtitle') }}</div>
           </div>
           <span v-if="detail" class="flow-status" :class="statusClass(detail.status)">
             <i></i>{{ flowStatusMeta(detail.status).label }}
@@ -124,39 +124,39 @@
                 <i></i>
                 <span>{{ TRIGGER_META[detail.triggerType] ?? detail.triggerType }}</span>
                 <i></i>
-                <span>失败后{{ FAILURE_STRATEGY_META[detail.failureStrategy] ?? detail.failureStrategy ?? '继续' }}</span>
+                <span>失败后{{ FAILURE_STRATEGY_META[detail.failureStrategy] ?? detail.failureStrategy ?? t('instance.continue') }}</span>
               </div>
             </div>
 
             <div class="overview-metrics">
               <div class="metric-card">
-                <span>执行进度</span>
+                <span>{{ t('instance.progress') }}</span>
                 <strong>{{ completedNodeCount }} / {{ detail.nodes?.length ?? 0 }}</strong>
                 <el-progress :percentage="progressPercent" :show-text="false" :stroke-width="5" />
               </div>
               <div class="metric-card">
-                <span>运行耗时</span>
+                <span>{{ t('instance.duration') }}</span>
                 <strong>{{ formatDuration(detail.durationMs) }}</strong>
-                <small>{{ detail.status === 'RUNNING' ? '任务正在执行' : '本次执行总耗时' }}</small>
+                <small>{{ detail.status === 'RUNNING' ? t('instance.runningHint') : t('instance.totalDuration') }}</small>
               </div>
               <div class="metric-card metric-time">
-                <span>开始时间</span>
+                <span>{{ t('instance.startTime') }}</span>
                 <strong>{{ detail.startTime || '-' }}</strong>
-                <small>结束：{{ detail.endTime || '尚未结束' }}</small>
+                <small>{{ t('instance.endAt', { time: detail.endTime || t('instance.notEnded') }) }}</small>
               </div>
             </div>
           </section>
 
           <div v-if="detail.errorMsg" class="flow-error-banner">
             <span class="error-symbol">!</span>
-            <div><strong>任务流执行异常</strong><p>{{ detail.errorMsg }}</p></div>
+            <div><strong>{{ t('instance.flowError') }}</strong><p>{{ detail.errorMsg }}</p></div>
           </div>
 
           <section v-if="detail.nodes?.length" class="execution-workspace">
             <aside class="node-rail">
               <div class="panel-heading">
-                <div><span class="eyebrow">EXECUTION PATH</span><h4>节点执行轨迹</h4></div>
-                <span>{{ detail.nodes.length }} 个节点</span>
+                <div><span class="eyebrow">EXECUTION PATH</span><h4>{{ t('instance.executionPath') }}</h4></div>
+                <span>{{ t('instance.nodeCount', { count: detail.nodes.length }) }}</span>
               </div>
 
               <div class="node-list">
@@ -196,22 +196,22 @@
               </header>
 
               <div class="node-facts">
-                <div><span>运行耗时</span><strong>{{ formatDuration(selectedNode.durationMs) }}</strong></div>
-                <div><span>影响行数</span><strong>{{ selectedNode.rowCount == null ? '-' : `${selectedNode.rowCount} 行` }}</strong></div>
-                <div><span>开始时间</span><strong>{{ selectedNode.startTime || '-' }}</strong></div>
-                <div><span>结束时间</span><strong>{{ selectedNode.endTime || '-' }}</strong></div>
+                <div><span>{{ t('instance.duration') }}</span><strong>{{ formatDuration(selectedNode.durationMs) }}</strong></div>
+                <div><span>{{ t('instance.rowCount') }}</span><strong>{{ selectedNode.rowCount == null ? '-' : t('instance.rowsUnit', { count: selectedNode.rowCount }) }}</strong></div>
+                <div><span>{{ t('instance.startTime') }}</span><strong>{{ selectedNode.startTime || '-' }}</strong></div>
+                <div><span>{{ t('instance.endTime') }}</span><strong>{{ selectedNode.endTime || '-' }}</strong></div>
               </div>
 
               <div v-if="selectedNode.errorMsg" class="node-error">
-                <div class="content-heading"><span>ERROR</span><strong>错误信息</strong></div>
+                <div class="content-heading"><span>ERROR</span><strong>{{ t('instance.errorInfo') }}</strong></div>
                 <p>{{ selectedNode.errorMsg }}</p>
               </div>
 
               <section v-if="selectedNode.taskType === 'SQL' && selectedNode.columns?.length" class="node-content-section">
                 <div class="content-heading">
                   <span>RESULT</span>
-                  <strong>查询结果</strong>
-                  <small>{{ selectedNode.rowCount ?? selectedNode.rows?.length ?? 0 }} 行{{ selectedNode.truncated ? ' · 结果已截断' : '' }}</small>
+                  <strong>{{ t('instance.queryResult') }}</strong>
+                  <small>{{ selectedNode.rowCount ?? selectedNode.rows?.length ?? 0 }} 行{{ selectedNode.truncated ? t('instance.rowsTruncated') : '' }}</small>
                 </div>
                 <el-table :data="selectedNode.rows ?? []" border size="small" max-height="260" class="result-table">
                   <el-table-column
@@ -228,24 +228,24 @@
               <section class="node-content-section log-section">
                 <div class="content-heading">
                   <span>LOG</span>
-                  <strong>运行日志</strong>
-                  <small v-if="selectedNode.status === 'RUNNING'" class="live-label"><i></i>实时更新中</small>
+                  <strong>{{ t('instance.runLog') }}</strong>
+                  <small v-if="selectedNode.status === 'RUNNING'" class="live-label"><i></i>{{ t('instance.liveUpdate') }}</small>
                 </div>
                 <pre v-if="selectedNode.logContent" class="node-log">{{ selectedNode.logContent }}</pre>
-                <div v-else class="empty-log">暂无运行日志</div>
+                <div v-else class="empty-log">{{ t('instance.emptyLog') }}</div>
               </section>
             </main>
           </section>
 
-          <el-empty v-else description="当前实例暂无节点运行记录" :image-size="72" class="detail-empty" />
+          <el-empty v-else :description="t('instance.noNodeRecords')" :image-size="72" class="detail-empty" />
         </template>
-        <el-empty v-else description="正在加载实例详情" :image-size="72" class="detail-empty" />
+        <el-empty v-else :description="t('instance.loadingDetail')" :image-size="72" class="detail-empty" />
       </div>
 
       <template #footer>
         <div class="dialog-footer">
-          <span v-if="detail?.status === 'RUNNING'" class="polling-tip"><i></i>运行数据每 1.5 秒自动刷新</span>
-          <el-button @click="detailVisible = false">关闭</el-button>
+          <span v-if="detail?.status === 'RUNNING'" class="polling-tip"><i></i>{{ t('instance.pollingTip') }}</span>
+          <el-button @click="detailVisible = false">{{ t('instance.close') }}</el-button>
         </div>
       </template>
     </el-dialog>
@@ -254,6 +254,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Search, Refresh } from '@element-plus/icons-vue'
 import {
@@ -265,6 +266,7 @@ import {
   type FlowInstanceDetail
 } from '../../api/dataflow'
 
+const { t } = useI18n()
 const loading = ref(false)
 const list = ref<FlowInstanceItem[]>([])
 const flows = ref<DataFlowListItem[]>([])
@@ -331,28 +333,26 @@ function stopPolling() {
   }
 }
 
-const TRIGGER_META: Record<string, string> = { MANUAL: '手动', CRON: '定时' }
-const FAILURE_STRATEGY_META: Record<string, string> = { CONTINUE: '继续', END: '结束' }
-
-const FLOW_STATUS_META: Record<string, { label: string; tag: 'primary' | 'success' | 'danger' | 'info' }> = {
-  RUNNING: { label: '运行中', tag: 'primary' },
-  SUCCESS: { label: '成功', tag: 'success' },
-  FAIL: { label: '失败', tag: 'danger' }
-}
-
-const NODE_STATUS_META: Record<string, { label: string; tag: 'primary' | 'success' | 'danger' | 'info' }> = {
-  RUNNING: { label: '运行中', tag: 'primary' },
-  SUCCESS: { label: '成功', tag: 'success' },
-  FAIL: { label: '失败', tag: 'danger' },
-  SKIP: { label: '跳过', tag: 'info' }
-}
+const TRIGGER_META = computed<Record<string, string>>(() => ({ MANUAL: t('instance.manual'), CRON: t('instance.cron') }))
+const FAILURE_STRATEGY_META = computed<Record<string, string>>(() => ({ CONTINUE: t('instance.continue'), END: t('instance.end') }))
 
 function flowStatusMeta(status: string) {
-  return FLOW_STATUS_META[status] ?? { label: status, tag: 'info' as const }
+  const map: Record<string, { label: string; tag: 'primary' | 'success' | 'danger' | 'info' }> = {
+    RUNNING: { label: t('instance.running'), tag: 'primary' },
+    SUCCESS: { label: t('instance.success'), tag: 'success' },
+    FAIL: { label: t('instance.fail'), tag: 'danger' }
+  }
+  return map[status] ?? { label: status, tag: 'info' as const }
 }
 
 function nodeStatusMeta(status: string) {
-  return NODE_STATUS_META[status] ?? { label: status, tag: 'info' as const }
+  const map: Record<string, { label: string; tag: 'primary' | 'success' | 'danger' | 'info' }> = {
+    RUNNING: { label: t('instance.running'), tag: 'primary' },
+    SUCCESS: { label: t('instance.success'), tag: 'success' },
+    FAIL: { label: t('instance.fail'), tag: 'danger' },
+    SKIP: { label: t('instance.skip'), tag: 'info' }
+  }
+  return map[status] ?? { label: status, tag: 'info' as const }
 }
 
 function statusClass(status?: string) {
@@ -425,7 +425,7 @@ async function openDetail(row: FlowInstanceItem) {
       startPolling()
     }
   } catch (e) {
-    ElMessage.error('加载实例详情失败')
+    ElMessage.error(t('instance.loadDetailFailed'))
   } finally {
     detailLoading.value = false
   }
