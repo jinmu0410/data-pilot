@@ -984,6 +984,7 @@ function selectNode(id: string) {
 }
 
 function onNodeDialogClosed() {
+  nodeDialogVisible.value = false
   selectedNodeId.value = ''
   selectedEdgeId.value = ''
 }
