@@ -6,7 +6,6 @@ import cn.datapilot.common.enums.Status;
 import cn.datapilot.common.exception.ApiException;
 import cn.datapilot.common.util.HttpServletUtils;
 import cn.datapilot.common.util.IPUtils;
-import cn.datapilot.web.config.Context;
 import cn.datapilot.web.interceptor.TokenInterceptor;
 import cn.datapilot.web.service.LoginService;
 import cn.datapilot.web.service.UserLoginLogService;
@@ -162,11 +161,14 @@ public class LoginServiceImpl implements LoginService {
         if (token == null) {
             return true;
         }
-        UserData user = Context.getUser();
-        // 删除用户id与token的关系
-        RMapCache<Long, String> mapCache = this.redissonClient.getMapCache(RedisKey.USER_TOKEN.getKey());
-        mapCache.put(user.getId(), token, 10, TimeUnit.DAYS);
+        // /logout 被排除在 TokenInterceptor 之外，Context 中无用户，需从 Redis 反查用户信息
         RBucket<UserData> bucket = this.redissonClient.getBucket(RedisKey.TOKEN.build(token));
+        UserData user = bucket.get();
+        if (user != null) {
+            // 删除用户id与token的关系
+            RMapCache<Long, String> mapCache = this.redissonClient.getMapCache(RedisKey.USER_TOKEN.getKey());
+            mapCache.remove(user.getId());
+        }
         return bucket.delete();
     }
 
