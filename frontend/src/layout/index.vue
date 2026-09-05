@@ -10,7 +10,7 @@
         <transition name="brand-fade">
           <div v-if="!menuCollapsed || isMobile" class="brand-copy">
             <strong>DataPilot</strong>
-            <span>数据中台</span>
+            <span>{{ t('layout.brandSub') }}</span>
           </div>
         </transition>
       </div>
@@ -24,7 +24,7 @@
         <div class="workspace-card">
           <span class="workspace-dot" />
           <div>
-            <small>当前工作空间</small>
+            <small>{{ t('layout.currentWorkspace') }}</small>
             <strong>{{ workspaceName }}</strong>
           </div>
           <el-icon><ArrowRight /></el-icon>
@@ -54,54 +54,54 @@
         active-text-color="#ffffff"
         @select="mobileOpen = false"
       >
-        <div v-if="!menuCollapsed || isMobile" class="menu-caption">工作台</div>
+        <div v-if="!menuCollapsed || isMobile" class="menu-caption">{{ t('menu.workspace') }}</div>
         <el-menu-item index="/dashboard">
           <el-icon><Odometer /></el-icon>
-          <template #title>工作台</template>
+          <template #title>{{ t('menu.workspace') }}</template>
         </el-menu-item>
 
-        <div v-if="!menuCollapsed || isMobile" class="menu-caption">数据资产</div>
+        <div v-if="!menuCollapsed || isMobile" class="menu-caption">{{ t('menu.dataAssets') }}</div>
         <el-sub-menu index="integration">
           <template #title>
             <el-icon><Connection /></el-icon>
-            <span>数据集成</span>
+            <span>{{ t('menu.integration') }}</span>
           </template>
-          <el-menu-item index="/datasource">数据源</el-menu-item>
+          <el-menu-item index="/datasource">{{ t('menu.datasource') }}</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="development">
           <template #title>
             <el-icon><EditPen /></el-icon>
-            <span>数据研发</span>
+            <span>{{ t('menu.development') }}</span>
           </template>
-          <el-menu-item index="/dataflow">任务流</el-menu-item>
-          <el-menu-item index="/dataflow/instance">任务实例</el-menu-item>
+          <el-menu-item index="/dataflow">{{ t('menu.dataflow') }}</el-menu-item>
+          <el-menu-item index="/dataflow/instance">{{ t('menu.dataflowInstance') }}</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="service">
           <template #title>
             <el-icon><Share /></el-icon>
-            <span>数据服务</span>
+            <span>{{ t('menu.service') }}</span>
           </template>
-          <el-menu-item index="/service/api">API 服务</el-menu-item>
+          <el-menu-item index="/service/api">{{ t('menu.api') }}</el-menu-item>
         </el-sub-menu>
 
-        <div v-if="!menuCollapsed || isMobile" class="menu-caption">平台设置</div>
+        <div v-if="!menuCollapsed || isMobile" class="menu-caption">{{ t('menu.platformSettings') }}</div>
         <el-sub-menu index="system">
           <template #title>
             <el-icon><Setting /></el-icon>
-            <span>系统管理</span>
+            <span>{{ t('menu.system') }}</span>
           </template>
-          <el-menu-item index="/system/user">用户管理</el-menu-item>
-          <el-menu-item index="/system/role">角色管理</el-menu-item>
-          <el-menu-item index="/system/permission">权限管理</el-menu-item>
-          <el-menu-item index="/system/workspace">工作空间</el-menu-item>
-          <el-menu-item index="/system/loginlog">登录日志</el-menu-item>
-          <el-menu-item index="/system/config">配置管理</el-menu-item>
+          <el-menu-item index="/system/user">{{ t('menu.user') }}</el-menu-item>
+          <el-menu-item index="/system/role">{{ t('menu.role') }}</el-menu-item>
+          <el-menu-item index="/system/permission">{{ t('menu.permission') }}</el-menu-item>
+          <el-menu-item index="/system/workspace">{{ t('menu.workspaceManage') }}</el-menu-item>
+          <el-menu-item index="/system/loginlog">{{ t('menu.loginlog') }}</el-menu-item>
+          <el-menu-item index="/system/config">{{ t('menu.config') }}</el-menu-item>
         </el-sub-menu>
       </el-menu>
 
       <button class="collapse-button" type="button" @click="toggleSidebar">
         <el-icon><Fold v-if="!menuCollapsed" /><Expand v-else /></el-icon>
-        <span v-if="!menuCollapsed">收起导航</span>
+        <span v-if="!menuCollapsed">{{ t('layout.collapse') }}</span>
       </button>
     </aside>
 
@@ -113,7 +113,7 @@
           </button>
           <div class="page-heading">
             <el-breadcrumb separator="/">
-              <el-breadcrumb-item>数据中台</el-breadcrumb-item>
+              <el-breadcrumb-item>{{ t('layout.breadcrumbRoot') }}</el-breadcrumb-item>
               <el-breadcrumb-item>{{ parentTitle }}</el-breadcrumb-item>
             </el-breadcrumb>
             <strong>{{ pageTitle }}</strong>
@@ -123,13 +123,16 @@
         <div class="topbar-actions">
           <button class="search-trigger" type="button" @click="commandVisible = true">
             <el-icon><Search /></el-icon>
-            <span>搜索功能</span>
+            <span>{{ t('layout.search') }}</span>
             <kbd>⌘ K</kbd>
           </button>
-          <button class="icon-button" type="button" :title="isDark ? '切换浅色模式' : '切换深色模式'" @click="toggleTheme">
+          <button class="icon-button lang-button" type="button" :title="locale === 'zh-CN' ? 'Switch to English' : '切换到中文'" @click="toggleLocale">
+            {{ locale === 'zh-CN' ? 'EN' : '中' }}
+          </button>
+          <button class="icon-button" type="button" :title="isDark ? t('layout.themeLight') : t('layout.themeDark')" @click="toggleTheme">
             <el-icon><Sunny v-if="isDark" /><Moon v-else /></el-icon>
           </button>
-          <button class="icon-button notice-button" type="button" title="通知">
+          <button class="icon-button notice-button" type="button" :title="t('layout.notice')">
             <el-icon><Bell /></el-icon>
             <span class="notice-dot" />
           </button>
@@ -139,14 +142,14 @@
               <el-avatar :size="34" class="avatar">{{ avatarText }}</el-avatar>
               <span class="user-copy">
                 <strong>{{ username }}</strong>
-                <small>平台管理员</small>
+                <small>{{ t('layout.admin') }}</small>
               </span>
               <el-icon><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="router.push('/system/user')">个人与账号</el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
+                <el-dropdown-item @click="router.push('/system/user')">{{ t('layout.profile') }}</el-dropdown-item>
+                <el-dropdown-item divided @click="handleLogout">{{ t('layout.logout') }}</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -168,8 +171,8 @@
       </section>
     </main>
 
-    <el-dialog v-model="commandVisible" title="快速前往" width="520px" class="command-dialog">
-      <el-input v-model="commandKeyword" size="large" placeholder="搜索菜单或功能" :prefix-icon="Search" autofocus />
+    <el-dialog v-model="commandVisible" :title="t('layout.quickNavigate')" width="520px" class="command-dialog">
+      <el-input v-model="commandKeyword" size="large" :placeholder="t('layout.searchPlaceholder')" :prefix-icon="Search" autofocus />
       <div class="command-list">
         <button
           v-for="item in filteredCommands"
@@ -182,7 +185,7 @@
           <span><strong>{{ item.name }}</strong><small>{{ item.group }}</small></span>
           <el-icon><ArrowRight /></el-icon>
         </button>
-        <el-empty v-if="filteredCommands.length === 0" description="没有匹配的功能" :image-size="72" />
+        <el-empty v-if="filteredCommands.length === 0" :description="t('layout.noMatch')" :image-size="72" />
       </div>
     </el-dialog>
   </div>
@@ -191,14 +194,18 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { Search } from '@element-plus/icons-vue'
 import { useAuthStore } from '../stores/auth'
+import { getStoredLocale, setLocale, type Locale } from '../i18n'
 import type { WorkspaceData } from '../api/auth'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
+const locale = ref<Locale>(getStoredLocale())
 const menuCollapsed = ref(localStorage.getItem('dp-menu-collapsed') === '1')
 const isMobile = ref(window.innerWidth <= 900)
 const mobileOpen = ref(false)
@@ -206,27 +213,27 @@ const isDark = ref(localStorage.getItem('dp-theme') === 'dark')
 const commandVisible = ref(false)
 const commandKeyword = ref('')
 
-const commands = [
-  { name: '工作台', group: '概览', path: '/dashboard' },
-  { name: '数据源', group: '数据集成', path: '/datasource' },
-  { name: '任务流', group: '数据研发', path: '/dataflow' },
-  { name: '任务实例', group: '数据研发', path: '/dataflow/instance' },
-  { name: 'API 服务', group: '数据服务', path: '/service/api' },
-  { name: '用户管理', group: '系统管理', path: '/system/user' },
-  { name: '角色管理', group: '系统管理', path: '/system/role' },
-  { name: '权限管理', group: '系统管理', path: '/system/permission' },
-  { name: '工作空间', group: '系统管理', path: '/system/workspace' },
-  { name: '登录日志', group: '系统管理', path: '/system/loginlog' },
-  { name: '配置管理', group: '系统管理', path: '/system/config' }
-]
+const commands = computed(() => [
+  { name: t('menu.workspace'), group: t('menu.overview'), path: '/dashboard' },
+  { name: t('menu.datasource'), group: t('menu.integration'), path: '/datasource' },
+  { name: t('menu.dataflow'), group: t('menu.development'), path: '/dataflow' },
+  { name: t('menu.dataflowInstance'), group: t('menu.development'), path: '/dataflow/instance' },
+  { name: t('menu.api'), group: t('menu.service'), path: '/service/api' },
+  { name: t('menu.user'), group: t('menu.system'), path: '/system/user' },
+  { name: t('menu.role'), group: t('menu.system'), path: '/system/role' },
+  { name: t('menu.permission'), group: t('menu.system'), path: '/system/permission' },
+  { name: t('menu.workspaceManage'), group: t('menu.system'), path: '/system/workspace' },
+  { name: t('menu.loginlog'), group: t('menu.system'), path: '/system/loginlog' },
+  { name: t('menu.config'), group: t('menu.system'), path: '/system/config' }
+])
 
-const pageTitle = computed(() => String(route.meta.title || '工作台'))
+const pageTitle = computed(() => String(route.meta.title || t('menu.workspace')))
 const parentTitle = computed(() => {
-  if (route.path.startsWith('/system')) return '系统管理'
-  if (route.path.startsWith('/service')) return '数据服务'
-  if (route.path.startsWith('/dataflow')) return '数据研发'
-  if (route.path.startsWith('/datasource')) return '数据集成'
-  return '工作台'
+  if (route.path.startsWith('/system')) return t('menu.system')
+  if (route.path.startsWith('/service')) return t('menu.service')
+  if (route.path.startsWith('/dataflow')) return t('menu.development')
+  if (route.path.startsWith('/datasource')) return t('menu.integration')
+  return t('menu.workspace')
 })
 const activeMenu = computed(() => {
   if (route.path.startsWith('/dataflow/edit') || route.path.startsWith('/dataflow/history')) return '/dataflow'
@@ -234,11 +241,11 @@ const activeMenu = computed(() => {
 })
 const username = computed(() => authStore.user?.username || 'admin')
 const avatarText = computed(() => username.value.charAt(0).toUpperCase())
-const workspaceName = computed(() => authStore.workspace?.name || '默认工作空间')
+const workspaceName = computed(() => authStore.workspace?.name || t('layout.defaultWorkspace'))
 const filteredCommands = computed(() => {
   const keyword = commandKeyword.value.trim().toLowerCase()
-  if (!keyword) return commands
-  return commands.filter((item) => `${item.name}${item.group}`.toLowerCase().includes(keyword))
+  if (!keyword) return commands.value
+  return commands.value.filter((item) => `${item.name}${item.group}`.toLowerCase().includes(keyword))
 })
 
 function applyTheme() {
@@ -249,6 +256,11 @@ function toggleTheme() {
   isDark.value = !isDark.value
   localStorage.setItem('dp-theme', isDark.value ? 'dark' : 'light')
   applyTheme()
+}
+
+function toggleLocale() {
+  locale.value = locale.value === 'zh-CN' ? 'en-US' : 'zh-CN'
+  setLocale(locale.value)
 }
 
 function toggleSidebar() {
@@ -600,6 +612,12 @@ function handleSwitchWorkspace(ws: WorkspaceData) {
 .mobile-menu {
   width: 36px;
   font-size: 16px;
+}
+
+.lang-button {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .icon-button:hover,

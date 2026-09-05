@@ -1,0 +1,53 @@
+export default {
+  menu: {
+    dashboard: '首页',
+    overview: '概览',
+    workspace: '工作台',
+    dataAssets: '数据资产',
+    integration: '数据集成',
+    datasource: '数据源',
+    development: '数据研发',
+    dataflow: '任务流',
+    dataflowInstance: '任务实例',
+    service: '数据服务',
+    api: 'API 服务',
+    platformSettings: '平台设置',
+    system: '系统管理',
+    user: '用户管理',
+    role: '角色管理',
+    permission: '权限管理',
+    workspaceManage: '工作空间',
+    loginlog: '登录日志',
+    config: '配置管理'
+  },
+  layout: {
+    brand: 'DataPilot',
+    brandSub: '数据中台',
+    currentWorkspace: '当前工作空间',
+    defaultWorkspace: '默认工作空间',
+    search: '搜索功能',
+    themeLight: '切换浅色模式',
+    themeDark: '切换深色模式',
+    notice: '通知',
+    admin: '平台管理员',
+    profile: '个人与账号',
+    logout: '退出登录',
+    collapse: '收起导航',
+    quickNavigate: '快速前往',
+    searchPlaceholder: '搜索菜单或功能',
+    noMatch: '没有匹配的功能',
+    breadcrumbRoot: '数据中台'
+  },
+  common: {
+    cancel: '取消',
+    confirm: '确定',
+    delete: '删除',
+    edit: '编辑',
+    add: '新增',
+    refresh: '刷新',
+    search: '查询',
+    close: '关闭',
+    save: '保存',
+    publish: '发布'
+  }
+}

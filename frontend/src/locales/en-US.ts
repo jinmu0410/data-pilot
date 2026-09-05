@@ -1,0 +1,53 @@
+export default {
+  menu: {
+    dashboard: 'Dashboard',
+    overview: 'Overview',
+    workspace: 'Workspace',
+    dataAssets: 'Data Assets',
+    integration: 'Data Integration',
+    datasource: 'Data Source',
+    development: 'Data Development',
+    dataflow: 'Task Flow',
+    dataflowInstance: 'Task Instances',
+    service: 'Data Service',
+    api: 'API Service',
+    platformSettings: 'Platform Settings',
+    system: 'System',
+    user: 'Users',
+    role: 'Roles',
+    permission: 'Permissions',
+    workspaceManage: 'Workspace',
+    loginlog: 'Login Logs',
+    config: 'Configuration'
+  },
+  layout: {
+    brand: 'DataPilot',
+    brandSub: 'Data Platform',
+    currentWorkspace: 'Current Workspace',
+    defaultWorkspace: 'Default Workspace',
+    search: 'Search',
+    themeLight: 'Switch to light mode',
+    themeDark: 'Switch to dark mode',
+    notice: 'Notifications',
+    admin: 'Administrator',
+    profile: 'Profile & Account',
+    logout: 'Log out',
+    collapse: 'Collapse',
+    quickNavigate: 'Quick Navigation',
+    searchPlaceholder: 'Search menu or feature',
+    noMatch: 'No matching feature',
+    breadcrumbRoot: 'Data Platform'
+  },
+  common: {
+    cancel: 'Cancel',
+    confirm: 'OK',
+    delete: 'Delete',
+    edit: 'Edit',
+    add: 'Add',
+    refresh: 'Refresh',
+    search: 'Search',
+    close: 'Close',
+    save: 'Save',
+    publish: 'Publish'
+  }
+}
