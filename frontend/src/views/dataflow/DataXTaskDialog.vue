@@ -307,6 +307,7 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button type="danger" link @click="emit('delete')">删除节点</el-button>
+        <el-button link @click="preview">预览配置</el-button>
         <span class="footer-spacer"></span>
         <el-button @click="cancelWithoutDone">取消</el-button>
         <el-button v-if="step > 0" @click="step--">上一步</el-button>
@@ -315,6 +316,21 @@
       </div>
     </template>
   </el-dialog>
+
+  <el-dialog
+    v-model="previewVisible"
+    title="最终生成的配置"
+    width="760px"
+    top="6vh"
+    append-to-body
+    :close-on-click-modal="false"
+  >
+    <div class="preview-command">
+      <span>执行命令</span>
+      <code>{{ previewCommand.join(' ') }}</code>
+    </div>
+    <pre class="preview-json">{{ previewContent }}</pre>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
@@ -322,6 +338,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import SqlEditor from '../../components/SqlEditor.vue'
 import { listSchemaTable, tableDetail, type SchemaTableMap, type TableColumn, type TableIndex } from '../../api/datasource'
+import { previewEngineConfig } from '../../api/dataflow'
 import type { NodeConfig, FieldMappingRow } from './nodes'
 
 interface DataSourceOption {
@@ -358,6 +375,24 @@ const sourceColumns = ref<TableColumn[]>([])
 const targetColumns = ref<TableColumn[]>([])
 const targetIndexes = ref<TableIndex[]>([])
 const loading = reactive({ sourceTree: false, targetTree: false, sourceColumns: false, targetColumns: false })
+
+const previewVisible = ref(false)
+const previewContent = ref('')
+const previewCommand = ref<string[]>([])
+
+async function preview() {
+  const node = { ...props.config }
+  delete node.__type
+  delete node.readMode
+  try {
+    const result = await previewEngineConfig('DATAX', node)
+    previewContent.value = result.configContent
+    previewCommand.value = result.command ?? []
+    previewVisible.value = true
+  } catch {
+    // 错误提示已在拦截器处理
+  }
+}
 
 const sourceDatasource = computed(() => props.datasources.find((item) => item.code === props.config.sourceDataSourceCode))
 const targetDatasource = computed(() => props.datasources.find((item) => item.code === props.config.targetDataSourceCode))
@@ -744,6 +779,10 @@ function cancelWithoutDone() {
 .sql-collapse :deep(.el-collapse-item__header span) { color: #969ead; font-size: 10px; font-weight: 400; }
 .dialog-footer { display: flex; align-items: center; width: 100%; }
 .footer-spacer { flex: 1; }
+.preview-command { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 9px 12px; background: #f5f7fb; border-radius: 8px; }
+.preview-command span { flex: 0 0 auto; color: #505a6d; font-size: 12px; font-weight: 600; }
+.preview-command code { min-width: 0; overflow: hidden; color: #4f5ab7; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.preview-json { max-height: 60vh; overflow: auto; margin: 0; padding: 14px; color: #d4d4d4; background: #1e1e1e; border-radius: 8px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
 
 @media (max-width: 900px) {
   .wizard-shell { grid-template-columns: 1fr; }

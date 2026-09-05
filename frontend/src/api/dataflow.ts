@@ -260,3 +260,17 @@ export function listFlowInstance(
 export function getFlowInstanceDetail(id: number): Promise<FlowInstanceDetail> {
   return request.post('/dataflow/instance/detail', { id }) as unknown as Promise<FlowInstanceDetail>
 }
+
+export interface EngineConfigPreview {
+  engine: string
+  configContent: string
+  command: string[]
+}
+
+// 预览同步引擎（DataX/SeaTunnel）最终生成的配置
+export function previewEngineConfig(
+  taskType: string,
+  node: Record<string, any>
+): Promise<EngineConfigPreview> {
+  return request.post('/dataflow/config/preview', { taskType, node }) as unknown as Promise<EngineConfigPreview>
+}

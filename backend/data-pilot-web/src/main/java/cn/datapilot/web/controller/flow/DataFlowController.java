@@ -7,11 +7,15 @@ import cn.datapilot.common.vo.base.PlainResult;
 import cn.datapilot.web.annotation.Auth;
 import cn.datapilot.web.annotation.DataPermission;
 import cn.datapilot.web.annotation.ReSubmitLock;
+import cn.datapilot.web.config.Context;
 import cn.datapilot.web.enums.OperationPermissionType;
 import cn.datapilot.web.enums.RecordType;
 import cn.datapilot.web.service.flow.DataFlowService;
 import cn.datapilot.web.service.flow.FlowRunService;
+import cn.datapilot.web.service.task.TaskParamsHelper;
+import cn.datapilot.web.service.task.runner.SyncTaskRunner;
 import cn.datapilot.web.vo.data.flow.*;
+import cn.datapilot.web.vo.data.task.TaskConfigResponse;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,6 +41,12 @@ public class DataFlowController {
 
     @Resource
     private FlowRunService flowRunService;
+
+    @Resource
+    private TaskParamsHelper taskParamsHelper;
+
+    @Resource
+    private SyncTaskRunner syncTaskRunner;
 
     /**
      * 数据流列表
@@ -205,5 +215,16 @@ public class DataFlowController {
         return new PlainResult<>(this.flowRunService.instanceDetail(idRequest.getId()));
     }
 
+    /**
+     * 预览同步引擎（DataX/SeaTunnel）最终生成的配置
+     */
+    @Auth("data:flow:detail")
+    @PostMapping("config/preview")
+    public PlainResult<TaskConfigResponse> previewConfig(@RequestBody @Valid ConfigPreviewRequest request) {
+        String taskParams = this.taskParamsHelper.serialize(request.getTaskType(), request.getNode());
+        TaskConfigResponse response = this.syncTaskRunner.buildConfig(
+                request.getTaskType(), taskParams, Context.getWorkspace().getCode());
+        return new PlainResult<>(response);
+    }
 
 }
