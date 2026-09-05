@@ -3,66 +3,66 @@
     <el-card shadow="never">
       <div class="toolbar">
         <el-form inline :model="query" @submit.prevent>
-          <el-form-item label="关键字">
+          <el-form-item :label="t('dataflow.keyword')">
             <el-input
               v-model="query.keyword"
-              placeholder="名称/编码"
+              :placeholder="t('dataflow.keywordPlaceholder')"
               clearable
               style="width: 200px"
               @keyup.enter="handleSearch"
             />
           </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="query.status" placeholder="全部" clearable style="width: 130px">
-              <el-option label="待发布" value="TBP" />
-              <el-option label="启用" value="ENABLE" />
-              <el-option label="暂停" value="PAUSE" />
-              <el-option label="历史" value="HISTORY" />
+          <el-form-item :label="t('dataflow.status')">
+            <el-select v-model="query.status" :placeholder="t('dataflow.all')" clearable style="width: 130px">
+              <el-option :label="t('dataflow.statusTBP')" value="TBP" />
+              <el-option :label="t('dataflow.statusEnable')" value="ENABLE" />
+              <el-option :label="t('dataflow.statusPause')" value="PAUSE" />
+              <el-option :label="t('dataflow.statusHistory')" value="HISTORY" />
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
-            <el-button type="success" :icon="Plus" @click="openCreate">新建任务流</el-button>
+            <el-button type="primary" :icon="Search" @click="handleSearch">{{ t('common.search') }}</el-button>
+            <el-button type="success" :icon="Plus" @click="openCreate">{{ t('dataflow.create') }}</el-button>
           </el-form-item>
         </el-form>
       </div>
 
       <el-table v-loading="loading" :data="list" border>
         <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="name" label="名称" min-width="150" />
-        <el-table-column prop="code" label="编码" min-width="150" />
-        <el-table-column label="状态" width="90">
+        <el-table-column prop="name" :label="t('dataflow.colName')" min-width="150" />
+        <el-table-column prop="code" :label="t('dataflow.colCode')" min-width="150" />
+        <el-table-column :label="t('dataflow.colStatus')" width="90">
           <template #default="{ row }">
             <el-tag :type="statusMeta(row.status).tag">
               {{ statusMeta(row.status).label }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="currentVersion" label="当前版本" width="110" />
-        <el-table-column prop="publishVersion" label="发布版本" width="110" />
-        <el-table-column prop="description" label="描述" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="updateTime" label="更新时间" width="170" />
-        <el-table-column label="操作" width="480" fixed="right">
+        <el-table-column prop="currentVersion" :label="t('dataflow.colCurrentVersion')" width="110" />
+        <el-table-column prop="publishVersion" :label="t('dataflow.colPublishVersion')" width="110" />
+        <el-table-column prop="description" :label="t('dataflow.colDescription')" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="updateTime" :label="t('dataflow.colUpdateTime')" width="170" />
+        <el-table-column :label="t('dataflow.colActions')" width="480" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="goEdit(row)">编辑</el-button>
-            <el-button link type="success" @click="handleRun(row)">运行</el-button>
-            <el-button link @click="goInstance(row)">实例</el-button>
-            <el-button link type="info" @click="openRunConfig(row)">运行配置</el-button>
-            <el-button link type="success" @click="openPublish(row)">发布</el-button>
-            <el-button link @click="goHistory(row)">发布记录</el-button>
+            <el-button link type="primary" @click="goEdit(row)">{{ t('dataflow.edit') }}</el-button>
+            <el-button link type="success" @click="handleRun(row)">{{ t('dataflow.run') }}</el-button>
+            <el-button link @click="goInstance(row)">{{ t('dataflow.instance') }}</el-button>
+            <el-button link type="info" @click="openRunConfig(row)">{{ t('dataflow.runConfig') }}</el-button>
+            <el-button link type="success" @click="openPublish(row)">{{ t('dataflow.publish') }}</el-button>
+            <el-button link @click="goHistory(row)">{{ t('dataflow.publishHistory') }}</el-button>
             <el-button
               v-if="row.status === 'ENABLE'"
               link
               type="warning"
               @click="handleStop(row)"
-            >停止</el-button>
+            >{{ t('dataflow.stop') }}</el-button>
             <el-button
               v-if="row.status === 'PAUSE'"
               link
               type="success"
               @click="handleStart(row)"
-            >启动</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            >{{ t('dataflow.start') }}</el-button>
+            <el-button link type="danger" @click="handleDelete(row)">{{ t('dataflow.delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -78,69 +78,69 @@
       />
     </el-card>
 
-    <el-dialog v-model="createVisible" title="新建任务流" width="480px">
+    <el-dialog v-model="createVisible" :title="t('dataflow.createTitle')" width="480px">
       <el-form :model="createForm" label-width="80px">
-        <el-form-item label="名称" required>
-          <el-input v-model="createForm.name" maxlength="20" placeholder="任务流名称" />
+        <el-form-item :label="t('dataflow.name')" required>
+          <el-input v-model="createForm.name" maxlength="20" :placeholder="t('dataflow.namePlaceholder')" />
         </el-form-item>
-        <el-form-item label="图标">
-          <el-input v-model="createForm.icon" placeholder="图标标识，默认 default" />
+        <el-form-item :label="t('dataflow.icon')">
+          <el-input v-model="createForm.icon" :placeholder="t('dataflow.iconPlaceholder')" />
         </el-form-item>
-        <el-form-item label="描述">
+        <el-form-item :label="t('dataflow.description')">
           <el-input v-model="createForm.description" type="textarea" :rows="2" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="createVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleCreate">确定</el-button>
+        <el-button @click="createVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleCreate">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="publishVisible" title="发布任务流" width="480px">
+    <el-dialog v-model="publishVisible" :title="t('dataflow.publishTitle')" width="480px">
       <el-form :model="publishForm" label-width="80px">
-        <el-form-item label="发布说明" required>
+        <el-form-item :label="t('dataflow.publishDesc')" required>
           <el-input v-model="publishForm.publishDescription" type="textarea" :rows="3" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="publishVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handlePublish">发布</el-button>
+        <el-button @click="publishVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="handlePublish">{{ t('dataflow.publish') }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="runVisible" :title="`运行任务流 - ${runForm.name}`" width="480px">
+    <el-dialog v-model="runVisible" :title="t('dataflow.runTitle', { name: runForm.name })" width="480px">
       <el-form :model="runForm" label-width="100px">
-        <el-form-item label="失败策略" required>
+        <el-form-item :label="t('dataflow.failureStrategy')" required>
           <el-radio-group v-model="runForm.failureStrategy">
-            <el-radio value="CONTINUE">继续</el-radio>
-            <el-radio value="END">结束</el-radio>
+            <el-radio value="CONTINUE">{{ t('dataflow.continue') }}</el-radio>
+            <el-radio value="END">{{ t('dataflow.end') }}</el-radio>
           </el-radio-group>
           <div class="strategy-hint">
-            继续：某节点失败后，等待同级节点跑完再结束；结束：某节点失败即终止其余节点并结束。
+            {{ t('dataflow.failureStrategyHint') }}
           </div>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="runVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="confirmRun">运行</el-button>
+        <el-button @click="runVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="confirmRun">{{ t('dataflow.run') }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="runConfigVisible" :title="`运行配置 - ${runConfigForm.name}`" width="520px">
+    <el-dialog v-model="runConfigVisible" :title="t('dataflow.runConfigTitle', { name: runConfigForm.name })" width="520px">
       <el-form v-loading="runConfigLoading" :model="runConfigForm" label-width="100px">
-        <el-form-item label="运行策略" required>
+        <el-form-item :label="t('dataflow.runStrategy')" required>
           <el-select v-model="runConfigForm.runStrategy" style="width: 100%">
-            <el-option label="全部实例" value="ALL_INSTANCES" />
-            <el-option label="指定实例" value="SPECIFY_INSTANCES" />
-            <el-option label="固定实例数" value="FIXED_INSTANCE_NUMBER" />
+            <el-option :label="t('dataflow.allInstances')" value="ALL_INSTANCES" />
+            <el-option :label="t('dataflow.specifyInstances')" value="SPECIFY_INSTANCES" />
+            <el-option :label="t('dataflow.fixedInstanceNumber')" value="FIXED_INSTANCE_NUMBER" />
           </el-select>
         </el-form-item>
 
-        <el-form-item v-if="runConfigForm.runStrategy === 'FIXED_INSTANCE_NUMBER'" label="实例数量" required>
+        <el-form-item v-if="runConfigForm.runStrategy === 'FIXED_INSTANCE_NUMBER'" :label="t('dataflow.instanceCount')" required>
           <el-input-number v-model="runConfigForm.instanceNumber" :min="1" :max="100" style="width: 100%" />
         </el-form-item>
 
-        <el-form-item v-if="runConfigForm.runStrategy === 'SPECIFY_INSTANCES'" label="指定实例" required>
+        <el-form-item v-if="runConfigForm.runStrategy === 'SPECIFY_INSTANCES'" :label="t('dataflow.specifyInstancesLabel')" required>
           <el-select
             v-model="runConfigForm.specifyInstances"
             multiple
@@ -148,28 +148,28 @@
             allow-create
             default-first-option
             :reserve-keyword="false"
-            placeholder="输入实例标识后回车添加"
+            :placeholder="t('dataflow.instancePlaceholder')"
             style="width: 100%"
           />
         </el-form-item>
 
-        <el-form-item label="监控">
+        <el-form-item :label="t('dataflow.monitor')">
           <el-radio-group v-model="runConfigForm.enableMonitor">
-            <el-radio value="ENABLE">开启</el-radio>
-            <el-radio value="DISABLE">关闭</el-radio>
+            <el-radio value="ENABLE">{{ t('dataflow.on') }}</el-radio>
+            <el-radio value="DISABLE">{{ t('dataflow.off') }}</el-radio>
           </el-radio-group>
         </el-form-item>
 
-        <el-form-item label="告警">
+        <el-form-item :label="t('dataflow.alarm')">
           <el-radio-group v-model="runConfigForm.enableAlarm">
-            <el-radio value="ENABLE">开启</el-radio>
-            <el-radio value="DISABLE">关闭</el-radio>
+            <el-radio value="ENABLE">{{ t('dataflow.on') }}</el-radio>
+            <el-radio value="DISABLE">{{ t('dataflow.off') }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="runConfigVisible = false">取消</el-button>
-        <el-button type="primary" :loading="runConfigSaving" @click="handleRunConfigSave">保存</el-button>
+        <el-button @click="runConfigVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="runConfigSaving" @click="handleRunConfigSave">{{ t('dataflow.save') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -178,6 +178,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
 import {
@@ -194,6 +195,7 @@ import {
 } from '../../api/dataflow'
 
 const router = useRouter()
+const { t } = useI18n()
 const loading = ref(false)
 const list = ref<DataFlowListItem[]>([])
 const query = reactive({ keyword: '', status: '' })
@@ -221,15 +223,14 @@ const runConfigForm = reactive({
   specifyInstances: [] as string[]
 })
 
-const STATUS_META: Record<string, { label: string; tag: 'success' | 'warning' | 'info' | 'primary' }> = {
-  TBP: { label: '待发布', tag: 'info' },
-  ENABLE: { label: '启用', tag: 'success' },
-  PAUSE: { label: '暂停', tag: 'warning' },
-  HISTORY: { label: '历史', tag: 'info' }
-}
-
 function statusMeta(status: string) {
-  return STATUS_META[status] ?? { label: status, tag: 'info' as const }
+  const map: Record<string, { label: string; tag: 'success' | 'warning' | 'info' | 'primary' }> = {
+    TBP: { label: t('dataflow.statusTBP'), tag: 'info' },
+    ENABLE: { label: t('dataflow.statusEnable'), tag: 'success' },
+    PAUSE: { label: t('dataflow.statusPause'), tag: 'warning' },
+    HISTORY: { label: t('dataflow.statusHistory'), tag: 'info' }
+  }
+  return map[status] ?? { label: status, tag: 'info' as const }
 }
 
 async function load() {
@@ -259,14 +260,14 @@ function openCreate() {
 
 async function handleCreate() {
   if (!createForm.name) {
-    ElMessage.warning('请填写名称')
+    ElMessage.warning(t('dataflow.msgNameRequired'))
     return
   }
   submitting.value = true
   try {
     // 后端创建时固定置为「待发布」，status 仅作非空校验
     await createDataFlow({ ...createForm, status: 'ENABLE' })
-    ElMessage.success('创建成功')
+    ElMessage.success(t('dataflow.msgCreateSuccess'))
     createVisible.value = false
     load()
   } finally {
@@ -291,7 +292,7 @@ async function confirmRun() {
   submitting.value = true
   try {
     await runDataFlow(runForm.id, runForm.failureStrategy)
-    ElMessage.success('已触发运行')
+    ElMessage.success(t('dataflow.msgRunTriggered'))
     runVisible.value = false
     router.push({ path: '/dataflow/instance', query: { flowId: runForm.id, flowName: runForm.name } })
   } finally {
@@ -310,13 +311,13 @@ function openPublish(row: DataFlowListItem) {
 
 async function handlePublish() {
   if (!publishForm.publishDescription) {
-    ElMessage.warning('请填写发布说明')
+    ElMessage.warning(t('dataflow.msgPublishDescRequired'))
     return
   }
   submitting.value = true
   try {
     await publishDataFlow(publishForm.id, publishForm.publishDescription)
-    ElMessage.success('发布成功')
+    ElMessage.success(t('dataflow.msgPublishSuccess'))
     publishVisible.value = false
     load()
   } finally {
@@ -326,7 +327,7 @@ async function handlePublish() {
 
 async function handleStart(row: DataFlowListItem) {
   await startDataFlow(row.id)
-  ElMessage.success('启动成功')
+  ElMessage.success(t('dataflow.msgStartSuccess'))
   load()
 }
 
@@ -361,11 +362,11 @@ async function openRunConfig(row: DataFlowListItem) {
 async function handleRunConfigSave() {
   const { runStrategy, specifyInstances } = runConfigForm
   if (runStrategy === 'FIXED_INSTANCE_NUMBER' && !runConfigForm.instanceNumber) {
-    ElMessage.warning('请填写实例数量')
+    ElMessage.warning(t('dataflow.msgInstanceCountRequired'))
     return
   }
   if (runStrategy === 'SPECIFY_INSTANCES' && !specifyInstances.length) {
-    ElMessage.warning('请填写指定实例')
+    ElMessage.warning(t('dataflow.msgSpecifyInstancesRequired'))
     return
   }
   runConfigSaving.value = true
@@ -378,7 +379,7 @@ async function handleRunConfigSave() {
       instanceNumber: runStrategy === 'FIXED_INSTANCE_NUMBER' ? runConfigForm.instanceNumber : undefined,
       specifyInstances: runStrategy === 'SPECIFY_INSTANCES' ? specifyInstances : undefined
     })
-    ElMessage.success('运行配置已保存')
+    ElMessage.success(t('dataflow.msgRunConfigSaved'))
     runConfigVisible.value = false
     load()
   } finally {
@@ -388,14 +389,14 @@ async function handleRunConfigSave() {
 
 async function handleStop(row: DataFlowListItem) {
   await stopDataFlow(row.id)
-  ElMessage.success('停止成功')
+  ElMessage.success(t('dataflow.msgStopSuccess'))
   load()
 }
 
 async function handleDelete(row: DataFlowListItem) {
-  await ElMessageBox.confirm(`确认删除任务流「${row.name}」？`, '提示', { type: 'warning' })
+  await ElMessageBox.confirm(t('dataflow.msgDeleteConfirm', { name: row.name }), t('dataflow.prompt'), { type: 'warning' })
   await deleteDataFlow(row.id)
-  ElMessage.success('删除成功')
+  ElMessage.success(t('dataflow.msgDeleteSuccess'))
   load()
 }
 
