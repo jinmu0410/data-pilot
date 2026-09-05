@@ -11,7 +11,7 @@ import lombok.Data;
 /**
  * 获取验证码请求参数
  *
- * @author DaoDao
+ * @author jinmu
  */
 @Data
 public class LoginRequest {

@@ -9,7 +9,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * @author DaoDao
+ * @author jinmu
  */
 public interface UserMapper extends BaseMapper<User> {
 

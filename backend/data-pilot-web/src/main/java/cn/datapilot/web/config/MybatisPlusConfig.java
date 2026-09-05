@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 /**
  * 〈MybatisPlusConfig〉
  *
- * @author 丁乾文
+ * @author jinmu
  * @date 2021/6/23 8:13 下午
  * @since 1.0.0
  */

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import java.sql.*;
 
 /**
- * @author DaoDao
+ * @author jinmu
  */
 @Component
 public class PostgreSQLDataSourceTest implements DataSourceTest {

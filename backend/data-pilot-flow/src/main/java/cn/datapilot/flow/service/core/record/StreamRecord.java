@@ -10,7 +10,7 @@ import java.util.Objects;
 /**
  * 〈RecordChange〉
  *
- * @author dqw
+ * @author jinmu
  * @date 2025/1/8
  * @since 1.0.0
  */

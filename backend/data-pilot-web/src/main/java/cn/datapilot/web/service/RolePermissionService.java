@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import java.util.List;
 
 /**
- * @author DaoDao
+ * @author jinmu
  */
 public interface RolePermissionService extends IService<RolePermission> {
 

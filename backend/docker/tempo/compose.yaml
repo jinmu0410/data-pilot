@@ -3,7 +3,7 @@ name: tempo
 services:
   tempo:
     container_name: tempo
-    image: registry.cn-beijing.aliyuncs.com/daodao-bot/grafana.tempo:2.7.2
+    image: grafana/tempo:2.7.2
     deploy:
       resources:
         limits:

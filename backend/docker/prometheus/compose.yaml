@@ -3,7 +3,7 @@ name: prometheus
 services:
   prometheus:
     container_name: prometheus
-    image: registry.cn-beijing.aliyuncs.com/daodao-bot/prom.prometheus:v3.2.1
+    image: prom/prometheus:v3.2.1
     deploy:
       resources:
         limits:

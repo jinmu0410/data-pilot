@@ -7,7 +7,7 @@ import cn.datapilot.web.vo.permission.*;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
- * @author DaoDao
+ * @author jinmu
  */
 public interface PermissionService extends IService<Permission> {
 

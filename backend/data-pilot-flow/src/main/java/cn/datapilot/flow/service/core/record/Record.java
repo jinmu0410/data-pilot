@@ -7,7 +7,7 @@ import java.io.Serializable;
 /**
  * 〈Record〉
  *
- * @author dqw
+ * @author jinmu
  * @date 2025/1/8 14:00
  * @since 1.0.0
  */

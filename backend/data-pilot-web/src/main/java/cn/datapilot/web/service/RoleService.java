@@ -7,7 +7,7 @@ import cn.datapilot.web.vo.role.*;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
- * @author DaoDao
+ * @author jinmu
  */
 public interface RoleService extends IService<Role> {
 

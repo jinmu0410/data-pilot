@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 /**
  * 〈ThreadAspect〉
  *
- * @author 丁乾文
+ * @author jinmu
  * @date 2023/9/5 20:06
  * @since 1.0.0
  */

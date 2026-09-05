@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 /**
  * DorisDataSource
  *
- * @author dqw
+ * @author jinmu
  * @since 1.0.0
  */
 @EqualsAndHashCode(callSuper = true)

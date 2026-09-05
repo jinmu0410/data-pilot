@@ -10,7 +10,7 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 
 /**
- * @author DaoDao
+ * @author jinmu
  */
 public interface UserRoleMapper extends BaseMapper<UserRole> {
 

@@ -3,7 +3,7 @@ name: grafana
 services:
   grafana:
     container_name: grafana
-    image: registry.cn-beijing.aliyuncs.com/daodao-bot/grafana.grafana:11.6.0
+    image: grafana/grafana:11.6.0
     deploy:
       resources:
         limits:

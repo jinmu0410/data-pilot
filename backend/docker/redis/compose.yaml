@@ -3,7 +3,7 @@ name: redis
 services:
   redis:
     container_name: redis
-    image: registry.cn-beijing.aliyuncs.com/daodao-bot/redis:7.4.2
+    image: redis:7.4.2
     deploy:
       resources:
         limits:

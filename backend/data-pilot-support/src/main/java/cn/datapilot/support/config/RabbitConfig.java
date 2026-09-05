@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
  * 〈一句话功能简述〉<br>
  * 〈发布与订阅〉
  *
- * @author 丁乾文
+ * @author jinmu
  * @date 2021/6/17
  * @since 1.0.0
  */

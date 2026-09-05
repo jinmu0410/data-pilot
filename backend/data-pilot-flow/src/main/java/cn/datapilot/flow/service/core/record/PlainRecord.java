@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * 〈PlainRecord〉
  *
- * @author dqw
+ * @author jinmu
  * @date 2025/1/10
  * @since 1.0.0
  */

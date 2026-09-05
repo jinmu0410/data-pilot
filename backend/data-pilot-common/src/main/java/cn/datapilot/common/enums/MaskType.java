@@ -6,7 +6,7 @@ import lombok.Getter;
 /**
  * 敏感类型枚举
  *
- * @author DaoDao
+ * @author jinmu
  */
 @Getter
 @AllArgsConstructor

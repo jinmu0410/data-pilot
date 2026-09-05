@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 /**
  * 〈公用参数〉<br>
  *
- * @author 丁乾文
+ * @author jinmu
  * @create 2019/9/30
  * @since 1.0.0
  */

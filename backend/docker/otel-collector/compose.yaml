@@ -3,7 +3,7 @@ name: otel-collector
 services:
   otel-collector:
     container_name: otel-collector
-    image: registry.cn-beijing.aliyuncs.com/daodao-bot/otel.opentelemetry-collector:0.123.0
+    image: otel/opentelemetry-collector:0.123.0
     deploy:
       resources:
         limits:

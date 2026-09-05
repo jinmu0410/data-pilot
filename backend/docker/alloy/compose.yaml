@@ -3,7 +3,7 @@ name: alloy
 services:
   alloy:
     container_name: alloy
-    image: registry.cn-beijing.aliyuncs.com/daodao-bot/grafana.alloy:v1.8.1
+    image: grafana/alloy:v1.8.1
     deploy:
       resources:
         limits:

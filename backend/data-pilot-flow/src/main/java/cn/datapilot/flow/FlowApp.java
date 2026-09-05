@@ -15,7 +15,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 /**
  * 〈App〉
  *
- * @author dqw
+ * @author jinmu
  * @since 1.0.0
  */
 @EnableScheduling

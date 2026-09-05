@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 〈RuleEngineFlowComponent〉
  *
- * @author dqw
+ * @author jinmu
  * @date 2025/1/10
  * @since 1.0.0
  */

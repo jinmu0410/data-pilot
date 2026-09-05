@@ -4,7 +4,7 @@ import cn.datapilot.flow.store.entity.Workspace;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
- * @author DaoDao
+ * @author jinmu
  */
 public interface WorkspaceMapper extends BaseMapper<Workspace> {
 

@@ -3,7 +3,7 @@ name: rabbitmq
 services:
   rabbitmq:
     container_name: rabbitmq
-    image: registry.cn-beijing.aliyuncs.com/daodao-bot/rabbitmq:4.0.5-management
+    image: rabbitmq:4.0.5-management
     deploy:
       resources:
         limits:

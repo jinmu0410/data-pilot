@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * @author DaoDao
+ * @author jinmu
  */
 public interface UserService extends IService<User> {
 

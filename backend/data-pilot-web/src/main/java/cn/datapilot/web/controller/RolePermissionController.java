@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * @author DaoDao
+ * @author jinmu
  */
 @RestController
 @RequestMapping("role/permission")

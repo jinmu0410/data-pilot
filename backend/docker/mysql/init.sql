@@ -557,7 +557,7 @@ create table permission
     create_time    datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
     update_time    datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     deleted        tinyint(1)  default 0                 not null comment '是否已被删除：0 否，1 是'
-) comment '@DaoDao 权限' collate = utf8mb4_bin;
+) comment '权限' collate = utf8mb4_bin;
 
 create index idx_code
     on permission (code);
@@ -576,7 +576,7 @@ create table role
     deleted        tinyint(1)  default 0                 not null comment '是否已被删除：0 否，1 是',
     key            idx_code (code),
     key            idx_name (name)
-) comment '@DaoDao 角色' collate = utf8mb4_bin;
+) comment '角色' collate = utf8mb4_bin;
 
 create table role_permission
 (
@@ -588,7 +588,7 @@ create table role_permission
     create_time    datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     update_time    datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     deleted        tinyint(1) default 0                 not null comment '是否已被删除：0 否，1 是'
-) comment '@DaoDao 角色权限' collate = utf8mb4_bin;
+) comment '角色权限' collate = utf8mb4_bin;
 
 create index idx_permission_id
     on role_permission (permission_id);
@@ -617,7 +617,7 @@ create table user
     deleted        tinyint(1)  default 0                 not null comment '是否已被删除：0 否，1 是',
     key            idx_email (email),
     key            idx_username (username)
-) comment '@DaoDao 用户' collate = utf8mb4_bin;
+) comment '用户' collate = utf8mb4_bin;
 
 create table user_login_log
 (

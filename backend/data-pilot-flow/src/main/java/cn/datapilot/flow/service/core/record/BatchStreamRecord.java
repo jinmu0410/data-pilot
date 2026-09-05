@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * 〈BatchStreamRecord〉
  *
- * @author dqw
+ * @author jinmu
  * @date 2025/1/10
  * @since 1.0.0
  */

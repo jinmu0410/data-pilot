@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 /**
  * MySQLDataSource
  *
- * @author dqw
+ * @author jinmu
  * @since 1.0.0
  */
 @EqualsAndHashCode(callSuper = true)

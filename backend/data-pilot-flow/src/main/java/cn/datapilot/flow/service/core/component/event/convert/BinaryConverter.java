@@ -11,7 +11,7 @@ import java.util.Properties;
 /**
  * BinaryConverter
  *
- * @author dqw
+ * @author jinmu
  * @date 2025/1/8 11:56
  * @since 1.0.0
  */

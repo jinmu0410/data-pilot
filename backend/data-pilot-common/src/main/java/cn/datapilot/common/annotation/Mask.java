@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
 /**
  * 标记需要脱敏的字段
  *
- * @author 丁乾文
+ * @author jinmu
  * @date 2023/8/14 22:20
  * @since 1.0.0
  */
