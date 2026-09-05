@@ -14,10 +14,10 @@
       <div class="dialog-heading">
         <span class="engine-logo">DX</span>
         <div>
-          <div class="dialog-title">DataX 同步任务</div>
-          <div class="dialog-subtitle">配置数据读取、字段映射和写入策略</div>
+          <div class="dialog-title">{{ t('datax.title') }}</div>
+          <div class="dialog-subtitle">{{ t('datax.subtitle') }}</div>
         </div>
-        <span class="engine-tag">离线同步</span>
+        <span class="engine-tag">{{ t('datax.tag') }}</span>
       </div>
     </template>
 
@@ -36,17 +36,17 @@
         </button>
 
         <div class="task-summary">
-          <span class="summary-label">任务概览</span>
-          <strong>{{ config.name || '未命名任务' }}</strong>
+          <span class="summary-label">{{ t('task.overview') }}</span>
+          <strong>{{ config.name || t('task.unnamed') }}</strong>
           <div class="summary-flow">
-            <span>{{ sourceDatasource?.name || '源端待选择' }}</span>
+            <span>{{ sourceDatasource?.name || t('datax.sourcePending') }}</span>
             <i>→</i>
-            <span>{{ targetDatasource?.name || '目标端待选择' }}</span>
+            <span>{{ targetDatasource?.name || t('datax.targetPending') }}</span>
           </div>
           <div class="summary-meta">
-            <span>{{ config.readMode === 'query' ? '自定义 SQL' : '整表读取' }}</span>
-            <span>{{ completeMappings.length }} 个字段</span>
-            <span>{{ config.channel || 3 }} 并发</span>
+            <span>{{ config.readMode === 'query' ? t('datax.customSql') : t('datax.tableRead') }}</span>
+            <span>{{ t('datax.fieldCount', { n: completeMappings.length }) }}</span>
+            <span>{{ t('datax.channelCount', { n: config.channel || 3 }) }}</span>
           </div>
         </div>
       </aside>
@@ -54,33 +54,33 @@
       <main class="wizard-content">
         <section v-show="step === 0" class="step-panel">
           <div class="section-heading">
-            <div><span class="eyebrow">BASIC</span><h3>定义任务</h3></div>
-            <p>先描述这条同步链路，便于后续检索与运维。</p>
+            <div><span class="eyebrow">BASIC</span><h3>{{ t('task.defineTask') }}</h3></div>
+            <p>{{ t('datax.defineTaskDesc') }}</p>
           </div>
 
           <div class="form-card">
-            <label class="field-label">任务名称 <em>*</em></label>
-            <el-input v-model="config.name" maxlength="80" show-word-limit placeholder="例如：订单明细每日同步" size="large" />
-            <label class="field-label field-gap">任务描述</label>
+            <label class="field-label">{{ t('task.name') }} <em>*</em></label>
+            <el-input v-model="config.name" maxlength="80" show-word-limit :placeholder="t('datax.namePlaceholder')" size="large" />
+            <label class="field-label field-gap">{{ t('task.description') }}</label>
             <el-input
               v-model="config.description"
               type="textarea"
               :rows="3"
               maxlength="300"
               show-word-limit
-              placeholder="说明数据用途、同步范围或负责人（可选）"
+              :placeholder="t('datax.descriptionPlaceholder')"
             />
           </div>
 
           <div class="mode-grid">
             <button type="button" class="mode-card" :class="{ selected: config.readMode === 'table' }" @click="setReadMode('table')">
               <span class="mode-icon table-icon">▦</span>
-              <span><strong>整表同步</strong><small>选择源表，自动获取字段并生成读取 SQL</small></span>
+              <span><strong>{{ t('datax.tableSync') }}</strong><small>{{ t('datax.tableSyncDesc') }}</small></span>
               <i class="mode-check">✓</i>
             </button>
             <button type="button" class="mode-card" :class="{ selected: config.readMode === 'query' }" @click="setReadMode('query')">
               <span class="mode-icon sql-icon">SQL</span>
-              <span><strong>自定义 SQL</strong><small>通过查询、过滤和别名组织需要同步的数据</small></span>
+              <span><strong>{{ t('datax.customSql') }}</strong><small>{{ t('datax.customSqlDesc') }}</small></span>
               <i class="mode-check">✓</i>
             </button>
           </div>
@@ -88,21 +88,21 @@
 
         <section v-show="step === 1" class="step-panel">
           <div class="section-heading">
-            <div><span class="eyebrow">CONNECTION</span><h3>选择数据端点</h3></div>
-            <p>按数据源、库和表逐级选择，元数据会自动加载。</p>
+            <div><span class="eyebrow">CONNECTION</span><h3>{{ t('datax.selectEndpoint') }}</h3></div>
+            <p>{{ t('datax.selectEndpointDesc') }}</p>
           </div>
 
           <div class="endpoint-grid">
             <article class="endpoint-card source-card">
               <div class="endpoint-head">
                 <span class="endpoint-badge">01</span>
-                <div><strong>数据来源</strong><small>Reader</small></div>
-                <span class="endpoint-status" :class="{ ready: sourceDatasource }">{{ sourceDatasource ? '已选择' : '待配置' }}</span>
+                <div><strong>{{ t('datax.source') }}</strong><small>Reader</small></div>
+                <span class="endpoint-status" :class="{ ready: sourceDatasource }">{{ sourceDatasource ? t('datax.selected') : t('datax.pending') }}</span>
               </div>
-              <label class="field-label">源数据源 <em>*</em></label>
+              <label class="field-label">{{ t('datax.sourceDatasource') }} <em>*</em></label>
               <el-select
                 v-model="config.sourceDataSourceCode"
-                placeholder="请选择源数据源"
+                :placeholder="t('datax.sourceDatasourcePlaceholder')"
                 filterable
                 size="large"
                 @change="onDatasourceChange('source')"
@@ -110,20 +110,20 @@
                 <el-option v-for="ds in datasources" :key="ds.code" :label="`${ds.name} · ${ds.type}`" :value="ds.code" />
               </el-select>
               <template v-if="config.readMode === 'table'">
-                <label class="field-label field-gap">源库 / Schema</label>
+                <label class="field-label field-gap">{{ t('datax.sourceSchema') }}</label>
                 <el-select
                   v-model="config.sourceSchema"
-                  placeholder="请选择源库"
+                  :placeholder="t('datax.sourceSchemaPlaceholder')"
                   filterable
                   :loading="loading.sourceTree"
                   @change="onSchemaChange('source')"
                 >
                   <el-option v-for="item in sourceTree" :key="item.key" :label="item.label" :value="item.key" />
                 </el-select>
-                <label class="field-label field-gap">源表 <em>*</em></label>
+                <label class="field-label field-gap">{{ t('datax.sourceTable') }} <em>*</em></label>
                 <el-select
                   v-model="config.sourceTable"
-                  placeholder="请选择源表"
+                  :placeholder="t('datax.sourceTablePlaceholder')"
                   filterable
                   :disabled="!config.sourceSchema"
                   :loading="loading.sourceColumns"
@@ -132,41 +132,41 @@
                   <el-option v-for="item in sourceTables" :key="item.key" :label="item.label" :value="item.key" />
                 </el-select>
               </template>
-              <div v-else class="query-mode-hint">自定义 SQL 模式无需绑定源表，可在下一步编写查询。</div>
+              <div v-else class="query-mode-hint">{{ t('datax.queryModeHint') }}</div>
             </article>
 
-            <div class="flow-direction"><span>数据流向</span><i>→</i></div>
+            <div class="flow-direction"><span>{{ t('datax.dataFlow') }}</span><i>→</i></div>
 
             <article class="endpoint-card target-card">
               <div class="endpoint-head">
                 <span class="endpoint-badge">02</span>
-                <div><strong>写入目标</strong><small>Writer</small></div>
-                <span class="endpoint-status" :class="{ ready: targetDatasource }">{{ targetDatasource ? '已选择' : '待配置' }}</span>
+                <div><strong>{{ t('datax.target') }}</strong><small>Writer</small></div>
+                <span class="endpoint-status" :class="{ ready: targetDatasource }">{{ targetDatasource ? t('datax.selected') : t('datax.pending') }}</span>
               </div>
-              <label class="field-label">目标数据源 <em>*</em></label>
+              <label class="field-label">{{ t('datax.targetDatasource') }} <em>*</em></label>
               <el-select
                 v-model="config.targetDataSourceCode"
-                placeholder="请选择目标数据源"
+                :placeholder="t('datax.targetDatasourcePlaceholder')"
                 filterable
                 size="large"
                 @change="onDatasourceChange('target')"
               >
                 <el-option v-for="ds in datasources" :key="ds.code" :label="`${ds.name} · ${ds.type}`" :value="ds.code" />
               </el-select>
-              <label class="field-label field-gap">目标库 / Schema</label>
+              <label class="field-label field-gap">{{ t('datax.targetSchema') }}</label>
               <el-select
                 v-model="config.targetSchema"
-                placeholder="请选择目标库"
+                :placeholder="t('datax.targetSchemaPlaceholder')"
                 filterable
                 :loading="loading.targetTree"
                 @change="onSchemaChange('target')"
               >
                 <el-option v-for="item in targetTree" :key="item.key" :label="item.label" :value="item.key" />
               </el-select>
-              <label class="field-label field-gap">目标表 <em>*</em></label>
+              <label class="field-label field-gap">{{ t('datax.targetTable') }} <em>*</em></label>
               <el-select
                 v-model="config.targetTable"
-                placeholder="请选择目标表"
+                :placeholder="t('datax.targetTablePlaceholder')"
                 filterable
                 :disabled="!config.targetSchema"
                 :loading="loading.targetColumns"
@@ -180,32 +180,32 @@
 
         <section v-show="step === 2" class="step-panel mapping-panel">
           <div class="section-heading mapping-heading">
-            <div><span class="eyebrow">MAPPING</span><h3>配置读取与字段映射</h3></div>
+            <div><span class="eyebrow">MAPPING</span><h3>{{ t('datax.mappingTitle') }}</h3></div>
             <div class="mapping-actions">
-              <el-button :disabled="!sourceColumns.length || !targetColumns.length" @click="autoMap">智能匹配</el-button>
-              <el-button :disabled="!mappingRows.length" @click="clearMappings">清空</el-button>
-              <el-button type="primary" plain @click="addMapping">添加映射</el-button>
+              <el-button :disabled="!sourceColumns.length || !targetColumns.length" @click="autoMap">{{ t('datax.autoMap') }}</el-button>
+              <el-button :disabled="!mappingRows.length" @click="clearMappings">{{ t('datax.clear') }}</el-button>
+              <el-button type="primary" plain @click="addMapping">{{ t('datax.addMapping') }}</el-button>
             </div>
           </div>
 
           <div v-if="config.readMode === 'query'" class="sql-block">
-            <div class="block-title"><span>读取 SQL <em>*</em></span><small>建议使用 AS 别名与目标字段保持一致</small></div>
+            <div class="block-title"><span>{{ t('datax.readSql') }} <em>*</em></span><small>{{ t('datax.readSqlHint') }}</small></div>
             <SqlEditor v-model="config.sqlText" height="190px" />
           </div>
           <div v-else class="generated-query">
-            <div><strong>读取语句已自动生成</strong><span>{{ sourceQualifiedName }}</span></div>
-            <code>{{ config.sqlText || '选择源表后自动生成' }}</code>
+            <div><strong>{{ t('datax.queryGenerated') }}</strong><span>{{ sourceQualifiedName }}</span></div>
+            <code>{{ config.sqlText || t('datax.queryGeneratedPlaceholder') }}</code>
           </div>
 
           <div class="mapping-table-wrap">
             <div class="mapping-table-head">
-              <span>源字段</span><span class="map-center">映射</span><span>目标字段</span><span></span>
+              <span>{{ t('datax.sourceField') }}</span><span class="map-center">{{ t('datax.mapping') }}</span><span>{{ t('datax.targetField') }}</span><span></span>
             </div>
             <div v-if="mappingRows.length" class="mapping-list">
               <div v-for="(row, index) in mappingRows" :key="index" class="mapping-item">
                 <el-select
                   v-model="row.source"
-                  placeholder="选择或输入源字段"
+                  :placeholder="t('datax.sourceFieldPlaceholder')"
                   filterable
                   :allow-create="config.readMode === 'query'"
                   :default-first-option="config.readMode === 'query'"
@@ -214,45 +214,45 @@
                   <el-option v-for="column in sourceColumns" :key="column.name" :label="columnLabel(column)" :value="column.name" />
                 </el-select>
                 <span class="map-link"><i></i>→</span>
-                <el-select v-model="row.target" placeholder="选择目标字段" filterable @change="regenerateSql">
+                <el-select v-model="row.target" :placeholder="t('datax.targetFieldPlaceholder')" filterable @change="regenerateSql">
                   <el-option v-for="column in targetColumns" :key="column.name" :label="columnLabel(column)" :value="column.name" />
                 </el-select>
-                <el-button link type="danger" @click="removeMapping(index)">移除</el-button>
+                <el-button link type="danger" @click="removeMapping(index)">{{ t('datax.remove') }}</el-button>
               </div>
             </div>
             <div v-else class="mapping-empty">
               <span>⇄</span>
-              <strong>还没有字段映射</strong>
-              <p>选择源表和目标表后点击“智能匹配”，或手动添加映射。</p>
+              <strong>{{ t('datax.noMapping') }}</strong>
+              <p>{{ t('datax.noMappingHint') }}</p>
             </div>
           </div>
           <div class="mapping-footer">
-            <span><i class="dot ok"></i>已映射 {{ completeMappings.length }} 个</span>
-            <span><i class="dot"></i>源字段 {{ sourceColumns.length }} 个</span>
-            <span><i class="dot"></i>目标字段 {{ targetColumns.length }} 个</span>
+            <span><i class="dot ok"></i>{{ t('datax.mappedCount', { n: completeMappings.length }) }}</span>
+            <span><i class="dot"></i>{{ t('datax.sourceFieldCount', { n: sourceColumns.length }) }}</span>
+            <span><i class="dot"></i>{{ t('datax.targetFieldCount', { n: targetColumns.length }) }}</span>
           </div>
         </section>
 
         <section v-show="step === 3" class="step-panel">
           <div class="section-heading">
-            <div><span class="eyebrow">RUNTIME</span><h3>写入与运行策略</h3></div>
-            <p>使用稳妥默认值即可运行，也可以按数据规模细调。</p>
+            <div><span class="eyebrow">RUNTIME</span><h3>{{ t('datax.runtimeTitle') }}</h3></div>
+            <p>{{ t('datax.runtimeDesc') }}</p>
           </div>
 
           <div class="settings-grid">
             <article class="settings-card">
-              <div class="block-title"><span>写入策略</span><small>控制目标端写入行为</small></div>
-              <label class="field-label">写入模式</label>
+              <div class="block-title"><span>{{ t('datax.writeStrategy') }}</span><small>{{ t('datax.writeStrategyDesc') }}</small></div>
+              <label class="field-label">{{ t('datax.writeMode') }}</label>
               <el-select v-model="config.writeMode" size="large">
                 <el-option v-for="mode in writeModeOptions" :key="mode.value" :label="mode.label" :value="mode.value" />
               </el-select>
               <div v-if="!targetSupportsConflictMode" class="performance-tip">
-                {{ targetDatasource?.type || '当前目标端' }} 的 DataX Writer 仅开放 Insert 模式。
+                {{ t('datax.insertOnlyHint', { type: targetDatasource?.type || t('datax.target') }) }}
               </div>
               <div v-if="requiresConflictKey" class="conflict-card" :class="{ invalid: !conflictReady }">
                 <div class="conflict-title">
-                  <span>冲突判定约束</span>
-                  <em>{{ conflictReady ? '映射完整' : '需要处理' }}</em>
+                  <span>{{ t('datax.conflictConstraint') }}</span>
+                  <em>{{ conflictReady ? t('datax.mappingComplete') : t('datax.needProcess') }}</em>
                 </div>
                 <template v-if="conflictConstraints.length">
                   <div v-for="constraint in conflictConstraints" :key="constraint.name" class="constraint-row">
@@ -267,36 +267,36 @@
                       >{{ column }}</el-tag>
                     </div>
                   </div>
-                  <p>{{ targetDatasource?.type }} 根据主键或唯一索引自动判断冲突；至少保证一组约束字段全部参与映射。</p>
+                  <p>{{ t('datax.conflictDesc', { type: targetDatasource?.type }) }}</p>
                 </template>
-                <p v-else>目标表没有主键或唯一索引，{{ config.writeMode }} 无法判断需要更新或替换的记录。</p>
+                <p v-else>{{ t('datax.noConflictKey', { mode: config.writeMode }) }}</p>
               </div>
               <div class="number-row">
-                <div><label class="field-label">读取批次</label><el-input-number v-model="config.fetchSize" :min="1" :controls="false" placeholder="自动" /></div>
-                <div><label class="field-label">写入批次</label><el-input-number v-model="config.batchSize" :min="1" :controls="false" placeholder="自动" /></div>
+                <div><label class="field-label">{{ t('datax.fetchSize') }}</label><el-input-number v-model="config.fetchSize" :min="1" :controls="false" :placeholder="t('datax.auto')" /></div>
+                <div><label class="field-label">{{ t('datax.batchSize') }}</label><el-input-number v-model="config.batchSize" :min="1" :controls="false" :placeholder="t('datax.auto')" /></div>
               </div>
             </article>
 
             <article class="settings-card">
-              <div class="block-title"><span>性能与保护</span><small>控制并行度、限速与超时</small></div>
+              <div class="block-title"><span>{{ t('datax.performance') }}</span><small>{{ t('datax.performanceDesc') }}</small></div>
               <div class="number-row three">
-                <div><label class="field-label">并发通道</label><el-input-number v-model="config.channel" :min="1" :max="64" :controls="false" /></div>
-                <div><label class="field-label">超时（秒）</label><el-input-number v-model="config.timeout" :min="1" :max="86400" :controls="false" /></div>
-                <div><label class="field-label">记录/秒</label><el-input-number v-model="config.jobSpeedRecord" :min="1" :controls="false" placeholder="不限" /></div>
+                <div><label class="field-label">{{ t('datax.channel') }}</label><el-input-number v-model="config.channel" :min="1" :max="64" :controls="false" /></div>
+                <div><label class="field-label">{{ t('datax.timeout') }}</label><el-input-number v-model="config.timeout" :min="1" :max="86400" :controls="false" /></div>
+                <div><label class="field-label">{{ t('datax.recordPerSec') }}</label><el-input-number v-model="config.jobSpeedRecord" :min="1" :controls="false" :placeholder="t('datax.unlimited')" /></div>
               </div>
-              <label class="field-label field-gap">字节/秒</label>
-              <el-input-number v-model="config.jobSpeedByte" :min="1" :controls="false" placeholder="不限制传输字节速率" class="full-number" />
-              <div class="performance-tip">建议从 3 个并发通道开始，根据源库与目标库负载逐步提升。</div>
+              <label class="field-label field-gap">{{ t('datax.bytePerSec') }}</label>
+              <el-input-number v-model="config.jobSpeedByte" :min="1" :controls="false" :placeholder="t('datax.byteUnlimited')" class="full-number" />
+              <div class="performance-tip">{{ t('datax.channelHint') }}</div>
             </article>
           </div>
 
           <el-collapse class="sql-collapse">
             <el-collapse-item name="pre">
-              <template #title><strong>前置 SQL</strong><span>同步开始前在目标库执行</span></template>
+              <template #title><strong>{{ t('task.preSql') }}</strong><span>{{ t('datax.preSqlDesc') }}</span></template>
               <SqlEditor v-model="config.preSql" height="140px" />
             </el-collapse-item>
             <el-collapse-item name="post">
-              <template #title><strong>后置 SQL</strong><span>同步成功后在目标库执行</span></template>
+              <template #title><strong>{{ t('task.postSql') }}</strong><span>{{ t('datax.postSqlDesc') }}</span></template>
               <SqlEditor v-model="config.postSql" height="140px" />
             </el-collapse-item>
           </el-collapse>
@@ -306,26 +306,26 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button type="danger" link @click="emit('delete')">删除节点</el-button>
-        <el-button plain @click="preview">预览配置</el-button>
+        <el-button type="danger" link @click="emit('delete')">{{ t('task.deleteNode') }}</el-button>
+        <el-button plain @click="preview">{{ t('datax.preview') }}</el-button>
         <span class="footer-spacer"></span>
-        <el-button @click="cancelWithoutDone">取消</el-button>
-        <el-button v-if="step > 0" @click="step--">上一步</el-button>
-        <el-button v-if="step < steps.length - 1" type="primary" @click="next">下一步</el-button>
-        <el-button v-else type="primary" @click="apply">应用配置</el-button>
+        <el-button @click="cancelWithoutDone">{{ t('common.cancel') }}</el-button>
+        <el-button v-if="step > 0" @click="step--">{{ t('task.prev') }}</el-button>
+        <el-button v-if="step < steps.length - 1" type="primary" @click="next">{{ t('task.next') }}</el-button>
+        <el-button v-else type="primary" @click="apply">{{ t('task.apply') }}</el-button>
       </div>
     </template>
 
     <el-dialog
       v-model="previewVisible"
-      title="最终生成的配置"
+      :title="t('datax.previewTitle')"
       width="760px"
       top="6vh"
       append-to-body
       :close-on-click-modal="false"
     >
       <div class="preview-command">
-        <span>执行命令</span>
+        <span>{{ t('datax.previewCommand') }}</span>
         <code>{{ previewCommand.join(' ') }}</code>
       </div>
       <pre class="preview-json">{{ previewContent }}</pre>
@@ -335,6 +335,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import SqlEditor from '../../components/SqlEditor.vue'
 import { listSchemaTable, tableDetail, type SchemaTableMap, type TableColumn, type TableIndex } from '../../api/datasource'
@@ -360,12 +361,14 @@ const emit = defineEmits<{
   (event: 'closed'): void
 }>()
 
-const steps = [
-  { title: '基础信息', description: '名称与读取方式' },
-  { title: '数据端点', description: '来源与写入目标' },
-  { title: '字段映射', description: '读取 SQL 与列映射' },
-  { title: '运行策略', description: '性能、限流与 SQL' }
-]
+const { t } = useI18n()
+
+const steps = computed(() => [
+  { title: t('datax.stepBasic'), description: t('datax.stepBasicDesc') },
+  { title: t('datax.stepEndpoint'), description: t('datax.stepEndpointDesc') },
+  { title: t('datax.stepMapping'), description: t('datax.stepMappingDesc') },
+  { title: t('datax.stepRuntime'), description: t('datax.stepRuntimeDesc') }
+])
 
 const step = ref(0)
 const snapshot = ref('')
@@ -399,11 +402,11 @@ const targetDatasource = computed(() => props.datasources.find((item) => item.co
 const targetSupportsConflictMode = computed(() => ['mysql', 'tidb'].includes(targetDatasource.value?.type?.toLowerCase() ?? ''))
 const writeModeOptions = computed(() => targetSupportsConflictMode.value
   ? [
-      { label: 'Insert · 直接插入，冲突时报错', value: 'insert' },
-      { label: 'Replace · 按主键/唯一键替换整行', value: 'replace' },
-      { label: 'Update · 冲突时更新映射字段', value: 'update' }
+      { label: t('datax.writeModeInsert'), value: 'insert' },
+      { label: t('datax.writeModeReplace'), value: 'replace' },
+      { label: t('datax.writeModeUpdate'), value: 'update' }
     ]
-  : [{ label: 'Insert · 直接插入', value: 'insert' }]
+  : [{ label: t('datax.writeModeInsertSimple'), value: 'insert' }]
 )
 const sourceTables = computed(() => sourceTree.value.find((item) => item.key === props.config.sourceSchema)?.children ?? [])
 const targetTables = computed(() => targetTree.value.find((item) => item.key === props.config.targetSchema)?.children ?? [])
@@ -417,17 +420,17 @@ const requiresConflictKey = computed(() => targetSupportsConflictMode.value && [
 const conflictConstraints = computed(() => {
   const result: { name: string; label: string; columns: string[] }[] = []
   const primaryColumns = targetColumns.value.filter((column) => column.primaryKey).map((column) => column.name)
-  if (primaryColumns.length) result.push({ name: 'PRIMARY', label: '主键', columns: primaryColumns })
+  if (primaryColumns.length) result.push({ name: 'PRIMARY', label: t('datax.primaryKey'), columns: primaryColumns })
   for (const index of targetIndexes.value.filter((item) => item.unique && item.columns?.length)) {
     if (index.columns.join('\u0000') === primaryColumns.join('\u0000')) continue
-    result.push({ name: index.name, label: `唯一索引 ${index.name}`, columns: index.columns })
+    result.push({ name: index.name, label: t('datax.uniqueIndex', { name: index.name }), columns: index.columns })
   }
   return result
 })
 const conflictReady = computed(() => conflictConstraints.value.some((constraint) =>
   constraint.columns.every((column) => mappedTargetColumns.value.has(column))
 ))
-const sourceQualifiedName = computed(() => [props.config.sourceSchema, props.config.sourceTable].filter(Boolean).join('.') || '尚未选择源表')
+const sourceQualifiedName = computed(() => [props.config.sourceSchema, props.config.sourceTable].filter(Boolean).join('.') || t('datax.noSourceTable'))
 
 watch(
   () => props.modelValue,
@@ -595,22 +598,22 @@ function columnLabel(column: TableColumn) {
 
 function validate(targetStep: number, quiet = false) {
   let message = ''
-  if (targetStep === 0 && !String(props.config.name || '').trim()) message = '请填写任务名称'
+  if (targetStep === 0 && !String(props.config.name || '').trim()) message = t('datax.nameRequired')
   if (targetStep === 1) {
-    if (!props.config.sourceDataSourceCode) message = '请选择源数据源'
-    else if (props.config.readMode === 'table' && !props.config.sourceTable) message = '请选择源表'
-    else if (!props.config.targetDataSourceCode) message = '请选择目标数据源'
-    else if (!props.config.targetTable) message = '请选择目标表'
+    if (!props.config.sourceDataSourceCode) message = t('datax.sourceDatasourceRequired')
+    else if (props.config.readMode === 'table' && !props.config.sourceTable) message = t('datax.sourceTableRequired')
+    else if (!props.config.targetDataSourceCode) message = t('datax.targetDatasourceRequired')
+    else if (!props.config.targetTable) message = t('datax.targetTableRequired')
   }
   if (targetStep === 2) {
-    if (!String(props.config.sqlText || '').trim()) message = '请配置读取 SQL'
-    else if (!completeMappings.value.length) message = '请至少配置一个完整的字段映射'
+    if (!String(props.config.sqlText || '').trim()) message = t('datax.readSqlRequired')
+    else if (!completeMappings.value.length) message = t('datax.mappingRequired')
   }
   if (targetStep === 3) {
-    if (!props.config.channel || props.config.channel < 1) message = '并发通道必须大于 0'
-    else if (!props.config.timeout || props.config.timeout < 1) message = '超时时间必须大于 0'
-    else if (requiresConflictKey.value && !conflictConstraints.value.length) message = '目标表需要主键或唯一索引才能使用更新/替换模式'
-    else if (requiresConflictKey.value && !conflictReady.value) message = '请将至少一组主键或唯一索引字段完整加入字段映射'
+    if (!props.config.channel || props.config.channel < 1) message = t('datax.channelPositive')
+    else if (!props.config.timeout || props.config.timeout < 1) message = t('datax.timeoutPositive')
+    else if (requiresConflictKey.value && !conflictConstraints.value.length) message = t('datax.conflictKeyRequired')
+    else if (requiresConflictKey.value && !conflictReady.value) message = t('datax.conflictMappingRequired')
   }
   if (message && !quiet) ElMessage.warning(message)
   return !message
@@ -636,7 +639,7 @@ function next() {
 }
 
 function apply() {
-  for (let index = 0; index < steps.length; index++) {
+  for (let index = 0; index < steps.value.length; index++) {
     if (!validate(index)) {
       step.value = index
       return
@@ -647,7 +650,7 @@ function apply() {
   regenerateSql()
   snapshot.value = JSON.stringify(props.config)
   emit('update:modelValue', false)
-  ElMessage.success('DataX 节点配置已应用')
+  ElMessage.success(t('datax.applied'))
 }
 
 function restoreSnapshot() {

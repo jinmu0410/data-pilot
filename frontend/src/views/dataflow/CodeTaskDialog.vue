@@ -36,16 +36,16 @@
         </button>
 
         <div class="task-summary">
-          <span class="summary-label">任务概览</span>
-          <strong>{{ config.name || '未命名任务' }}</strong>
+          <span class="summary-label">{{ t('task.overview') }}</span>
+          <strong>{{ config.name || t('task.unnamed') }}</strong>
           <div class="summary-engine">
             <span class="summary-logo" :class="`is-${type.toLowerCase()}`">{{ engine.logo }}</span>
             <div><b>{{ engine.runtime }}</b><small>{{ executionMode }}</small></div>
           </div>
           <div class="summary-meta">
-            <span v-if="isSql">{{ datasource?.name || '数据源待选择' }}</span>
-            <span>{{ codeLines }} 行代码</span>
-            <span>{{ config.timeout || 30 }} 秒超时</span>
+            <span v-if="isSql">{{ datasource?.name || t('task.datasourcePending') }}</span>
+            <span>{{ t('task.codeLines', { n: codeLines }) }}</span>
+            <span>{{ t('task.timeoutSec', { n: config.timeout || 30 }) }}</span>
           </div>
         </div>
       </aside>
@@ -53,21 +53,21 @@
       <main class="wizard-content">
         <section v-show="step === 0" class="step-panel">
           <div class="section-heading">
-            <div><span class="eyebrow">BASIC</span><h3>定义任务</h3></div>
-            <p>补充清晰的名称和用途说明，方便任务检索、编排与运维。</p>
+            <div><span class="eyebrow">BASIC</span><h3>{{ t('task.defineTask') }}</h3></div>
+            <p>{{ t('task.defineTaskDesc') }}</p>
           </div>
 
           <div class="form-card">
-            <label class="field-label">任务名称 <em>*</em></label>
+            <label class="field-label">{{ t('task.name') }} <em>*</em></label>
             <el-input v-model="config.name" maxlength="80" show-word-limit :placeholder="namePlaceholder" size="large" />
-            <label class="field-label field-gap">任务描述</label>
+            <label class="field-label field-gap">{{ t('task.description') }}</label>
             <el-input
               v-model="config.description"
               type="textarea"
               :rows="4"
               maxlength="300"
               show-word-limit
-              placeholder="说明任务用途、处理范围或负责人（可选）"
+              :placeholder="t('task.descriptionPlaceholder')"
             />
           </div>
 
@@ -81,31 +81,31 @@
         <section v-show="step === 1" class="step-panel">
           <template v-if="isSql">
             <div class="section-heading">
-              <div><span class="eyebrow">CONNECTION</span><h3>选择数据源</h3></div>
-              <p>指定 SQL 执行连接和语句类型，运行时将使用对应的数据源配置。</p>
+              <div><span class="eyebrow">CONNECTION</span><h3>{{ t('task.selectDatasource') }}</h3></div>
+              <p>{{ t('task.sqlConnDesc') }}</p>
             </div>
 
             <div class="connection-grid">
               <article class="connection-card">
-                <div class="card-heading"><span class="card-number">01</span><div><strong>执行数据源</strong><small>Connection</small></div></div>
-                <label class="field-label">数据源 <em>*</em></label>
-                <el-select v-model="config.datasourceCode" placeholder="请选择数据源" filterable size="large">
+                <div class="card-heading"><span class="card-number">01</span><div><strong>{{ t('task.execDatasource') }}</strong><small>Connection</small></div></div>
+                <label class="field-label">{{ t('task.dataSource') }} <em>*</em></label>
+                <el-select v-model="config.datasourceCode" :placeholder="t('task.selectDatasourcePlaceholder')" filterable size="large">
                   <el-option v-for="item in datasources" :key="item.code" :label="`${item.name} · ${item.type}`" :value="item.code" />
                 </el-select>
                 <div class="connection-status" :class="{ ready: datasource }">
                   <i></i>
-                  <span>{{ datasource ? `${datasource.name}（${datasource.type}）已就绪` : '选择已启用的数据源后继续' }}</span>
+                  <span>{{ datasource ? t('task.datasourceReady', { name: datasource.name, type: datasource.type }) : t('task.datasourceContinue') }}</span>
                 </div>
               </article>
 
               <article class="connection-card">
-                <div class="card-heading"><span class="card-number purple">02</span><div><strong>语句类型</strong><small>Statement mode</small></div></div>
+                <div class="card-heading"><span class="card-number purple">02</span><div><strong>{{ t('task.statementType') }}</strong><small>Statement mode</small></div></div>
                 <div class="mode-list">
                   <button type="button" class="mode-card" :class="{ selected: config.sqlType === 'QUERY' }" @click="config.sqlType = 'QUERY'">
-                    <span class="mode-symbol">Q</span><span><strong>查询语句</strong><small>SELECT、WITH 等返回结果集的语句</small></span><i>✓</i>
+                    <span class="mode-symbol">Q</span><span><strong>{{ t('task.queryStatement') }}</strong><small>{{ t('task.queryStatementDesc') }}</small></span><i>✓</i>
                   </button>
                   <button type="button" class="mode-card" :class="{ selected: config.sqlType === 'NON_QUERY' }" @click="config.sqlType = 'NON_QUERY'">
-                    <span class="mode-symbol action">DML</span><span><strong>非查询语句</strong><small>DDL、INSERT、UPDATE、DELETE 等操作</small></span><i>✓</i>
+                    <span class="mode-symbol action">DML</span><span><strong>{{ t('task.nonQueryStatement') }}</strong><small>{{ t('task.nonQueryStatementDesc') }}</small></span><i>✓</i>
                   </button>
                 </div>
               </article>
@@ -114,8 +114,8 @@
 
           <template v-else>
             <div class="section-heading code-heading">
-              <div><span class="eyebrow">SCRIPT</span><h3>编写{{ engine.shortName }}脚本</h3></div>
-              <div class="code-stats"><span>{{ codeLines }} 行</span><span>{{ codeCharacters }} 字符</span></div>
+              <div><span class="eyebrow">SCRIPT</span><h3>{{ t('task.writeScript', { name: engine.shortName }) }}</h3></div>
+              <div class="code-stats"><span>{{ t('task.lines', { n: codeLines }) }}</span><span>{{ t('task.chars', { n: codeCharacters }) }}</span></div>
             </div>
             <div class="editor-card">
               <div class="editor-toolbar">
@@ -125,15 +125,15 @@
               </div>
               <SqlEditor v-model="config.script" :language="editorLanguage" height="410px" />
             </div>
-            <div class="code-tip"><strong>编写提示</strong><span>{{ engine.codeTip }}</span></div>
+            <div class="code-tip"><strong>{{ t('task.writeTip') }}</strong><span>{{ engine.codeTip }}</span></div>
           </template>
         </section>
 
         <section v-show="step === 2" class="step-panel">
           <template v-if="isSql">
             <div class="section-heading code-heading">
-              <div><span class="eyebrow">STATEMENT</span><h3>编写 SQL 逻辑</h3></div>
-              <div class="code-actions"><span>{{ codeLines }} 行</span><el-button size="small" @click="formatSql">格式化 SQL</el-button></div>
+              <div><span class="eyebrow">STATEMENT</span><h3>{{ t('task.writeSql') }}</h3></div>
+              <div class="code-actions"><span>{{ t('task.lines', { n: codeLines }) }}</span><el-button size="small" @click="formatSql">{{ t('task.formatSql') }}</el-button></div>
             </div>
             <div class="editor-card sql-main-editor">
               <div class="editor-toolbar">
@@ -144,10 +144,10 @@
               <SqlEditor ref="sqlEditorRef" v-model="config.sqlText" language="sql" height="330px" />
             </div>
             <div class="parameter-card">
-              <div class="block-title"><span>SQL 参数</span><small>在 SQL 中使用 ${key} 引用，多个参数用分号分隔</small></div>
-              <el-input v-model="config.sqlParams" placeholder="例如：biz_date=2026-09-04;tenant_id=1001" size="large" clearable />
+              <div class="block-title"><span>{{ t('task.sqlParams') }}</span><small>{{ t('task.sqlParamsDesc') }}</small></div>
+              <el-input v-model="config.sqlParams" :placeholder="t('task.sqlParamsPlaceholder')" size="large" clearable />
               <div class="parameter-preview">
-                <span v-if="!sqlParameters.length">暂未配置参数</span>
+                <span v-if="!sqlParameters.length">{{ t('task.noParams') }}</span>
                 <el-tag v-for="item in sqlParameters" :key="item" size="small" effect="plain">{{ item }}</el-tag>
               </div>
             </div>
@@ -155,69 +155,69 @@
 
           <template v-else>
             <div class="section-heading">
-              <div><span class="eyebrow">RUNTIME</span><h3>设置运行策略</h3></div>
-              <p>通过执行超时限制异常脚本占用资源的时间。</p>
+              <div><span class="eyebrow">RUNTIME</span><h3>{{ t('task.runtimeStrategy') }}</h3></div>
+              <p>{{ t('task.runtimeStrategyDesc') }}</p>
             </div>
             <div class="runtime-grid">
               <article class="settings-card">
-                <div class="block-title"><span>执行保护</span><small>Runtime guard</small></div>
-                <label class="field-label">超时时间（秒） <em>*</em></label>
+                <div class="block-title"><span>{{ t('task.runtimeGuard') }}</span><small>Runtime guard</small></div>
+                <label class="field-label">{{ t('task.timeoutSeconds') }} <em>*</em></label>
                 <el-input-number v-model="config.timeout" :min="1" :max="86400" :controls="false" class="full-number" />
-                <div class="range-hints"><button type="button" @click="config.timeout = 30">30 秒</button><button type="button" @click="config.timeout = 300">5 分钟</button><button type="button" @click="config.timeout = 1800">30 分钟</button></div>
+                <div class="range-hints"><button type="button" @click="config.timeout = 30">{{ t('task.sec30') }}</button><button type="button" @click="config.timeout = 300">{{ t('task.min5') }}</button><button type="button" @click="config.timeout = 1800">{{ t('task.min30') }}</button></div>
               </article>
               <article class="settings-card command-card">
-                <div class="block-title"><span>执行方式</span><small>Command preview</small></div>
+                <div class="block-title"><span>{{ t('task.execMode') }}</span><small>Command preview</small></div>
                 <div class="command-preview"><span>$</span><code>{{ commandPreview }}</code></div>
-                <p>任务运行时会生成临时脚本文件，并由平台的脚本执行器拉起独立进程。</p>
+                <p>{{ t('task.execModeDesc') }}</p>
               </article>
             </div>
-            <div class="safety-card"><span>✓</span><div><strong>运行隔离</strong><p>任务支持超时终止并记录标准输出与错误日志，不需要在脚本中重复实现超时控制。</p></div></div>
+            <div class="safety-card"><span>✓</span><div><strong>{{ t('task.isolation') }}</strong><p>{{ t('task.isolationDesc') }}</p></div></div>
           </template>
         </section>
 
         <section v-show="step === 3" class="step-panel">
           <template v-if="isSql">
             <div class="section-heading">
-              <div><span class="eyebrow">RUNTIME</span><h3>运行与扩展配置</h3></div>
-              <p>设置超时保护，并按需配置主 SQL 前后的辅助语句。</p>
+              <div><span class="eyebrow">RUNTIME</span><h3>{{ t('task.runtimeExt') }}</h3></div>
+              <p>{{ t('task.runtimeExtDesc') }}</p>
             </div>
             <div class="runtime-grid sql-runtime-grid">
               <article class="settings-card">
-                <div class="block-title"><span>执行保护</span><small>Runtime guard</small></div>
-                <label class="field-label">超时时间（秒） <em>*</em></label>
+                <div class="block-title"><span>{{ t('task.runtimeGuard') }}</span><small>Runtime guard</small></div>
+                <label class="field-label">{{ t('task.timeoutSeconds') }} <em>*</em></label>
                 <el-input-number v-model="config.timeout" :min="1" :max="86400" :controls="false" class="full-number" />
-                <div class="performance-tip">查询和数据变更都会受到超时限制，建议根据数据量设置合理上限。</div>
+                <div class="performance-tip">{{ t('task.performanceTip') }}</div>
               </article>
               <article class="settings-card review-card">
-                <div class="block-title"><span>配置摘要</span><small>Ready check</small></div>
-                <div class="review-line"><span>数据源</span><strong>{{ datasource?.name || '未选择' }}</strong></div>
-                <div class="review-line"><span>语句类型</span><strong>{{ executionMode }}</strong></div>
-                <div class="review-line"><span>SQL 行数</span><strong>{{ codeLines }} 行</strong></div>
-                <div class="review-line"><span>参数数量</span><strong>{{ sqlParameters.length }} 个</strong></div>
+                <div class="block-title"><span>{{ t('task.configSummary') }}</span><small>Ready check</small></div>
+                <div class="review-line"><span>{{ t('task.dataSource') }}</span><strong>{{ datasource?.name || t('task.notSelected') }}</strong></div>
+                <div class="review-line"><span>{{ t('task.statementType') }}</span><strong>{{ executionMode }}</strong></div>
+                <div class="review-line"><span>{{ t('task.sqlLines') }}</span><strong>{{ t('task.lines', { n: codeLines }) }}</strong></div>
+                <div class="review-line"><span>{{ t('task.paramCount') }}</span><strong>{{ t('task.countUnit', { n: sqlParameters.length }) }}</strong></div>
               </article>
             </div>
             <el-collapse class="sql-collapse">
-              <el-collapse-item name="pre"><template #title><strong>前置 SQL</strong><span>主 SQL 执行前运行</span></template><SqlEditor v-model="config.preSql" language="sql" height="145px" /></el-collapse-item>
-              <el-collapse-item name="post"><template #title><strong>后置 SQL</strong><span>主 SQL 成功后运行</span></template><SqlEditor v-model="config.postSql" language="sql" height="145px" /></el-collapse-item>
+              <el-collapse-item name="pre"><template #title><strong>{{ t('task.preSql') }}</strong><span>{{ t('task.preSqlDesc') }}</span></template><SqlEditor v-model="config.preSql" language="sql" height="145px" /></el-collapse-item>
+              <el-collapse-item name="post"><template #title><strong>{{ t('task.postSql') }}</strong><span>{{ t('task.postSqlDesc') }}</span></template><SqlEditor v-model="config.postSql" language="sql" height="145px" /></el-collapse-item>
             </el-collapse>
           </template>
 
           <template v-else>
             <div class="section-heading">
-              <div><span class="eyebrow">REVIEW</span><h3>确认任务配置</h3></div>
-              <p>检查任务信息和脚本摘要，应用后即可在画布中建立依赖。</p>
+              <div><span class="eyebrow">REVIEW</span><h3>{{ t('task.reviewConfig') }}</h3></div>
+              <p>{{ t('task.reviewConfigDesc') }}</p>
             </div>
             <div class="review-layout">
               <article class="review-overview">
                 <span class="review-logo" :class="`is-${type.toLowerCase()}`">{{ engine.logo }}</span>
-                <div><small>{{ engine.tag }}</small><strong>{{ config.name || '未命名任务' }}</strong><p>{{ config.description || '暂无任务描述' }}</p></div>
+                <div><small>{{ engine.tag }}</small><strong>{{ config.name || t('task.unnamed') }}</strong><p>{{ config.description || t('task.noDescription') }}</p></div>
               </article>
               <div class="review-metrics">
-                <div><strong>{{ codeLines }}</strong><span>脚本行数</span></div>
-                <div><strong>{{ codeCharacters }}</strong><span>字符数量</span></div>
-                <div><strong>{{ config.timeout || 30 }}s</strong><span>执行超时</span></div>
+                <div><strong>{{ codeLines }}</strong><span>{{ t('task.scriptLines') }}</span></div>
+                <div><strong>{{ codeCharacters }}</strong><span>{{ t('task.charCount') }}</span></div>
+                <div><strong>{{ config.timeout || 30 }}s</strong><span>{{ t('task.execTimeout') }}</span></div>
               </div>
-              <div class="script-preview"><div><span>{{ scriptFilename }}</span><em>只读预览</em></div><pre>{{ scriptPreview }}</pre></div>
+              <div class="script-preview"><div><span>{{ scriptFilename }}</span><em>{{ t('task.readonlyPreview') }}</em></div><pre>{{ scriptPreview }}</pre></div>
             </div>
           </template>
         </section>
@@ -226,12 +226,12 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button type="danger" link @click="emit('delete')">删除节点</el-button>
+        <el-button type="danger" link @click="emit('delete')">{{ t('task.deleteNode') }}</el-button>
         <span class="footer-spacer"></span>
-        <el-button @click="cancelWithoutDone">取消</el-button>
-        <el-button v-if="step > 0" @click="step--">上一步</el-button>
-        <el-button v-if="step < steps.length - 1" type="primary" @click="next">下一步</el-button>
-        <el-button v-else type="primary" @click="apply">应用配置</el-button>
+        <el-button @click="cancelWithoutDone">{{ t('common.cancel') }}</el-button>
+        <el-button v-if="step > 0" @click="step--">{{ t('task.prev') }}</el-button>
+        <el-button v-if="step < steps.length - 1" type="primary" @click="next">{{ t('task.next') }}</el-button>
+        <el-button v-else type="primary" @click="apply">{{ t('task.apply') }}</el-button>
       </div>
     </template>
   </el-dialog>
@@ -239,6 +239,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import SqlEditor from '../../components/SqlEditor.vue'
 import type { NodeConfig } from './nodes'
@@ -263,6 +264,7 @@ const emit = defineEmits<{
   (event: 'closed'): void
 }>()
 
+const { t } = useI18n()
 const step = ref(0)
 const snapshot = ref('')
 const sqlEditorRef = ref<{ format: () => void }>()
@@ -270,33 +272,33 @@ const isSql = computed(() => props.type === 'SQL')
 const editorLanguage = computed(() => props.type === 'PYTHON' ? 'python' : 'shell')
 const steps = computed(() => isSql.value
   ? [
-      { title: '基础信息', description: '名称与任务说明' },
-      { title: '数据连接', description: '数据源与语句类型' },
-      { title: 'SQL 逻辑', description: '语句与动态参数' },
-      { title: '运行配置', description: '超时与前后置 SQL' }
+      { title: t('task.stepBasic'), description: t('task.stepBasicDesc') },
+      { title: t('task.stepConn'), description: t('task.stepConnDesc') },
+      { title: t('task.stepSql'), description: t('task.stepSqlDesc') },
+      { title: t('task.stepRuntime'), description: t('task.stepRuntimeDesc') }
     ]
   : [
-      { title: '基础信息', description: '名称与任务说明' },
-      { title: '脚本内容', description: `${props.type === 'PYTHON' ? 'Python' : 'Shell'} 代码` },
-      { title: '运行配置', description: '超时与执行方式' },
-      { title: '确认配置', description: '检查任务摘要' }
+      { title: t('task.stepBasic'), description: t('task.stepBasicDesc') },
+      { title: t('task.stepScript'), description: props.type === 'PYTHON' ? t('task.stepScriptDescPython') : t('task.stepScriptDescShell') },
+      { title: t('task.stepRuntime'), description: t('task.stepRuntimeScriptDesc') },
+      { title: t('task.stepReview'), description: t('task.stepReviewDesc') }
     ])
 
 const engine = computed(() => {
   if (props.type === 'SQL') return {
-    logo: 'SQL', title: 'SQL 任务', shortName: 'SQL', tag: '数据库任务', runtime: 'SQL Engine',
-    subtitle: '配置数据连接、SQL 逻辑和执行策略', introduction: '在指定数据源上执行查询、数据变更或 DDL 语句。',
+    logo: 'SQL', title: t('task.engineSqlTitle'), shortName: 'SQL', tag: t('task.engineSqlTag'), runtime: t('task.engineSqlRuntime'),
+    subtitle: t('task.engineSqlSubtitle'), introduction: t('task.engineSqlIntro'),
     codeTip: ''
   }
   if (props.type === 'PYTHON') return {
-    logo: 'PY', title: 'Python 脚本任务', shortName: 'Python', tag: '脚本任务', runtime: 'Python Runtime',
-    subtitle: '编写 Python 脚本并配置运行保护', introduction: '适用于数据处理、接口调用、文件计算等通用自动化任务。',
-    codeTip: '可使用标准输出记录关键进度；异常退出将自动标记任务失败。'
+    logo: 'PY', title: t('task.enginePythonTitle'), shortName: 'Python', tag: t('task.enginePythonTag'), runtime: t('task.enginePythonRuntime'),
+    subtitle: t('task.enginePythonSubtitle'), introduction: t('task.enginePythonIntro'),
+    codeTip: t('task.enginePythonCodeTip')
   }
   return {
-    logo: 'SH', title: 'Shell 脚本任务', shortName: 'Shell', tag: '脚本任务', runtime: 'Shell Runtime',
-    subtitle: '编写 Shell 脚本并配置运行保护', introduction: '适用于系统命令、文件处理和已有工具链的自动化编排。',
-    codeTip: '建议开启严格模式并对关键命令检查退出码，避免错误被后续命令覆盖。'
+    logo: 'SH', title: t('task.engineShellTitle'), shortName: 'Shell', tag: t('task.engineShellTag'), runtime: t('task.engineShellRuntime'),
+    subtitle: t('task.engineShellSubtitle'), introduction: t('task.engineShellIntro'),
+    codeTip: t('task.engineShellCodeTip')
   }
 })
 
@@ -306,15 +308,15 @@ const codeLines = computed(() => code.value.trim() ? code.value.split(/\r?\n/).l
 const codeCharacters = computed(() => code.value.length)
 const sqlParameters = computed(() => String(props.config.sqlParams || '').split(';').map((item) => item.trim()).filter(Boolean))
 const executionMode = computed(() => isSql.value
-  ? (props.config.sqlType === 'NON_QUERY' ? '非查询语句' : '查询语句')
-  : `${engine.value.shortName} 脚本`)
+  ? (props.config.sqlType === 'NON_QUERY' ? t('task.nonQueryStatement') : t('task.queryStatement'))
+  : t('task.scriptType', { name: engine.value.shortName }))
 const scriptFilename = computed(() => props.type === 'PYTHON' ? 'task.py' : 'task.sh')
 const commandPreview = computed(() => props.type === 'PYTHON' ? 'python3 task.py' : '/bin/sh task.sh')
-const scriptPreview = computed(() => code.value.trim() || '# 暂无脚本内容')
+const scriptPreview = computed(() => code.value.trim() || t('task.noScriptContent'))
 const namePlaceholder = computed(() => {
-  if (props.type === 'SQL') return '例如：每日订单指标汇总'
-  if (props.type === 'PYTHON') return '例如：清洗用户行为日志'
-  return '例如：归档每日数据文件'
+  if (props.type === 'SQL') return t('task.namePlaceholderSql')
+  if (props.type === 'PYTHON') return t('task.namePlaceholderPython')
+  return t('task.namePlaceholderShell')
 })
 
 watch(
@@ -344,14 +346,14 @@ function initializeDefaults() {
 
 function validate(targetStep: number, quiet = false) {
   let message = ''
-  if (targetStep === 0 && !String(props.config.name || '').trim()) message = '请填写任务名称'
+  if (targetStep === 0 && !String(props.config.name || '').trim()) message = t('task.nameRequired')
   if (isSql.value) {
-    if (targetStep === 1 && !props.config.datasourceCode) message = '请选择执行数据源'
-    if (targetStep === 2 && !String(props.config.sqlText || '').trim()) message = '请填写 SQL 语句'
-    if (targetStep === 3 && (!props.config.timeout || props.config.timeout < 1)) message = '超时时间必须大于 0'
+    if (targetStep === 1 && !props.config.datasourceCode) message = t('task.datasourceRequired')
+    if (targetStep === 2 && !String(props.config.sqlText || '').trim()) message = t('task.sqlRequired')
+    if (targetStep === 3 && (!props.config.timeout || props.config.timeout < 1)) message = t('task.timeoutPositive')
   } else {
-    if (targetStep === 1 && !String(props.config.script || '').trim()) message = `请填写${engine.value.shortName}脚本`
-    if (targetStep === 2 && (!props.config.timeout || props.config.timeout < 1)) message = '超时时间必须大于 0'
+    if (targetStep === 1 && !String(props.config.script || '').trim()) message = t('task.scriptRequired', { name: engine.value.shortName })
+    if (targetStep === 2 && (!props.config.timeout || props.config.timeout < 1)) message = t('task.timeoutPositive')
   }
   if (message && !quiet) ElMessage.warning(message)
   return !message
@@ -390,7 +392,7 @@ function apply() {
   props.config.name = String(props.config.name).trim()
   snapshot.value = JSON.stringify(props.config)
   emit('update:modelValue', false)
-  ElMessage.success(`${engine.value.title}配置已应用`)
+  ElMessage.success(t('task.applied', { title: engine.value.title }))
 }
 
 function restoreSnapshot() {

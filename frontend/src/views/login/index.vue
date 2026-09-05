@@ -4,16 +4,16 @@
       <div class="brand-noise" />
       <div class="brand-head">
         <span class="brand-mark"><i /><i /><i /><i /></span>
-        <span><strong>DataPilot</strong><small>数据中台</small></span>
+        <span><strong>DataPilot</strong><small>{{ t('login.brandSub') }}</small></span>
       </div>
       <div class="brand-message">
         <span class="message-label">DATA OPERATING SYSTEM</span>
-        <h1>让每一份数据<br><em>连接、流动、创造价值</em></h1>
-        <p>统一数据连接、任务编排和服务发布，用更清晰的方式掌控整个数据生命周期。</p>
+        <h1>{{ t('login.tagline1') }}<br><em>{{ t('login.tagline2') }}</em></h1>
+        <p>{{ t('login.taglineDesc') }}</p>
         <div class="feature-row">
-          <span><el-icon><Connection /></el-icon>多源连接</span>
-          <span><el-icon><Operation /></el-icon>可视编排</span>
-          <span><el-icon><DataAnalysis /></el-icon>服务发布</span>
+          <span><el-icon><Connection /></el-icon>{{ t('login.featureConnect') }}</span>
+          <span><el-icon><Operation /></el-icon>{{ t('login.featureOrchestrate') }}</span>
+          <span><el-icon><DataAnalysis /></el-icon>{{ t('login.featurePublish') }}</span>
         </div>
       </div>
       <div class="data-visual" aria-hidden="true">
@@ -33,18 +33,18 @@
       <div class="login-card">
         <div class="login-header">
           <span class="welcome-pill"><i /> WELCOME BACK</span>
-          <h2>登录数据工作台</h2>
-          <p>使用你的平台账号继续</p>
+          <h2>{{ t('login.title') }}</h2>
+          <p>{{ t('login.subtitle') }}</p>
         </div>
         <el-form :model="form" label-position="top" @submit.prevent="handleLogin">
-          <el-form-item label="用户名">
-            <el-input v-model="form.account" placeholder="请输入用户名" size="large" :prefix-icon="User" autocomplete="username" />
+          <el-form-item :label="t('login.username')">
+            <el-input v-model="form.account" :placeholder="t('login.usernamePlaceholder')" size="large" :prefix-icon="User" autocomplete="username" />
           </el-form-item>
-          <el-form-item label="密码">
+          <el-form-item :label="t('login.password')">
             <el-input
               v-model="form.password"
               type="password"
-              placeholder="请输入密码"
+              :placeholder="t('login.passwordPlaceholder')"
               size="large"
               :prefix-icon="Lock"
               autocomplete="current-password"
@@ -53,15 +53,15 @@
             />
           </el-form-item>
           <div class="form-options">
-            <el-checkbox v-model="remember">记住账号</el-checkbox>
-            <span>安全登录</span>
+            <el-checkbox v-model="remember">{{ t('login.remember') }}</el-checkbox>
+            <span>{{ t('login.secure') }}</span>
           </div>
           <el-button type="primary" size="large" class="login-btn" :loading="loading" @click="handleLogin">
-            {{ loading ? '正在登录' : '进入工作台' }}
+            {{ loading ? t('login.loggingIn') : t('login.enter') }}
             <el-icon class="button-arrow"><ArrowRight /></el-icon>
           </el-button>
         </el-form>
-        <div class="login-footer"><el-icon><Lock /></el-icon>账号信息通过加密通道传输</div>
+        <div class="login-footer"><el-icon><Lock /></el-icon>{{ t('login.encrypted') }}</div>
       </div>
       <span class="copyright">© {{ new Date().getFullYear() }} DataPilot. All rights reserved.</span>
     </main>
@@ -71,11 +71,13 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Lock, User } from '@element-plus/icons-vue'
 import { useAuthStore } from '../../stores/auth'
 
 const router = useRouter()
+const { t } = useI18n()
 const authStore = useAuthStore()
 const rememberedAccount = localStorage.getItem('dp-remember-account') || 'admin'
 const form = reactive({ account: rememberedAccount, password: 'admin' })
@@ -84,7 +86,7 @@ const loading = ref(false)
 
 async function handleLogin() {
   if (!form.account || !form.password) {
-    ElMessage.warning('请输入用户名和密码')
+    ElMessage.warning(t('login.required'))
     return
   }
   loading.value = true
@@ -92,7 +94,7 @@ async function handleLogin() {
     await authStore.login(form.account, form.password)
     if (remember.value) localStorage.setItem('dp-remember-account', form.account)
     else localStorage.removeItem('dp-remember-account')
-    ElMessage.success('欢迎回来')
+    ElMessage.success(t('login.welcomeBack'))
     router.push('/dashboard')
   } catch {
     // 统一请求拦截器负责展示错误。

@@ -3,42 +3,42 @@
     <el-card shadow="never">
       <div class="toolbar">
         <el-form inline :model="query" @submit.prevent>
-          <el-form-item label="用户名">
-            <el-input v-model="query.username" placeholder="用户名" clearable style="width: 160px" @keyup.enter="handleSearch" />
+          <el-form-item :label="t('system.username')">
+            <el-input v-model="query.username" :placeholder="t('system.username')" clearable style="width: 160px" @keyup.enter="handleSearch" />
           </el-form-item>
-          <el-form-item label="IP">
-            <el-input v-model="query.ip" placeholder="IP 地址" clearable style="width: 150px" @keyup.enter="handleSearch" />
+          <el-form-item :label="t('system.ip')">
+            <el-input v-model="query.ip" :placeholder="t('system.ipPlaceholder')" clearable style="width: 150px" @keyup.enter="handleSearch" />
           </el-form-item>
-          <el-form-item label="时间">
+          <el-form-item :label="t('system.time')">
             <el-date-picker
               v-model="range"
               type="datetimerange"
               value-format="YYYY-MM-DD HH:mm:ss"
-              start-placeholder="开始时间"
-              end-placeholder="结束时间"
+              :start-placeholder="t('system.startTime')"
+              :end-placeholder="t('system.endTime')"
               style="width: 360px"
             />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
+            <el-button type="primary" :icon="Search" @click="handleSearch">{{ t('common.search') }}</el-button>
           </el-form-item>
         </el-form>
       </div>
 
       <el-table v-loading="loading" :data="list" border>
         <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column label="用户名" min-width="120">
+        <el-table-column :label="t('system.username')" min-width="120">
           <template #default="{ row }">{{ row.user?.username ?? '-' }}</template>
         </el-table-column>
-        <el-table-column prop="ip" label="IP" width="140" />
-        <el-table-column prop="browser" label="浏览器" min-width="130" show-overflow-tooltip />
-        <el-table-column prop="os" label="系统" min-width="130" show-overflow-tooltip />
-        <el-table-column prop="platform" label="平台" width="110" />
-        <el-table-column prop="createTime" label="登录时间" width="170" />
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column prop="ip" :label="t('system.ip')" width="140" />
+        <el-table-column prop="browser" :label="t('system.browser')" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="os" :label="t('system.os')" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="platform" :label="t('system.platform')" width="110" />
+        <el-table-column prop="createTime" :label="t('system.loginTime')" width="170" />
+        <el-table-column :label="t('system.actions')" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openDetail(row)">详情</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" @click="openDetail(row)">{{ t('system.detail') }}</el-button>
+            <el-button link type="danger" @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -54,17 +54,17 @@
       />
     </el-card>
 
-    <el-dialog v-model="detailVisible" title="登录日志详情" width="520px">
+    <el-dialog v-model="detailVisible" :title="t('system.loginLogDetail')" width="520px">
       <el-descriptions :column="1" border>
         <el-descriptions-item label="ID">{{ detail?.id }}</el-descriptions-item>
-        <el-descriptions-item label="请求ID">{{ detail?.requestId }}</el-descriptions-item>
-        <el-descriptions-item label="用户名">{{ detail?.username }}</el-descriptions-item>
-        <el-descriptions-item label="IP">{{ detail?.ip }}</el-descriptions-item>
-        <el-descriptions-item label="浏览器">{{ detail?.browser }}</el-descriptions-item>
-        <el-descriptions-item label="系统">{{ detail?.os }}</el-descriptions-item>
-        <el-descriptions-item label="平台">{{ detail?.platform }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.requestId')">{{ detail?.requestId }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.username')">{{ detail?.username }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.ip')">{{ detail?.ip }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.browser')">{{ detail?.browser }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.os')">{{ detail?.os }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.platform')">{{ detail?.platform }}</el-descriptions-item>
         <el-descriptions-item label="User-Agent">{{ detail?.userAgent }}</el-descriptions-item>
-        <el-descriptions-item label="登录时间">{{ detail?.createTime }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.loginTime')">{{ detail?.createTime }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
   </div>
@@ -72,6 +72,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import {
@@ -82,6 +83,7 @@ import {
   type LoginLogDetail
 } from '../../../api/loginlog'
 
+const { t } = useI18n()
 const loading = ref(false)
 const list = ref<LoginLogItem[]>([])
 const query = reactive({ username: '', ip: '' })
@@ -122,9 +124,9 @@ async function openDetail(row: LoginLogItem) {
 }
 
 async function handleDelete(row: LoginLogItem) {
-  await ElMessageBox.confirm(`确认删除该登录日志？`, '提示', { type: 'warning' })
+  await ElMessageBox.confirm(t('system.deleteLoginLogConfirm'), t('system.prompt'), { type: 'warning' })
   await deleteLoginLog(row.id)
-  ElMessage.success('删除成功')
+  ElMessage.success(t('system.deleteSuccess'))
   load()
 }
 

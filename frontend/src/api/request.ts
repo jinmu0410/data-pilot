@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { i18n } from '../i18n'
 
 export const TOKEN_KEY = 'dp_token'
 export const WORKSPACE_KEY = 'dp_workspace'
@@ -36,13 +37,13 @@ request.interceptors.response.use(
       if (window.location.pathname !== '/login') {
         window.location.href = '/login'
       }
-      return Promise.reject(new Error(res.message || '登录已失效'))
+      return Promise.reject(new Error(res.message || i18n.global.t('common.loginExpired')))
     }
-    ElMessage.error(res?.message || '请求失败')
-    return Promise.reject(new Error(res?.message || '请求失败'))
+    ElMessage.error(res?.message || i18n.global.t('common.requestFailed'))
+    return Promise.reject(new Error(res?.message || i18n.global.t('common.requestFailed')))
   },
   (error) => {
-    ElMessage.error(error.message || '网络错误')
+    ElMessage.error(error.message || i18n.global.t('common.networkError'))
     return Promise.reject(error)
   }
 )

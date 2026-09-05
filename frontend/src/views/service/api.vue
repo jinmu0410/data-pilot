@@ -3,15 +3,15 @@
     <section class="page-hero">
       <div class="hero-copy">
         <span class="page-eyebrow">DATA SERVICE</span>
-        <h2>API 服务</h2>
-        <p>把查询 SQL 封装成可鉴权、可限流、可观测的数据接口。</p>
+        <h2>{{ t('api.title') }}</h2>
+        <p>{{ t('api.subtitle') }}</p>
       </div>
       <div class="hero-stats">
-        <div><strong>{{ page.total }}</strong><span>API 总数</span></div>
-        <div><strong>{{ publishedCount }}</strong><span>当前页已发布</span></div>
-        <div><strong>{{ enabledCount }}</strong><span>当前页启用</span></div>
+        <div><strong>{{ page.total }}</strong><span>{{ t('api.total') }}</span></div>
+        <div><strong>{{ publishedCount }}</strong><span>{{ t('api.published') }}</span></div>
+        <div><strong>{{ enabledCount }}</strong><span>{{ t('api.enabled') }}</span></div>
       </div>
-      <el-button type="primary" :icon="Plus" size="large" @click="openAdd">创建 API</el-button>
+      <el-button type="primary" :icon="Plus" size="large" @click="openAdd">{{ t('api.create') }}</el-button>
     </section>
 
     <el-card shadow="never" class="filter-card">
@@ -20,7 +20,7 @@
           <el-form-item>
             <el-input
               v-model="query.keyword"
-              placeholder="搜索名称 / 编码"
+              :placeholder="t('api.searchPlaceholder')"
               clearable
               :prefix-icon="Search"
               style="width: 220px"
@@ -28,15 +28,15 @@
             />
           </el-form-item>
           <el-form-item>
-            <el-select v-model="query.status" placeholder="状态" clearable style="width: 110px">
-              <el-option label="启用" value="ENABLE" />
-              <el-option label="禁用" value="DISABLE" />
+            <el-select v-model="query.status" :placeholder="t('api.status')" clearable style="width: 110px">
+              <el-option :label="t('api.enable')" value="ENABLE" />
+              <el-option :label="t('api.disable')" value="DISABLE" />
             </el-select>
           </el-form-item>
           <el-form-item>
             <el-select
               v-model="query.dataSourceCode"
-              placeholder="数据源"
+              :placeholder="t('api.datasource')"
               clearable
               filterable
               style="width: 180px"
@@ -45,8 +45,8 @@
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
-            <el-button :icon="Refresh" @click="handleReset">重置</el-button>
+            <el-button type="primary" :icon="Search" @click="handleSearch">{{ t('common.search') }}</el-button>
+            <el-button :icon="Refresh" @click="handleReset">{{ t('api.reset') }}</el-button>
           </el-form-item>
         </el-form>
       </div>
@@ -54,60 +54,60 @@
 
     <el-card shadow="never" class="list-card">
       <div class="list-heading">
-        <div><h3>服务列表</h3><span>统一管理草稿、发布版本与调用入口</span></div>
+        <div><h3>{{ t('api.list') }}</h3><span>{{ t('api.listDesc') }}</span></div>
         <span class="support-tip">PREPARED SQL · SECRET · RATE LIMIT · LOG</span>
       </div>
       <el-table v-loading="loading" :data="list" class="api-table">
         <template #empty>
-          <el-empty description="暂无查询模板，点击右上角「新建 API」开始" :image-size="80" />
+          <el-empty :description="t('api.empty')" :image-size="80" />
         </template>
-        <el-table-column label="API 服务" min-width="240" show-overflow-tooltip>
+        <el-table-column :label="t('api.title')" min-width="240" show-overflow-tooltip>
           <template #default="{ row }">
             <div class="api-name-cell">
               <span class="api-logo">API</span>
               <div class="name-cell">
                 <div class="name-text">{{ row.name }}</div>
-                <div class="name-desc">{{ row.description || '暂无服务描述' }}</div>
+                <div class="name-desc">{{ row.description || t('api.noDescription') }}</div>
               </div>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="编码" min-width="180">
+        <el-table-column :label="t('api.code')" min-width="180">
           <template #default="{ row }">
             <div class="code-cell">
               <span class="code-text" :title="row.code">{{ row.code }}</span>
-              <el-icon class="code-copy" @click="copyText(row.code, '编码已复制')"><CopyDocument /></el-icon>
+              <el-icon class="code-copy" @click="copyText(row.code, t('api.codeCopied'))"><CopyDocument /></el-icon>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="数据源" min-width="145" show-overflow-tooltip>
+        <el-table-column :label="t('api.datasource')" min-width="145" show-overflow-tooltip>
           <template #default="{ row }"><span class="datasource-pill">{{ row.dataSourceName }}</span></template>
         </el-table-column>
-        <el-table-column label="状态" width="90" align="center">
+        <el-table-column :label="t('api.status')" width="90" align="center">
           <template #default="{ row }">
-            <span class="status-badge" :class="{ enabled: row.status === 'ENABLE' }"><i></i>{{ row.status === 'ENABLE' ? '启用' : '禁用' }}</span>
+            <span class="status-badge" :class="{ enabled: row.status === 'ENABLE' }"><i></i>{{ row.status === 'ENABLE' ? t('api.enable') : t('api.disable') }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="版本" width="100" align="center">
+        <el-table-column :label="t('api.version')" width="100" align="center">
           <template #default="{ row }">
             <span v-if="row.publishVersion" class="version-badge">{{ row.publishVersion }}</span>
-            <span v-else class="draft-badge">草稿</span>
+            <span v-else class="draft-badge">{{ t('api.draft') }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="updateTime" label="更新时间" width="170" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column prop="updateTime" :label="t('api.updateTime')" width="170" />
+        <el-table-column :label="t('api.actions')" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" :icon="Edit" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="success" :icon="Promotion" @click="openPublish(row)">发布</el-button>
-            <el-button link type="warning" :icon="VideoPlay" @click="openTest(row)">测试</el-button>
+            <el-button link type="primary" :icon="Edit" @click="openEdit(row)">{{ t('common.edit') }}</el-button>
+            <el-button link type="success" :icon="Promotion" @click="openPublish(row)">{{ t('common.publish') }}</el-button>
+            <el-button link type="warning" :icon="VideoPlay" @click="openTest(row)">{{ t('api.test') }}</el-button>
             <el-dropdown trigger="click" @command="(cmd: string) => handleCommand(cmd, row)">
               <el-button link type="info">
-                更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                {{ t('api.more') }}<el-icon class="el-icon--right"><ArrowDown /></el-icon>
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item command="log"><el-icon><Document /></el-icon>调用日志</el-dropdown-item>
-                  <el-dropdown-item command="delete" divided><el-icon><Delete /></el-icon>删除</el-dropdown-item>
+                  <el-dropdown-item command="log"><el-icon><Document /></el-icon>{{ t('api.callLog') }}</el-dropdown-item>
+                  <el-dropdown-item command="delete" divided><el-icon><Delete /></el-icon>{{ t('common.delete') }}</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -131,70 +131,70 @@
       <template #header>
         <div class="dialog-heading">
           <span class="dialog-logo">API</span>
-          <div><div class="dialog-title">{{ form.id ? '编辑 API 服务' : '创建 API 服务' }}</div><div class="dialog-subtitle">定义查询逻辑、请求参数与运行策略，保存后可发布为 REST API</div></div>
+          <div><div class="dialog-title">{{ form.id ? t('api.editTitle') : t('api.createTitle') }}</div><div class="dialog-subtitle">{{ t('api.dialogSubtitle') }}</div></div>
           <span class="dialog-mode">{{ form.id ? 'EDIT SERVICE' : 'NEW SERVICE' }}</span>
         </div>
       </template>
       <div class="config-shell">
         <aside class="config-sidebar">
           <span class="sidebar-label">SERVICE BUILDER</span>
-          <div class="step-card done"><span>01</span><div><strong>基本信息</strong><small>名称、数据源与状态</small></div></div>
-          <div class="step-card" :class="{ done: !!form.template.trim() }"><span>02</span><div><strong>查询逻辑</strong><small>只读 SQL 与动态占位符</small></div></div>
-          <div class="step-card" :class="{ done: templateParams.length > 0 }"><span>03</span><div><strong>请求参数</strong><small>自动识别并配置测试值</small></div></div>
-          <div class="service-summary"><span>配置概览</span><strong>{{ form.name || '未命名 API' }}</strong><p>{{ selectedDatasource?.name || '尚未选择数据源' }}</p><div><i :class="{ ready: canDraftTest }"></i>{{ canDraftTest ? '可执行草稿测试' : '等待完成必填配置' }}</div></div>
+          <div class="step-card done"><span>01</span><div><strong>{{ t('api.basicInfo') }}</strong><small>{{ t('api.basicInfoDesc') }}</small></div></div>
+          <div class="step-card" :class="{ done: !!form.template.trim() }"><span>02</span><div><strong>{{ t('api.queryLogic') }}</strong><small>{{ t('api.queryLogicDesc') }}</small></div></div>
+          <div class="step-card" :class="{ done: templateParams.length > 0 }"><span>03</span><div><strong>{{ t('api.requestParams') }}</strong><small>{{ t('api.requestParamsDesc') }}</small></div></div>
+          <div class="service-summary"><span>{{ t('api.configOverview') }}</span><strong>{{ form.name || t('api.unnamed') }}</strong><p>{{ selectedDatasource?.name || t('api.noDatasource') }}</p><div><i :class="{ ready: canDraftTest }"></i>{{ canDraftTest ? t('api.canDraftTest') : t('api.waitingConfig') }}</div></div>
         </aside>
         <main class="config-content">
           <section class="form-section">
-            <div class="section-heading"><div><span class="section-index">01</span><div><h3>基本信息</h3><p>用于识别服务并选择查询数据源</p></div></div></div>
+            <div class="section-heading"><div><span class="section-index">01</span><div><h3>{{ t('api.basicInfo') }}</h3><p>{{ t('api.basicInfoSubtitle') }}</p></div></div></div>
             <div class="form-grid basic-grid">
-              <div class="field"><label>API 名称 <em>*</em></label><el-input v-model="form.name" size="large" maxlength="200" show-word-limit placeholder="例如：订单明细查询" /></div>
-              <div class="field"><label>查询数据源 <em>*</em></label><el-select v-model="form.dataSourceCode" size="large" placeholder="选择 JDBC 数据源" filterable style="width:100%"><el-option v-for="ds in jdbcDatasources" :key="ds.code" :label="`${ds.name} (${ds.type})`" :value="ds.code" /></el-select></div>
-              <div class="field wide-field"><label>服务描述</label><el-input v-model="form.description" type="textarea" :rows="2" maxlength="500" placeholder="说明接口用途、使用方或数据口径（可选）" /></div>
+              <div class="field"><label>{{ t('api.name') }} <em>*</em></label><el-input v-model="form.name" size="large" maxlength="200" show-word-limit :placeholder="t('api.namePlaceholder')" /></div>
+              <div class="field"><label>{{ t('api.queryDatasource') }} <em>*</em></label><el-select v-model="form.dataSourceCode" size="large" :placeholder="t('api.selectDatasource')" filterable style="width:100%"><el-option v-for="ds in jdbcDatasources" :key="ds.code" :label="`${ds.name} (${ds.type})`" :value="ds.code" /></el-select></div>
+              <div class="field wide-field"><label>{{ t('api.description') }}</label><el-input v-model="form.description" type="textarea" :rows="2" maxlength="500" :placeholder="t('api.descriptionPlaceholder')" /></div>
             </div>
           </section>
           <section class="form-section">
-            <div class="section-heading"><div><span class="section-index">02</span><div><h3>SQL 查询模板</h3><p>仅支持 SELECT / WITH 查询，变量使用 &#36;{param} 占位</p></div></div><button type="button" class="format-action" @click="sqlEditorRef?.format()"><el-icon><MagicStick /></el-icon>格式化 SQL</button></div>
+            <div class="section-heading"><div><span class="section-index">02</span><div><h3>{{ t('api.sqlTemplate') }}</h3><p>{{ t('api.sqlTemplateDesc') }}</p></div></div><button type="button" class="format-action" @click="sqlEditorRef?.format()"><el-icon><MagicStick /></el-icon>{{ t('api.formatSql') }}</button></div>
             <div class="editor-panel">
           <div class="editor-toolbar">
             <span class="editor-lang">{{ editorDialect === 'postgresql' ? 'POSTGRESQL' : 'SQL' }}</span>
             <div class="editor-toolbar-actions">
-              <span class="editor-toolbar-hint">PreparedStatement 安全绑定参数</span>
+              <span class="editor-toolbar-hint">{{ t('api.preparedHint') }}</span>
             </div>
           </div>
           <div class="editor-wrap">
             <SqlEditor ref="sqlEditorRef" v-model="form.template" :dialect="editorDialect" />
           </div>
         </div>
-            <div class="sql-hint"><span>i</span><p>占位符只能代表参数值，不能替代库名、表名或 SQL 关键字；服务端会预编译绑定以避免参数注入。</p></div>
+            <div class="sql-hint"><span>i</span><p>{{ t('api.sqlHint') }}</p></div>
           </section>
           <section class="form-section">
-            <div class="section-heading"><div><span class="section-index">03</span><div><h3>请求参数</h3><p>根据 SQL 自动识别。填写测试值可在保存前验证查询结果</p></div></div><span class="param-counter">{{ templateParams.length }} PARAMETERS</span></div>
+            <div class="section-heading"><div><span class="section-index">03</span><div><h3>{{ t('api.requestParams') }}</h3><p>{{ t('api.requestParamsSubtitle') }}</p></div></div><span class="param-counter">{{ templateParams.length }} PARAMETERS</span></div>
             <div v-if="parameterRows.length" class="parameter-table">
-              <div class="parameter-head"><span>参数名</span><span>值类型</span><span>测试值</span><span>说明</span></div>
+              <div class="parameter-head"><span>{{ t('api.paramName') }}</span><span>{{ t('api.paramType') }}</span><span>{{ t('api.testValue') }}</span><span>{{ t('api.paramDesc') }}</span></div>
               <div v-for="item in parameterRows" :key="item.name" class="parameter-row">
-                <div class="parameter-name"><code v-text="'${' + item.name + '}'"></code><small>必传</small></div>
+                <div class="parameter-name"><code v-text="'${' + item.name + '}'"></code><small>{{ t('api.required') }}</small></div>
                 <el-select v-model="item.type"><el-option v-for="option in PARAM_TYPES" :key="option.value" :label="option.label" :value="option.value" /></el-select>
                 <el-input v-model="item.value" :placeholder="parameterPlaceholder(item.type)" clearable />
-                <el-input v-model="item.description" placeholder="业务含义（当前仅本次测试）" clearable />
+                <el-input v-model="item.description" :placeholder="t('api.paramDescPlaceholder')" clearable />
               </div>
             </div>
-            <div v-else class="parameter-empty"><span>{ }</span><div><strong>当前 SQL 没有动态参数</strong><p>输入类似 WHERE id = &#36;{id} 后会自动生成参数配置行</p></div></div>
+            <div v-else class="parameter-empty"><span>{ }</span><div><strong>{{ t('api.noParams') }}</strong><p>{{ t('api.noParamsHint') }}</p></div></div>
           </section>
           <section class="form-section runtime-section">
-            <div class="section-heading"><div><span class="section-index">04</span><div><h3>运行设置</h3><p>控制查询超时与草稿启用状态</p></div></div></div>
-            <div class="runtime-grid"><div class="setting-card"><div><strong>查询超时</strong><small>避免慢查询长期占用连接</small></div><el-input-number v-model="form.timeout" :min="1" :max="3600" controls-position="right" /><span>秒</span></div><div class="setting-card"><div><strong>服务状态</strong><small>禁用后不能发布或调用</small></div><el-switch v-model="form.status" active-value="ENABLE" inactive-value="DISABLE" active-text="启用" inactive-text="禁用" /></div></div>
+            <div class="section-heading"><div><span class="section-index">04</span><div><h3>{{ t('api.runtime') }}</h3><p>{{ t('api.runtimeDesc') }}</p></div></div></div>
+            <div class="runtime-grid"><div class="setting-card"><div><strong>{{ t('api.queryTimeout') }}</strong><small>{{ t('api.queryTimeoutDesc') }}</small></div><el-input-number v-model="form.timeout" :min="1" :max="3600" controls-position="right" /><span>{{ t('api.seconds') }}</span></div><div class="setting-card"><div><strong>{{ t('api.serviceStatus') }}</strong><small>{{ t('api.serviceStatusDesc') }}</small></div><el-switch v-model="form.status" active-value="ENABLE" inactive-value="DISABLE" :active-text="t('api.enable')" :inactive-text="t('api.disable')" /></div></div>
           </section>
         </main>
       </div>
 
       <template #footer>
-        <div class="dialog-footer"><span class="footer-tip">参数定义由 SQL 实时生成，无需重复维护。</span><el-button @click="formVisible = false">取消</el-button><el-button :icon="VideoPlay" :loading="testingDraft" :disabled="!canDraftTest" @click="handleDraftTest">测试草稿</el-button><el-button type="primary" :loading="saving" @click="handleSave">{{ form.id ? '保存修改' : '创建 API' }}</el-button></div>
+        <div class="dialog-footer"><span class="footer-tip">{{ t('api.footerTip') }}</span><el-button @click="formVisible = false">{{ t('common.cancel') }}</el-button><el-button :icon="VideoPlay" :loading="testingDraft" :disabled="!canDraftTest" @click="handleDraftTest">{{ t('api.testDraft') }}</el-button><el-button type="primary" :loading="saving" @click="handleSave">{{ form.id ? t('api.saveChanges') : t('api.create') }}</el-button></div>
       </template>
     </el-dialog>
 
     <!-- 发布 -->
     <el-dialog v-model="publishVisible" width="min(720px, calc(100vw - 40px))" top="4vh" append-to-body class="api-publish-dialog" destroy-on-close :close-on-click-modal="false">
-      <template #header><div class="dialog-heading"><span class="dialog-logo publish-logo">PUB</span><div><div class="dialog-title">发布 API 服务</div><div class="dialog-subtitle">配置访问鉴权、接口限流和运行观测策略</div></div><span class="dialog-mode">SECURITY POLICY</span></div></template>
+      <template #header><div class="dialog-heading"><span class="dialog-logo publish-logo">PUB</span><div><div class="dialog-title">{{ t('api.publishTitle') }}</div><div class="dialog-subtitle">{{ t('api.publishSubtitle') }}</div></div><span class="dialog-mode">SECURITY POLICY</span></div></template>
       <div class="publish-target">
         <el-icon class="publish-target-icon"><Promotion /></el-icon>
         <div class="publish-target-info">
@@ -203,48 +203,48 @@
         </div>
       </div>
 
-      <div class="section-title">访问鉴权</div>
+      <div class="section-title">{{ t('api.auth') }}</div>
       <div class="auth-options">
         <button v-for="item in AUTH_OPTIONS" :key="item.value" type="button" :class="{ active: publishForm.authType === item.value }" @click="publishForm.authType = item.value"><span>{{ item.icon }}</span><div><strong>{{ item.label }}</strong><small>{{ item.description }}</small></div><i>✓</i></button>
       </div>
       <div v-if="publishForm.authType !== 'PUBLIC'" class="secret-field">
-        <div class="field-label"><span>{{ publishForm.authType === 'HMAC_SHA256' ? '签名密钥' : 'API Key' }}</span><small>{{ publishForm.authType === 'HMAC_SHA256' ? 'AES-GCM 加密存储' : 'SHA-256 单向摘要存储' }}</small></div>
-        <el-input v-model="publishForm.secret" maxlength="60" :placeholder="canKeepPublishedSecret ? '留空保持当前密钥，填写则轮换' : '输入至少 16 位密钥或自动生成'" clearable show-password><template #append><el-button @click="generateSecret">自动生成</el-button></template></el-input>
-        <div v-if="publishForm.authType === 'HMAC_SHA256'" class="security-hint">请求需要携带时间戳、随机数与 HMAC-SHA256 签名，签名有效期 5 分钟且随机数不可重复。</div>
+        <div class="field-label"><span>{{ publishForm.authType === 'HMAC_SHA256' ? t('api.signSecret') : t('api.apiKey') }}</span><small>{{ publishForm.authType === 'HMAC_SHA256' ? t('api.aesStorage') : t('api.shaStorage') }}</small></div>
+        <el-input v-model="publishForm.secret" maxlength="60" :placeholder="canKeepPublishedSecret ? t('api.secretKeepPlaceholder') : t('api.secretPlaceholder')" clearable show-password><template #append><el-button @click="generateSecret">{{ t('api.autoGenerate') }}</el-button></template></el-input>
+        <div v-if="publishForm.authType === 'HMAC_SHA256'" class="security-hint">{{ t('api.hmacHint') }}</div>
       </div>
 
-      <div class="section-title">运行配置</div>
+      <div class="section-title">{{ t('api.runtimeConfig') }}</div>
       <div class="switch-row">
         <div class="switch-row-text">
-          <div class="switch-row-title">结果缓存</div>
-          <div class="switch-row-desc">开启后 60s 内相同参数直接返回缓存</div>
+          <div class="switch-row-title">{{ t('api.cache') }}</div>
+          <div class="switch-row-desc">{{ t('api.cacheDesc') }}</div>
         </div>
         <el-switch v-model="publishForm.cacheOn" />
       </div>
       <div class="switch-row">
         <div class="switch-row-text">
-          <div class="switch-row-title">限流</div>
-          <div class="switch-row-desc">控制该接口的调用频率，防止被打爆</div>
+          <div class="switch-row-title">{{ t('api.limit') }}</div>
+          <div class="switch-row-desc">{{ t('api.limitDesc') }}</div>
         </div>
         <el-switch v-model="publishForm.limitOn" />
       </div>
       <div v-if="publishForm.limitOn" class="limit-config">
-        <div><label>限流维度</label><el-segmented v-model="publishForm.limitType" :options="limitTypeOptions" block /></div>
-        <div><label>时间窗口</label><div class="inline-control"><el-input-number v-model="publishForm.limitRefreshInterval" :min="1" :max="86400" controls-position="right" /><el-select v-model="publishForm.limitTimeUnit"><el-option label="秒" value="SECONDS" /><el-option label="分钟" value="MINUTES" /><el-option label="小时" value="HOURS" /></el-select></div></div>
-        <div><label>窗口内最大请求</label><div class="inline-control"><el-input-number v-model="publishForm.limitRate" :min="1" :max="100000" controls-position="right" /><span>次</span></div></div>
-        <p>{{ publishForm.limitType === 'IP' ? '每个来源 IP 独立计数，适合开放平台。' : '所有调用方共享额度，适合保护数据库总体负载。' }}</p>
+        <div><label>{{ t('api.limitType') }}</label><el-segmented v-model="publishForm.limitType" :options="limitTypeOptions" block /></div>
+        <div><label>{{ t('api.timeWindow') }}</label><div class="inline-control"><el-input-number v-model="publishForm.limitRefreshInterval" :min="1" :max="86400" controls-position="right" /><el-select v-model="publishForm.limitTimeUnit"><el-option :label="t('api.seconds')" value="SECONDS" /><el-option :label="t('api.minutes')" value="MINUTES" /><el-option :label="t('api.hours')" value="HOURS" /></el-select></div></div>
+        <div><label>{{ t('api.maxRequests') }}</label><div class="inline-control"><el-input-number v-model="publishForm.limitRate" :min="1" :max="100000" controls-position="right" /><span>{{ t('api.times') }}</span></div></div>
+        <p>{{ publishForm.limitType === 'IP' ? t('api.limitIpHint') : t('api.limitGlobalHint') }}</p>
       </div>
       <div class="switch-row">
         <div class="switch-row-text">
-          <div class="switch-row-title">记录日志</div>
-          <div class="switch-row-desc">每次调用写入请求 / 响应 / 耗时等明细</div>
+          <div class="switch-row-title">{{ t('api.log') }}</div>
+          <div class="switch-row-desc">{{ t('api.logDesc') }}</div>
         </div>
         <el-switch v-model="publishForm.logOn" />
       </div>
 
       <template #footer>
-        <el-button @click="publishVisible = false">取消</el-button>
-        <el-button type="primary" :loading="publishing" @click="handlePublish">发布</el-button>
+        <el-button @click="publishVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="publishing" @click="handlePublish">{{ t('common.publish') }}</el-button>
       </template>
     </el-dialog>
 
@@ -258,66 +258,66 @@
       destroy-on-close
       :close-on-click-modal="false"
     >
-      <template #header><div class="dialog-heading"><span class="dialog-logo test-logo">RUN</span><div><div class="dialog-title">接口测试 · {{ testName }}</div><div class="dialog-subtitle">填写动态参数，预览 SQL 结果并生成外部调用示例</div></div><span class="dialog-mode">{{ testCode }}</span></div></template>
+      <template #header><div class="dialog-heading"><span class="dialog-logo test-logo">RUN</span><div><div class="dialog-title">{{ t('api.testTitle') }} · {{ testName }}</div><div class="dialog-subtitle">{{ t('api.testSubtitle') }}</div></div><span class="dialog-mode">{{ testCode }}</span></div></template>
       <div class="test-shell">
         <section class="test-params-panel">
-          <div class="test-panel-head"><div><strong>请求参数</strong><span>{{ testParameterRows.length }} 个 SQL 占位符</span></div><el-switch v-model="advancedParams" active-text="JSON" /></div>
+          <div class="test-panel-head"><div><strong>{{ t('api.requestParams') }}</strong><span>{{ t('api.placeholderCount', { n: testParameterRows.length }) }}</span></div><el-switch v-model="advancedParams" active-text="JSON" /></div>
           <template v-if="!advancedParams">
             <div v-if="testParameterRows.length" class="test-param-list">
-              <div v-for="item in testParameterRows" :key="item.name" class="test-param-item"><div class="test-param-label"><code>{{ item.name }}</code><span>必传</span></div><div class="test-param-control"><el-select v-model="item.type" style="width:105px"><el-option v-for="option in PARAM_TYPES" :key="option.value" :label="option.label" :value="option.value" /></el-select><el-input v-model="item.value" :placeholder="parameterPlaceholder(item.type)" clearable /></div></div>
+              <div v-for="item in testParameterRows" :key="item.name" class="test-param-item"><div class="test-param-label"><code>{{ item.name }}</code><span>{{ t('api.required') }}</span></div><div class="test-param-control"><el-select v-model="item.type" style="width:105px"><el-option v-for="option in PARAM_TYPES" :key="option.value" :label="option.label" :value="option.value" /></el-select><el-input v-model="item.value" :placeholder="parameterPlaceholder(item.type)" clearable /></div></div>
             </div>
-            <div v-else class="parameter-empty compact"><span>{ }</span><div><strong>此接口无需参数</strong><p>可以直接运行查询</p></div></div>
+            <div v-else class="parameter-empty compact"><span>{ }</span><div><strong>{{ t('api.noParamsNeeded') }}</strong><p>{{ t('api.noParamsNeededHint') }}</p></div></div>
           </template>
-          <div v-else><el-input v-model="testParamsJson" type="textarea" :rows="8" class="test-params-input" placeholder='{"id": 1}' /><div class="json-hint">适合粘贴复杂参数；必须是合法 JSON 对象。</div></div>
-          <div class="test-actions"><el-button type="primary" :icon="CaretRight" :loading="testing" @click="handleTest">运行查询</el-button><el-button @click="resetTestParams">重置参数</el-button></div>
+          <div v-else><el-input v-model="testParamsJson" type="textarea" :rows="8" class="test-params-input" placeholder='{"id": 1}' /><div class="json-hint">{{ t('api.jsonHint') }}</div></div>
+          <div class="test-actions"><el-button type="primary" :icon="CaretRight" :loading="testing" @click="handleTest">{{ t('api.runQuery') }}</el-button><el-button @click="resetTestParams">{{ t('api.resetParams') }}</el-button></div>
         </section>
         <section class="test-result-panel">
-          <div class="test-panel-head"><div><strong>运行结果</strong><span v-if="testResult">{{ testResult.rowCount }} 行 · {{ testResult.durationMs }} ms</span><span v-else>尚未执行</span></div><el-tag v-if="testResult?.truncated" type="warning" effect="light" size="small">仅展示前 200 行</el-tag></div>
+          <div class="test-panel-head"><div><strong>{{ t('api.runResult') }}</strong><span v-if="testResult">{{ t('api.resultMeta', { rows: testResult.rowCount, ms: testResult.durationMs }) }}</span><span v-else>{{ t('api.notExecuted') }}</span></div><el-tag v-if="testResult?.truncated" type="warning" effect="light" size="small">{{ t('api.truncated') }}</el-tag></div>
           <el-table v-if="testResult?.columns?.length" :data="testResult.rows" border size="small" max-height="300" class="result-table"><el-table-column v-for="col in testResult.columns" :key="col" :prop="col" :label="col" min-width="120" show-overflow-tooltip /></el-table>
-          <el-empty v-else :description="testResult ? '查询成功，无返回结果' : '运行后将在这里展示查询结果'" :image-size="62" />
+          <el-empty v-else :description="testResult ? t('api.noResult') : t('api.noResultHint')" :image-size="62" />
         </section>
       </div>
       <div class="curl-block">
-        <div class="curl-head"><div><strong>外部调用示例</strong><span>选择响应模式后自动生成 cURL</span></div><div class="curl-head-right"><el-select v-model="testMethod" size="small" style="width:105px"><el-option label="单条 one" value="one" /><el-option label="数量 count" value="count" /><el-option label="列表 list" value="list" /><el-option label="分页 page" value="page" /></el-select><template v-if="testMethod === 'page'"><el-input-number v-model="testPageNum" size="small" :min="1" :max="100000" controls-position="right" style="width:95px" /><el-input-number v-model="testPageSize" size="small" :min="1" :max="1000" controls-position="right" style="width:95px" /></template><el-button link type="primary" size="small" @click="copyCurl">复制 cURL</el-button></div></div>
-        <div v-if="testAuthType !== 'PUBLIC'" class="test-credential"><span>{{ testAuthType === 'HMAC_SHA256' ? 'HMAC 签名密钥' : 'API Key' }}</span><el-input v-model="testSecret" type="password" show-password placeholder="仅用于本地生成示例，不会保存或回传" /></div>
+        <div class="curl-head"><div><strong>{{ t('api.curlExample') }}</strong><span>{{ t('api.curlExampleDesc') }}</span></div><div class="curl-head-right"><el-select v-model="testMethod" size="small" style="width:105px"><el-option :label="t('api.methodOne')" value="one" /><el-option :label="t('api.methodCount')" value="count" /><el-option :label="t('api.methodList')" value="list" /><el-option :label="t('api.methodPage')" value="page" /></el-select><template v-if="testMethod === 'page'"><el-input-number v-model="testPageNum" size="small" :min="1" :max="100000" controls-position="right" style="width:95px" /><el-input-number v-model="testPageSize" size="small" :min="1" :max="1000" controls-position="right" style="width:95px" /></template><el-button link type="primary" size="small" @click="copyCurl">{{ t('api.copyCurl') }}</el-button></div></div>
+        <div v-if="testAuthType !== 'PUBLIC'" class="test-credential"><span>{{ testAuthType === 'HMAC_SHA256' ? t('api.hmacSecret') : t('api.apiKey') }}</span><el-input v-model="testSecret" type="password" show-password :placeholder="t('api.testSecretPlaceholder')" /></div>
         <pre class="curl-code">{{ curlText }}</pre>
       </div>
     </el-dialog>
 
     <!-- 日志列表 -->
-    <el-dialog v-model="logVisible" :title="`调用日志 - ${logName}`" width="960px" top="5vh" destroy-on-close>
+    <el-dialog v-model="logVisible" :title="`${t('api.logTitle')} - ${logName}`" width="960px" top="5vh" destroy-on-close>
       <el-table v-loading="logLoading" :data="logList" border size="small">
         <template #empty>
-          <el-empty description="暂无调用记录" :image-size="70" />
+          <el-empty :description="t('api.noLog')" :image-size="70" />
         </template>
         <el-table-column prop="id" label="ID" width="64" align="center" />
-        <el-table-column label="方法" width="80" align="center">
+        <el-table-column :label="t('api.method')" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="methodType(row.method)" effect="light" size="small">{{ row.method }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="84" align="center">
+        <el-table-column :label="t('api.status')" width="84" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 'SUCCESS' ? 'success' : 'danger'" effect="light" size="small">
-              {{ row.status === 'SUCCESS' ? '成功' : '失败' }}
+              {{ row.status === 'SUCCESS' ? t('api.success') : t('api.fail') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="number" label="数量" width="72" align="center" />
-        <el-table-column prop="cost" label="耗时" width="90" align="center">
+        <el-table-column prop="number" :label="t('api.count')" width="72" align="center" />
+        <el-table-column prop="cost" :label="t('api.cost')" width="90" align="center">
           <template #default="{ row }">{{ row.cost }} ms</template>
         </el-table-column>
-        <el-table-column label="缓存" width="72" align="center">
+        <el-table-column :label="t('api.cache')" width="72" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.hitCache === 'YES'" type="warning" effect="light" size="small">命中</el-tag>
+            <el-tag v-if="row.hitCache === 'YES'" type="warning" effect="light" size="small">{{ t('api.hit') }}</el-tag>
             <span v-else class="muted">-</span>
           </template>
         </el-table-column>
         <el-table-column prop="ip" label="IP" width="130" show-overflow-tooltip />
-        <el-table-column prop="createTime" label="时间" width="170" />
-        <el-table-column label="操作" width="70" fixed="right" align="center">
+        <el-table-column prop="createTime" :label="t('api.time')" width="170" />
+        <el-table-column :label="t('api.actions')" width="70" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openLogDetail(row)">详情</el-button>
+            <el-button link type="primary" @click="openLogDetail(row)">{{ t('api.detail') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -332,25 +332,25 @@
     </el-dialog>
 
     <!-- 日志详情 -->
-    <el-dialog v-model="logDetailVisible" :title="`日志详情 #${logDetail?.id ?? ''}`" width="760px" top="5vh" destroy-on-close>
+    <el-dialog v-model="logDetailVisible" :title="`${t('api.logDetailTitle')} #${logDetail?.id ?? ''}`" width="760px" top="5vh" destroy-on-close>
       <template v-if="logDetail">
         <el-descriptions :column="2" border size="small" class="log-desc">
-          <el-descriptions-item label="状态">
+          <el-descriptions-item :label="t('api.status')">
             <el-tag :type="logDetail.status === 'SUCCESS' ? 'success' : 'danger'" effect="light" size="small">
               {{ logDetail.status }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="方法">{{ logDetail.method }}</el-descriptions-item>
-          <el-descriptions-item label="耗时">{{ logDetail.cost }} ms</el-descriptions-item>
-          <el-descriptions-item label="数量">{{ logDetail.number }}</el-descriptions-item>
-          <el-descriptions-item label="缓存">
-            {{ logDetail.hitCache === 'YES' ? '命中' : '未命中' }}
+          <el-descriptions-item :label="t('api.method')">{{ logDetail.method }}</el-descriptions-item>
+          <el-descriptions-item :label="t('api.cost')">{{ logDetail.cost }} ms</el-descriptions-item>
+          <el-descriptions-item :label="t('api.count')">{{ logDetail.number }}</el-descriptions-item>
+          <el-descriptions-item :label="t('api.cache')">
+            {{ logDetail.hitCache === 'YES' ? t('api.hit') : t('api.miss') }}
           </el-descriptions-item>
           <el-descriptions-item label="IP">{{ logDetail.ip }}</el-descriptions-item>
         </el-descriptions>
-        <div class="log-block-title">请求参数</div>
+        <div class="log-block-title">{{ t('api.requestParams') }}</div>
         <pre class="log-block">{{ prettyJson(logDetail.requestArg) }}</pre>
-        <div class="log-block-title">响应参数</div>
+        <div class="log-block-title">{{ t('api.responseParams') }}</div>
         <pre class="log-block">{{ prettyJson(logDetail.responseArg) }}</pre>
         <el-alert v-if="logDetail.exception" :title="logDetail.exception" type="error" :closable="false" show-icon />
       </template>
@@ -360,6 +360,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Search,
@@ -394,23 +395,24 @@ import {
   type QueryExecuteResult
 } from '../../api/service'
 
+const { t } = useI18n()
 const JDBC_TYPES = ['Doris', 'MySQL', 'TiDB', 'PostgreSQL']
 type ParameterType = 'string' | 'number' | 'boolean' | 'null'
 type AuthType = 'PUBLIC' | 'API_KEY' | 'HMAC_SHA256'
 type LimitType = 'GLOBAL' | 'IP'
 interface ParameterRow { name: string; type: ParameterType; value: string; description: string }
-const PARAM_TYPES: Array<{ label: string; value: ParameterType }> = [
-  { label: '文本', value: 'string' },
-  { label: '数字', value: 'number' },
-  { label: '布尔', value: 'boolean' },
-  { label: '空值', value: 'null' }
-]
-const AUTH_OPTIONS: Array<{ value: AuthType; label: string; description: string; icon: string }> = [
-  { value: 'PUBLIC', label: '公开访问', description: '无需凭证，适合公开数据', icon: 'OPEN' },
-  { value: 'API_KEY', label: 'API Key', description: '请求头携带固定访问密钥', icon: 'KEY' },
-  { value: 'HMAC_SHA256', label: 'HMAC 签名', description: '防篡改、带时效并防重放', icon: 'SIGN' }
-]
-const limitTypeOptions = [{ label: '全局共享', value: 'GLOBAL' }, { label: '按来源 IP', value: 'IP' }]
+const PARAM_TYPES = computed<Array<{ label: string; value: ParameterType }>>(() => [
+  { label: t('api.paramString'), value: 'string' },
+  { label: t('api.paramNumber'), value: 'number' },
+  { label: t('api.paramBoolean'), value: 'boolean' },
+  { label: t('api.paramNull'), value: 'null' }
+])
+const AUTH_OPTIONS = computed<Array<{ value: AuthType; label: string; description: string; icon: string }>>(() => [
+  { value: 'PUBLIC', label: t('api.authPublic'), description: t('api.authPublicDesc'), icon: 'OPEN' },
+  { value: 'API_KEY', label: t('api.authApiKey'), description: t('api.authApiKeyDesc'), icon: 'KEY' },
+  { value: 'HMAC_SHA256', label: t('api.authHmac'), description: t('api.authHmacDesc'), icon: 'SIGN' }
+])
+const limitTypeOptions = computed(() => [{ label: t('api.limitGlobal'), value: 'GLOBAL' }, { label: t('api.limitIp'), value: 'IP' }])
 
 const loading = ref(false)
 const list = ref<QueryTemplateItem[]>([])
@@ -525,20 +527,20 @@ function isReadOnlySql(sql: string) {
 }
 
 function parameterPlaceholder(type: ParameterType) {
-  return type === 'number' ? '例如：1001' : type === 'boolean' ? 'true / false' : type === 'null' ? '固定传入 null' : '输入文本值'
+  return type === 'number' ? t('api.phNumber') : type === 'boolean' ? t('api.phBoolean') : type === 'null' ? t('api.phNull') : t('api.phString')
 }
 
 function convertParameter(item: ParameterRow): unknown {
   if (item.type === 'null') return null
   if (item.type === 'number') {
-    if (!item.value.trim() || Number.isNaN(Number(item.value))) throw new Error(`参数 ${item.name} 需要填写有效数字`)
+    if (!item.value.trim() || Number.isNaN(Number(item.value))) throw new Error(t('api.paramNumberInvalid', { name: item.name }))
     return Number(item.value)
   }
   if (item.type === 'boolean') {
-    if (!['true', 'false'].includes(item.value.trim().toLowerCase())) throw new Error(`参数 ${item.name} 只能填写 true 或 false`)
+    if (!['true', 'false'].includes(item.value.trim().toLowerCase())) throw new Error(t('api.paramBooleanInvalid', { name: item.name }))
     return item.value.trim().toLowerCase() === 'true'
   }
-  if (!item.value.trim()) throw new Error(`请填写参数 ${item.name}`)
+  if (!item.value.trim()) throw new Error(t('api.paramRequired', { name: item.name }))
   return item.value
 }
 
@@ -546,7 +548,7 @@ function rowsToParams(rows: ParameterRow[], notify = true): Record<string, unkno
   try {
     return Object.fromEntries(rows.map((item) => [item.name, convertParameter(item)]))
   } catch (error) {
-    if (notify) ElMessage.warning(error instanceof Error ? error.message : '参数格式错误')
+    if (notify) ElMessage.warning(error instanceof Error ? error.message : t('api.paramFormatError'))
     return null
   }
 }
@@ -555,10 +557,10 @@ function currentTestParams(notify = true): Record<string, unknown> | null {
   if (!advancedParams.value) return rowsToParams(testParameterRows.value, notify)
   try {
     const value = JSON.parse(testParamsJson.value || '{}')
-    if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error('请求参数必须是 JSON 对象')
+    if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error(t('api.jsonObjectRequired'))
     return value
   } catch (error) {
-    if (notify) ElMessage.warning(error instanceof Error ? error.message : 'JSON 格式错误')
+    if (notify) ElMessage.warning(error instanceof Error ? error.message : t('api.jsonFormatError'))
     return null
   }
 }
@@ -574,7 +576,7 @@ function methodType(method: string): 'primary' | 'success' | 'info' | 'warning' 
 }
 
 function prettyJson(raw?: string): string {
-  if (!raw) return '（无）'
+  if (!raw) return t('api.none')
   try {
     return JSON.stringify(JSON.parse(raw), null, 2)
   } catch {
@@ -582,12 +584,12 @@ function prettyJson(raw?: string): string {
   }
 }
 
-async function copyText(text: string, tip = '已复制') {
+async function copyText(text: string, tip = t('api.copied')) {
   try {
     await navigator.clipboard.writeText(text)
     ElMessage.success(tip)
   } catch {
-    ElMessage.warning('复制失败，请手动复制')
+    ElMessage.warning(t('api.copyFailed'))
   }
 }
 
@@ -655,7 +657,7 @@ async function openEdit(row: QueryTemplateItem) {
 
 async function handleDraftTest() {
   if (!canDraftTest.value) {
-    ElMessage.warning('请先选择数据源并填写只读 SQL')
+    ElMessage.warning(t('api.draftTestHint'))
     return
   }
   const params = rowsToParams(parameterRows.value)
@@ -663,7 +665,7 @@ async function handleDraftTest() {
   testingDraft.value = true
   try {
     const result = await testTemplate({ dataSourceCode: form.dataSourceCode, template: form.template, params })
-    ElMessage.success(`草稿执行成功：${result.rowCount} 行，耗时 ${result.durationMs} ms`)
+    ElMessage.success(t('api.draftTestSuccess', { rows: result.rowCount, ms: result.durationMs }))
   } finally {
     testingDraft.value = false
   }
@@ -671,19 +673,19 @@ async function handleDraftTest() {
 
 async function handleSave() {
   if (!form.name.trim()) {
-    ElMessage.warning('请填写名称')
+    ElMessage.warning(t('api.nameRequired'))
     return
   }
   if (!form.dataSourceCode) {
-    ElMessage.warning('请选择数据源')
+    ElMessage.warning(t('api.datasourceRequired'))
     return
   }
   if (!form.template.trim()) {
-    ElMessage.warning('SQL 模板不能为空')
+    ElMessage.warning(t('api.templateRequired'))
     return
   }
   if (!isReadOnlySql(form.template)) {
-    ElMessage.warning('API 服务只允许单条 SELECT 或 WITH 查询语句')
+    ElMessage.warning(t('api.templateReadOnly'))
     return
   }
   saving.value = true
@@ -698,10 +700,10 @@ async function handleSave() {
     }
     if (form.id) {
       await updateTemplate({ ...payload, id: form.id })
-      ElMessage.success('更新成功')
+      ElMessage.success(t('api.updateSuccess'))
     } else {
       await addTemplate(payload)
-      ElMessage.success('保存成功')
+      ElMessage.success(t('api.saveSuccess'))
     }
     formVisible.value = false
     load()
@@ -740,17 +742,17 @@ function generateSecret() {
   const random = new Uint32Array(length)
   crypto.getRandomValues(random)
   publishForm.secret = Array.from(random, (item) => alphabet[item % alphabet.length]).join('')
-  ElMessage.success('已生成高强度随机密钥')
+  ElMessage.success(t('api.secretGenerated'))
 }
 
 async function handlePublish() {
   if (!publishTarget.value) return
   if (publishForm.authType !== 'PUBLIC' && !publishForm.secret.trim() && !canKeepPublishedSecret.value) {
-    ElMessage.warning('当前鉴权方式需要配置密钥')
+    ElMessage.warning(t('api.secretRequired'))
     return
   }
   if (publishForm.secret && new TextEncoder().encode(publishForm.secret).length < 16) {
-    ElMessage.warning('密钥长度不能少于 16 个 UTF-8 字节')
+    ElMessage.warning(t('api.secretTooShort'))
     return
   }
   publishing.value = true
@@ -767,7 +769,7 @@ async function handlePublish() {
       limitTimeUnit: publishForm.limitOn ? publishForm.limitTimeUnit : undefined,
       recordLog: publishForm.logOn ? 'ENABLE' : 'DISABLE'
     })
-    ElMessage.success(`发布成功（${res.version}）`)
+    ElMessage.success(t('api.publishSuccess', { version: res.version }))
     publishVisible.value = false
     load()
   } finally {
@@ -822,17 +824,17 @@ function resetTestParams() {
 }
 
 async function copyCurl() {
-  await copyText(curlText.value, 'curl 已复制')
+  await copyText(curlText.value, t('api.curlCopied'))
 }
 
 async function handleDelete(row: QueryTemplateItem) {
-  await ElMessageBox.confirm(`确认删除 API「${row.name}」？删除后其发布接口将不可用。`, '提示', {
+  await ElMessageBox.confirm(t('api.deleteConfirm', { name: row.name }), t('dataflow.prompt'), {
     type: 'warning',
-    confirmButtonText: '删除',
-    cancelButtonText: '取消'
+    confirmButtonText: t('common.delete'),
+    cancelButtonText: t('common.cancel')
   })
   await deleteTemplate(row.id)
-  ElMessage.success('删除成功')
+  ElMessage.success(t('api.deleteSuccess'))
   load()
 }
 

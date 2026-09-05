@@ -3,39 +3,39 @@
     <el-card shadow="never">
       <div class="toolbar">
         <el-form inline :model="query" @submit.prevent>
-          <el-form-item label="角色名">
-            <el-input v-model="query.name" placeholder="角色名" clearable style="width: 180px" @keyup.enter="handleSearch" />
+          <el-form-item :label="t('system.roleName')">
+            <el-input v-model="query.name" :placeholder="t('system.roleName')" clearable style="width: 180px" @keyup.enter="handleSearch" />
           </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-              <el-option label="启用" value="ENABLE" />
-              <el-option label="禁用" value="DISABLE" />
+          <el-form-item :label="t('system.status')">
+            <el-select v-model="query.status" :placeholder="t('system.all')" clearable style="width: 120px">
+              <el-option :label="t('system.enable')" value="ENABLE" />
+              <el-option :label="t('system.disable')" value="DISABLE" />
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
-            <el-button type="success" :icon="Plus" @click="openAdd">新增角色</el-button>
+            <el-button type="primary" :icon="Search" @click="handleSearch">{{ t('common.search') }}</el-button>
+            <el-button type="success" :icon="Plus" @click="openAdd">{{ t('system.addRole') }}</el-button>
           </el-form-item>
         </el-form>
       </div>
 
       <el-table v-loading="loading" :data="list" border>
         <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="name" label="角色名" min-width="150" />
-        <el-table-column prop="code" label="编码" min-width="150" />
-        <el-table-column label="状态" width="90">
+        <el-table-column prop="name" :label="t('system.roleName')" min-width="150" />
+        <el-table-column prop="code" :label="t('system.code')" min-width="150" />
+        <el-table-column :label="t('system.status')" width="90">
           <template #default="{ row }">
             <el-tag :type="row.status === 'ENABLE' ? 'success' : 'info'">
-              {{ row.status === 'ENABLE' ? '启用' : '禁用' }}
+              {{ row.status === 'ENABLE' ? t('system.enable') : t('system.disable') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="170" />
-        <el-table-column label="操作" width="170" fixed="right">
+        <el-table-column prop="createTime" :label="t('system.createTime')" width="170" />
+        <el-table-column :label="t('system.actions')" width="170" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="warning" @click="openAssign(row)">分配权限</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" @click="openEdit(row)">{{ t('common.edit') }}</el-button>
+            <el-button link type="warning" @click="openAssign(row)">{{ t('system.assignPermission') }}</el-button>
+            <el-button link type="danger" @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -51,25 +51,25 @@
       />
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑角色' : '新增角色'" width="460px">
+    <el-dialog v-model="dialogVisible" :title="editingId ? t('system.editRole') : t('system.addRole')" width="460px">
       <el-form :model="form" label-width="80px">
-        <el-form-item label="角色名" required>
-          <el-input v-model="form.name" placeholder="角色名称" />
+        <el-form-item :label="t('system.roleName')" required>
+          <el-input v-model="form.name" :placeholder="t('system.roleNamePlaceholder')" />
         </el-form-item>
-        <el-form-item label="状态">
+        <el-form-item :label="t('system.status')">
           <el-radio-group v-model="form.status">
-            <el-radio value="ENABLE">启用</el-radio>
-            <el-radio value="DISABLE">禁用</el-radio>
+            <el-radio value="ENABLE">{{ t('system.enable') }}</el-radio>
+            <el-radio value="DISABLE">{{ t('system.disable') }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
+        <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="assignVisible" :title="`分配权限 - ${assignRoleName}`" width="520px">
+    <el-dialog v-model="assignVisible" :title="t('system.assignPermissionTitle', { name: assignRoleName })" width="520px">
       <div v-loading="assignLoading" class="assign-body">
         <el-checkbox-group v-model="checkedPermissions">
           <el-checkbox v-for="p in allPermissions" :key="p.id" :value="p.id" class="assign-item">
@@ -79,8 +79,8 @@
         </el-checkbox-group>
       </div>
       <template #footer>
-        <el-button @click="assignVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleAssign">保存</el-button>
+        <el-button @click="assignVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleAssign">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -88,6 +88,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
 import {
@@ -101,6 +102,7 @@ import {
 } from '../../../api/role'
 import { listPermission, type PermissionItem } from '../../../api/permission'
 
+const { t } = useI18n()
 const loading = ref(false)
 const list = ref<RoleItem[]>([])
 const query = reactive({ name: '', status: '' })
@@ -152,17 +154,17 @@ function openEdit(row: RoleItem) {
 
 async function handleSubmit() {
   if (!form.name) {
-    ElMessage.warning('请填写角色名')
+    ElMessage.warning(t('system.roleNameRequired'))
     return
   }
   submitting.value = true
   try {
     if (editingId.value) {
       await updateRole({ id: editingId.value, name: form.name, status: form.status })
-      ElMessage.success('更新成功')
+      ElMessage.success(t('system.updateSuccess'))
     } else {
       await addRole({ name: form.name, status: form.status })
-      ElMessage.success('新增成功')
+      ElMessage.success(t('system.addSuccess'))
     }
     dialogVisible.value = false
     load()
@@ -192,7 +194,7 @@ async function handleAssign() {
   submitting.value = true
   try {
     await upsertRolePermission(assignRoleId.value, checkedPermissions.value)
-    ElMessage.success('权限已更新')
+    ElMessage.success(t('system.permissionUpdated'))
     assignVisible.value = false
   } finally {
     submitting.value = false
@@ -200,9 +202,9 @@ async function handleAssign() {
 }
 
 async function handleDelete(row: RoleItem) {
-  await ElMessageBox.confirm(`确认删除角色「${row.name}」？`, '提示', { type: 'warning' })
+  await ElMessageBox.confirm(t('system.deleteRoleConfirm', { name: row.name }), t('system.prompt'), { type: 'warning' })
   await deleteRole(row.id)
-  ElMessage.success('删除成功')
+  ElMessage.success(t('system.deleteSuccess'))
   load()
 }
 

@@ -3,39 +3,39 @@
     <el-card shadow="never">
       <div class="toolbar">
         <el-form inline :model="query" @submit.prevent>
-          <el-form-item label="名称">
-            <el-input v-model="query.name" placeholder="工作空间名称" clearable style="width: 180px" @keyup.enter="handleSearch" />
+          <el-form-item :label="t('system.name')">
+            <el-input v-model="query.name" :placeholder="t('system.workspaceName')" clearable style="width: 180px" @keyup.enter="handleSearch" />
           </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-              <el-option label="启用" value="ENABLE" />
-              <el-option label="禁用" value="DISABLE" />
+          <el-form-item :label="t('system.status')">
+            <el-select v-model="query.status" :placeholder="t('system.all')" clearable style="width: 120px">
+              <el-option :label="t('system.enable')" value="ENABLE" />
+              <el-option :label="t('system.disable')" value="DISABLE" />
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
-            <el-button type="success" :icon="Plus" @click="openAdd">新增工作空间</el-button>
+            <el-button type="primary" :icon="Search" @click="handleSearch">{{ t('common.search') }}</el-button>
+            <el-button type="success" :icon="Plus" @click="openAdd">{{ t('system.addWorkspace') }}</el-button>
           </el-form-item>
         </el-form>
       </div>
 
       <el-table v-loading="loading" :data="list" border>
         <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="name" label="名称" min-width="150" />
-        <el-table-column prop="code" label="编码" min-width="150" />
-        <el-table-column label="状态" width="90">
+        <el-table-column prop="name" :label="t('system.name')" min-width="150" />
+        <el-table-column prop="code" :label="t('system.code')" min-width="150" />
+        <el-table-column :label="t('system.status')" width="90">
           <template #default="{ row }">
             <el-tag :type="row.status === 'ENABLE' ? 'success' : 'info'">
-              {{ row.status === 'ENABLE' ? '启用' : '禁用' }}
+              {{ row.status === 'ENABLE' ? t('system.enable') : t('system.disable') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="170" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column prop="createTime" :label="t('system.createTime')" width="170" />
+        <el-table-column :label="t('system.actions')" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="warning" @click="openMembers(row)">成员</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" @click="openEdit(row)">{{ t('common.edit') }}</el-button>
+            <el-button link type="warning" @click="openMembers(row)">{{ t('system.members') }}</el-button>
+            <el-button link type="danger" @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -51,47 +51,47 @@
       />
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑工作空间' : '新增工作空间'" width="460px">
+    <el-dialog v-model="dialogVisible" :title="editingId ? t('system.editWorkspace') : t('system.addWorkspace')" width="460px">
       <el-form :model="form" label-width="80px">
-        <el-form-item label="名称" required>
-          <el-input v-model="form.name" placeholder="工作空间名称" />
+        <el-form-item :label="t('system.name')" required>
+          <el-input v-model="form.name" :placeholder="t('system.workspaceName')" />
         </el-form-item>
-        <el-form-item v-if="!editingId" label="编码">
-          <el-input v-model="form.code" placeholder="字母/数字/下划线" />
+        <el-form-item v-if="!editingId" :label="t('system.code')">
+          <el-input v-model="form.code" :placeholder="t('system.codePlaceholder')" />
         </el-form-item>
-        <el-form-item label="密钥">
-          <el-input v-model="form.secret" placeholder="访问密钥" />
+        <el-form-item :label="t('system.secret')">
+          <el-input v-model="form.secret" :placeholder="t('system.secretPlaceholder')" />
         </el-form-item>
-        <el-form-item label="状态">
+        <el-form-item :label="t('system.status')">
           <el-radio-group v-model="form.status">
-            <el-radio value="ENABLE">启用</el-radio>
-            <el-radio value="DISABLE">禁用</el-radio>
+            <el-radio value="ENABLE">{{ t('system.enable') }}</el-radio>
+            <el-radio value="DISABLE">{{ t('system.disable') }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
+        <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="memberVisible" :title="`成员管理 - ${memberWorkspaceName}`" width="640px">
+    <el-dialog v-model="memberVisible" :title="t('system.memberManage', { name: memberWorkspaceName })" width="640px">
       <div class="member-toolbar">
-        <el-button type="primary" size="small" :icon="Plus" @click="openAddMember">添加成员</el-button>
+        <el-button type="primary" size="small" :icon="Plus" @click="openAddMember">{{ t('system.addMember') }}</el-button>
       </div>
       <el-tabs v-model="memberTab" @tab-change="loadMembers">
-        <el-tab-pane label="管理员" name="1" />
-        <el-tab-pane label="普通用户" name="0" />
+        <el-tab-pane :label="t('system.admin')" name="1" />
+        <el-tab-pane :label="t('system.normalUser')" name="0" />
       </el-tabs>
       <el-table v-loading="memberLoading" :data="members" border size="small">
         <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="username" label="用户名" min-width="140" />
-        <el-table-column prop="email" label="邮箱" min-width="180" show-overflow-tooltip />
-        <el-table-column label="操作" width="140">
+        <el-table-column prop="username" :label="t('system.username')" min-width="140" />
+        <el-table-column prop="email" :label="t('system.email')" min-width="180" show-overflow-tooltip />
+        <el-table-column :label="t('system.actions')" width="140">
           <template #default="{ row }">
-            <el-button v-if="memberTab === '1'" link type="warning" @click="transfer(row, 0)">设为普通用户</el-button>
-            <el-button v-else link type="primary" @click="transfer(row, 1)">设为管理员</el-button>
-            <el-button link type="danger" @click="removeMember(row)">移除</el-button>
+            <el-button v-if="memberTab === '1'" link type="warning" @click="transfer(row, 0)">{{ t('system.setNormalUser') }}</el-button>
+            <el-button v-else link type="primary" @click="transfer(row, 1)">{{ t('system.setAdmin') }}</el-button>
+            <el-button link type="danger" @click="removeMember(row)">{{ t('system.remove') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -105,15 +105,15 @@
       />
     </el-dialog>
 
-    <el-dialog v-model="addMemberVisible" title="添加成员" width="520px">
-      <el-input v-model="addMemberKeyword" placeholder="用户名模糊搜索" clearable style="margin-bottom: 12px" @keyup.enter="loadNotInMembers" />
+    <el-dialog v-model="addMemberVisible" :title="t('system.addMember')" width="520px">
+      <el-input v-model="addMemberKeyword" :placeholder="t('system.usernameSearch')" clearable style="margin-bottom: 12px" @keyup.enter="loadNotInMembers" />
       <el-table v-loading="addMemberLoading" :data="notInMembers" border size="small" max-height="360">
         <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="username" label="用户名" min-width="140" />
-        <el-table-column prop="email" label="邮箱" min-width="180" show-overflow-tooltip />
-        <el-table-column label="操作" width="90">
+        <el-table-column prop="username" :label="t('system.username')" min-width="140" />
+        <el-table-column prop="email" :label="t('system.email')" min-width="180" show-overflow-tooltip />
+        <el-table-column :label="t('system.actions')" width="90">
           <template #default="{ row }">
-            <el-button link type="primary" @click="bind(row)">添加</el-button>
+            <el-button link type="primary" @click="bind(row)">{{ t('system.add') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -131,6 +131,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
 import {
@@ -147,6 +148,7 @@ import {
   type WorkspaceMember
 } from '../../../api/workspace'
 
+const { t } = useI18n()
 const loading = ref(false)
 const list = ref<WorkspaceItem[]>([])
 const query = reactive({ name: '', status: '' })
@@ -205,14 +207,14 @@ function openEdit(row: WorkspaceItem) {
 
 async function handleSubmit() {
   if (!form.name) {
-    ElMessage.warning('请填写名称')
+    ElMessage.warning(t('system.nameRequired'))
     return
   }
   submitting.value = true
   try {
     if (editingId.value) {
       await updateWorkspace({ id: editingId.value, name: form.name, secret: form.secret || undefined, status: form.status })
-      ElMessage.success('更新成功')
+      ElMessage.success(t('system.updateSuccess'))
     } else {
       await addWorkspace({
         name: form.name,
@@ -220,7 +222,7 @@ async function handleSubmit() {
         secret: form.secret || undefined,
         status: form.status
       })
-      ElMessage.success('新增成功')
+      ElMessage.success(t('system.addSuccess'))
     }
     dialogVisible.value = false
     load()
@@ -230,9 +232,9 @@ async function handleSubmit() {
 }
 
 async function handleDelete(row: WorkspaceItem) {
-  await ElMessageBox.confirm(`确认删除工作空间「${row.name}」？`, '提示', { type: 'warning' })
+  await ElMessageBox.confirm(t('system.deleteWorkspaceConfirm', { name: row.name }), t('system.prompt'), { type: 'warning' })
   await deleteWorkspace(row.id)
-  ElMessage.success('删除成功')
+  ElMessage.success(t('system.deleteSuccess'))
   load()
 }
 
@@ -264,14 +266,14 @@ async function loadMembers() {
 
 async function transfer(row: WorkspaceMember, type: number) {
   await permissionTransfer(memberWorkspaceId.value, row.id, type)
-  ElMessage.success('已更新')
+  ElMessage.success(t('system.updated'))
   loadMembers()
 }
 
 async function removeMember(row: WorkspaceMember) {
-  await ElMessageBox.confirm(`确认移除成员「${row.username}」？`, '提示', { type: 'warning' })
+  await ElMessageBox.confirm(t('system.removeMemberConfirm', { username: row.username }), t('system.prompt'), { type: 'warning' })
   await deleteMember(memberWorkspaceId.value, row.id)
-  ElMessage.success('已移除')
+  ElMessage.success(t('system.removed'))
   loadMembers()
 }
 
@@ -300,7 +302,7 @@ async function loadNotInMembers() {
 
 async function bind(row: WorkspaceMember) {
   await bindMember(row.id, memberWorkspaceId.value)
-  ElMessage.success('已添加')
+  ElMessage.success(t('system.added'))
   loadNotInMembers()
   loadMembers()
 }

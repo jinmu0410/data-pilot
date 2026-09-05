@@ -4,7 +4,7 @@
       <div class="welcome-copy">
         <span class="eyebrow"><i /> DATA WORKSPACE</span>
         <h1>{{ greeting }}，{{ username }}</h1>
-        <p>今天也准备好让数据高效流动了吗？这里是你的数据工作台。</p>
+        <p>{{ t('dashboard.welcome') }}</p>
         <div class="welcome-meta">
           <span><el-icon><Calendar /></el-icon>{{ today }}</span>
           <span><el-icon><Location /></el-icon>{{ workspaceName }}</span>
@@ -39,8 +39,8 @@
       <el-card shadow="never" class="project-panel">
         <template #header>
           <div class="panel-heading">
-            <div><strong>快捷工作区</strong><span>常用的数据平台能力</span></div>
-            <el-button link type="primary" @click="router.push('/dataflow')">进入研发中心 <el-icon><ArrowRight /></el-icon></el-button>
+            <div><strong>{{ t('dashboard.quickWork') }}</strong><span>{{ t('dashboard.quickWorkDesc') }}</span></div>
+            <el-button link type="primary" @click="router.push('/dataflow')">{{ t('dashboard.enterDev') }} <el-icon><ArrowRight /></el-icon></el-button>
           </div>
         </template>
         <div class="project-grid">
@@ -55,23 +55,23 @@
       <el-card shadow="never" class="health-panel">
         <template #header>
           <div class="panel-heading">
-            <div><strong>运行概况</strong><span>最近实例状态分布</span></div>
-            <span class="live-label"><i /> 实时</span>
+            <div><strong>{{ t('dashboard.runOverview') }}</strong><span>{{ t('dashboard.runOverviewDesc') }}</span></div>
+            <span class="live-label"><i /> {{ t('dashboard.live') }}</span>
           </div>
         </template>
         <div class="health-overview">
           <div class="health-ring" :style="ringStyle">
-            <div><strong>{{ successRate }}%</strong><span>成功率</span></div>
+            <div><strong>{{ successRate }}%</strong><span>{{ t('dashboard.successRate') }}</span></div>
           </div>
           <div class="health-legend">
-            <div><i class="success" /><span>成功</span><strong>{{ instanceStatus.success }}</strong></div>
-            <div><i class="running" /><span>运行中</span><strong>{{ instanceStatus.running }}</strong></div>
-            <div><i class="failed" /><span>失败/跳过</span><strong>{{ instanceStatus.failed }}</strong></div>
+            <div><i class="success" /><span>{{ t('dashboard.success') }}</span><strong>{{ instanceStatus.success }}</strong></div>
+            <div><i class="running" /><span>{{ t('dashboard.running') }}</span><strong>{{ instanceStatus.running }}</strong></div>
+            <div><i class="failed" /><span>{{ t('dashboard.failedSkip') }}</span><strong>{{ instanceStatus.failed }}</strong></div>
           </div>
         </div>
         <div class="health-foot">
-          <span><el-icon><CircleCheck /></el-icon>服务连接正常</span>
-          <button type="button" @click="router.push('/dataflow/instance')">查看明细</button>
+          <span><el-icon><CircleCheck /></el-icon>{{ t('dashboard.connectionOk') }}</span>
+          <button type="button" @click="router.push('/dataflow/instance')">{{ t('dashboard.viewDetail') }}</button>
         </div>
       </el-card>
     </section>
@@ -80,26 +80,26 @@
       <el-card shadow="never" class="recent-panel">
         <template #header>
           <div class="panel-heading">
-            <div><strong>最近运行</strong><span>最新任务流执行记录</span></div>
-            <el-button link type="primary" @click="router.push('/dataflow/instance')">全部实例</el-button>
+            <div><strong>{{ t('dashboard.recentRun') }}</strong><span>{{ t('dashboard.recentRunDesc') }}</span></div>
+            <el-button link type="primary" @click="router.push('/dataflow/instance')">{{ t('dashboard.allInstances') }}</el-button>
           </div>
         </template>
         <div v-if="recentInstances.length" class="recent-list">
           <button v-for="item in recentInstances" :key="item.id" type="button" class="recent-item" @click="router.push(`/dataflow/instance?id=${item.id}`)">
             <span class="recent-status" :class="statusTone(item.status)"><el-icon><VideoPlay /></el-icon></span>
-            <span class="recent-main"><strong>{{ item.flowName || item.flowCode }}</strong><small>{{ item.triggerType === 'CRON' ? '定时调度' : '手动触发' }} · {{ formatTime(item.createTime) }}</small></span>
+            <span class="recent-main"><strong>{{ item.flowName || item.flowCode }}</strong><small>{{ item.triggerType === 'CRON' ? t('dashboard.cronTrigger') : t('dashboard.manualTrigger') }} · {{ formatTime(item.createTime) }}</small></span>
             <el-tag size="small" :type="statusTag(item.status)">{{ statusLabel(item.status) }}</el-tag>
             <span class="duration">{{ formatDuration(item.durationMs) }}</span>
           </button>
         </div>
-        <el-empty v-else description="暂无运行记录，创建任务流开始第一次运行" :image-size="88" />
+        <el-empty v-else :description="t('dashboard.noInstance')" :image-size="88" />
       </el-card>
 
       <el-card shadow="never" class="flow-panel">
         <template #header>
           <div class="panel-heading">
-            <div><strong>最近更新</strong><span>持续建设中的任务流</span></div>
-            <el-button link type="primary" @click="router.push('/dataflow')">任务流列表</el-button>
+            <div><strong>{{ t('dashboard.recentUpdate') }}</strong><span>{{ t('dashboard.recentUpdateDesc') }}</span></div>
+            <el-button link type="primary" @click="router.push('/dataflow')">{{ t('dashboard.flowList') }}</el-button>
           </div>
         </template>
         <div v-if="recentFlows.length" class="flow-list">
@@ -109,7 +109,7 @@
             <el-tag size="small" :type="flow.status === 'ENABLE' ? 'success' : 'info'">{{ flowStatus(flow.status) }}</el-tag>
           </button>
         </div>
-        <el-empty v-else description="暂无任务流" :image-size="88" />
+        <el-empty v-else :description="t('dashboard.noFlow')" :image-size="88" />
       </el-card>
     </section>
   </div>
@@ -118,6 +118,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
   Coin,
   Connection,
@@ -134,38 +135,39 @@ import { listTemplate } from '../../api/service'
 import { useAuthStore } from '../../stores/auth'
 
 const router = useRouter()
+const { t, locale } = useI18n()
 const authStore = useAuthStore()
 const loading = ref(false)
 const totals = ref({ datasource: 0, flow: 0, service: 0, instance: 0 })
 const recentInstances = ref<FlowInstanceItem[]>([])
 const recentFlows = ref<DataFlowListItem[]>([])
 
-const username = computed(() => authStore.user?.username || '管理员')
-const workspaceName = computed(() => authStore.workspace?.name || '默认工作空间')
+const username = computed(() => authStore.user?.username || t('layout.admin'))
+const workspaceName = computed(() => authStore.workspace?.name || t('layout.defaultWorkspace'))
 const greeting = computed(() => {
   const hour = new Date().getHours()
-  if (hour < 6) return '夜深了'
-  if (hour < 12) return '早上好'
-  if (hour < 18) return '下午好'
-  return '晚上好'
+  if (hour < 6) return t('dashboard.greetingNight')
+  if (hour < 12) return t('dashboard.greetingMorning')
+  if (hour < 18) return t('dashboard.greetingAfternoon')
+  return t('dashboard.greetingEvening')
 })
-const today = computed(() => new Intl.DateTimeFormat('zh-CN', {
+const today = computed(() => new Intl.DateTimeFormat(locale.value, {
   month: 'long', day: 'numeric', weekday: 'long'
 }).format(new Date()))
 
 const stats = computed(() => [
-  { label: '数据源', value: totals.value.datasource, hint: '统一连接与元数据管理', icon: Coin, tone: 'blue' },
-  { label: '任务流', value: totals.value.flow, hint: '可视化编排执行流程', icon: Operation, tone: 'purple' },
-  { label: 'API 服务', value: totals.value.service, hint: '安全发布数据能力', icon: Link, tone: 'cyan' },
-  { label: '任务实例', value: totals.value.instance, hint: '全链路执行可观测', icon: Timer, tone: 'orange' }
+  { label: t('dashboard.statDatasource'), value: totals.value.datasource, hint: t('dashboard.statDatasourceHint'), icon: Coin, tone: 'blue' },
+  { label: t('dashboard.statFlow'), value: totals.value.flow, hint: t('dashboard.statFlowHint'), icon: Operation, tone: 'purple' },
+  { label: t('dashboard.statApi'), value: totals.value.service, hint: t('dashboard.statApiHint'), icon: Link, tone: 'cyan' },
+  { label: t('dashboard.statInstance'), value: totals.value.instance, hint: t('dashboard.statInstanceHint'), icon: Timer, tone: 'orange' }
 ])
 
-const quickActions = [
-  { title: '数据源', description: '连接数据库并浏览元数据', path: '/datasource', icon: Connection, tone: 'blue' },
-  { title: '任务流', description: '拖拽节点构建数据任务', path: '/dataflow', icon: Operation, tone: 'purple' },
-  { title: 'API 服务', description: '将查询能力快速服务化', path: '/service/api', icon: DataAnalysis, tone: 'cyan' },
-  { title: '任务实例', description: '追踪节点状态与执行日志', path: '/dataflow/instance', icon: Files, tone: 'orange' }
-]
+const quickActions = computed(() => [
+  { title: t('dashboard.actionDatasource'), description: t('dashboard.actionDatasourceDesc'), path: '/datasource', icon: Connection, tone: 'blue' },
+  { title: t('dashboard.actionFlow'), description: t('dashboard.actionFlowDesc'), path: '/dataflow', icon: Operation, tone: 'purple' },
+  { title: t('dashboard.actionApi'), description: t('dashboard.actionApiDesc'), path: '/service/api', icon: DataAnalysis, tone: 'cyan' },
+  { title: t('dashboard.actionInstance'), description: t('dashboard.actionInstanceDesc'), path: '/dataflow/instance', icon: Files, tone: 'orange' }
+])
 
 const instanceStatus = computed(() => {
   const status = { success: 0, running: 0, failed: 0 }
@@ -222,18 +224,18 @@ function statusTag(status: string) {
 }
 
 function statusLabel(status: string) {
-  return ({ SUCCESS: '成功', RUNNING: '运行中', FAIL: '失败', SKIP: '已跳过' } as Record<string, string>)[status] || status
+  return ({ SUCCESS: t('dashboard.statusSuccess'), RUNNING: t('dashboard.statusRunning'), FAIL: t('dashboard.statusFail'), SKIP: t('dashboard.statusSkip') } as Record<string, string>)[status] || status
 }
 
 function flowStatus(status: string) {
-  return ({ ENABLE: '已启用', PAUSE: '已暂停', TBP: '待发布', HISTORY: '历史' } as Record<string, string>)[status] || status
+  return ({ ENABLE: t('dashboard.flowEnable'), PAUSE: t('dashboard.flowPause'), TBP: t('dashboard.flowTBP'), HISTORY: t('dashboard.flowHistory') } as Record<string, string>)[status] || status
 }
 
 function formatTime(value: string) {
   if (!value) return '-'
   const date = new Date(value.replace(' ', 'T'))
   if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(date)
+  return new Intl.DateTimeFormat(locale.value, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(date)
 }
 
 function formatDuration(value: number) {

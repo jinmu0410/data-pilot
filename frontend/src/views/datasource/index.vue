@@ -17,7 +17,7 @@
     <el-card shadow="never" class="filter-card">
       <el-form inline :model="query" @submit.prevent>
         <el-form-item :label="t('datasource.name')"><el-input v-model="query.name" :placeholder="t('datasource.namePlaceholder')" clearable style="width: 200px" @keyup.enter="handleSearch" /></el-form-item>
-        <el-form-item :label="t('datasource.type')"><el-select v-model="query.type" :placeholder="t('datasource.allTypes')" clearable style="width: 150px"><el-option v-for="item in TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
+        <el-form-item :label="t('datasource.type')"><el-select v-model="query.type" :placeholder="t('datasource.allTypes')" clearable style="width: 150px"><el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
         <el-form-item :label="t('datasource.status')"><el-select v-model="query.status" :placeholder="t('datasource.allStatus')" clearable style="width: 130px"><el-option :label="t('datasource.enable')" value="ENABLE" /><el-option :label="t('datasource.disable')" value="DISABLE" /></el-select></el-form-item>
         <el-form-item><el-button type="primary" :icon="Search" @click="handleSearch">{{ t('common.search') }}</el-button><el-button :icon="Refresh" @click="resetSearch">{{ t('datasource.reset') }}</el-button></el-form-item>
       </el-form>
@@ -38,61 +38,61 @@
     </el-card>
 
     <el-dialog v-model="dialogVisible" width="min(1080px, calc(100vw - 40px))" top="4vh" append-to-body destroy-on-close :close-on-click-modal="false" class="datasource-config-dialog">
-      <template #header><div class="dialog-heading"><span class="dialog-logo" :class="typeClass(form.type)">{{ currentType.abbr }}</span><div><div class="dialog-title">{{ editingId ? '编辑数据源' : '创建数据源' }}</div><div class="dialog-subtitle">配置连接参数并在保存前完成可用性验证</div></div><span class="dialog-mode">{{ editingId ? 'EDIT' : 'NEW CONNECTION' }}</span></div></template>
+      <template #header><div class="dialog-heading"><span class="dialog-logo" :class="typeClass(form.type)">{{ currentType.abbr }}</span><div><div class="dialog-title">{{ editingId ? t('datasource.editTitle') : t('datasource.createDialogTitle') }}</div><div class="dialog-subtitle">{{ t('datasource.dialogSubtitle') }}</div></div><span class="dialog-mode">{{ editingId ? 'EDIT' : 'NEW CONNECTION' }}</span></div></template>
       <div class="config-shell">
         <aside class="type-sidebar">
-          <span class="sidebar-label">选择数据源类型</span>
-          <button v-for="item in TYPE_OPTIONS" :key="item.value" type="button" class="type-option" :class="[{ active: form.type === item.value }, typeClass(item.value)]" @click="selectType(item.value)"><span>{{ item.abbr }}</span><div><strong>{{ item.label }}</strong><small>{{ item.category }}</small></div><i>✓</i></button>
-          <div class="connection-summary"><span>当前配置</span><strong>{{ form.name || '未命名数据源' }}</strong><p>{{ currentType.protocol }}</p><div><i :class="{ ready: form.url }"></i>{{ form.url ? '连接地址已填写' : '等待填写连接地址' }}</div></div>
+          <span class="sidebar-label">{{ t('datasource.selectType') }}</span>
+          <button v-for="item in typeOptions" :key="item.value" type="button" class="type-option" :class="[{ active: form.type === item.value }, typeClass(item.value)]" @click="selectType(item.value)"><span>{{ item.abbr }}</span><div><strong>{{ item.label }}</strong><small>{{ item.category }}</small></div><i>✓</i></button>
+          <div class="connection-summary"><span>{{ t('datasource.currentConfig') }}</span><strong>{{ form.name || t('datasource.unnamed') }}</strong><p>{{ currentType.protocol }}</p><div><i :class="{ ready: form.url }"></i>{{ form.url ? t('datasource.urlFilled') : t('datasource.urlPending') }}</div></div>
         </aside>
 
         <main class="config-content">
           <section class="form-section">
-            <div class="section-heading"><div><span class="section-index">01</span><div><h3>基本信息</h3><p>用于在平台内识别和管理这条连接</p></div></div></div>
+            <div class="section-heading"><div><span class="section-index">01</span><div><h3>{{ t('datasource.basicInfo') }}</h3><p>{{ t('datasource.basicInfoDesc') }}</p></div></div></div>
             <div class="form-grid basic-grid">
-              <div class="field wide-field"><label>数据源名称 <em>*</em></label><el-input v-model="form.name" maxlength="32" show-word-limit placeholder="例如：生产订单库" size="large" /></div>
-              <div class="field"><label>运行状态</label><el-segmented v-model="form.status" :options="statusOptions" block /></div>
-              <div class="field wide-field"><label>描述</label><el-input v-model="form.description" type="textarea" :rows="2" maxlength="300" placeholder="说明用途、所属系统或负责人（可选）" /></div>
+              <div class="field wide-field"><label>{{ t('datasource.nameLabel') }} <em>*</em></label><el-input v-model="form.name" maxlength="32" show-word-limit :placeholder="t('datasource.nameFormPlaceholder')" size="large" /></div>
+              <div class="field"><label>{{ t('datasource.runningStatus') }}</label><el-segmented v-model="form.status" :options="statusOptions" block /></div>
+              <div class="field wide-field"><label>{{ t('datasource.description') }}</label><el-input v-model="form.description" type="textarea" :rows="2" maxlength="300" :placeholder="t('datasource.descriptionPlaceholder')" /></div>
             </div>
           </section>
 
           <section class="form-section">
-            <div class="section-heading"><div><span class="section-index">02</span><div><h3>连接配置</h3><p>{{ currentType.description }}</p></div></div><button type="button" class="recommend-button" @click="applyRecommendedConfig">使用推荐配置</button></div>
+            <div class="section-heading"><div><span class="section-index">02</span><div><h3>{{ t('datasource.connectionConfig') }}</h3><p>{{ currentType.description }}</p></div></div><button type="button" class="recommend-button" @click="applyRecommendedConfig">{{ t('datasource.useRecommended') }}</button></div>
             <div class="connection-form-card">
               <div class="endpoint-strip"><span class="source-logo" :class="typeClass(form.type)">{{ currentType.abbr }}</span><div><strong>{{ currentType.label }}</strong><small>{{ currentType.protocol }}</small></div><span>{{ isJdbc ? 'JDBC' : currentType.value === 'Kafka' ? 'BROKER' : 'HTTP' }}</span></div>
               <div class="form-grid">
                 <div class="field full-field"><label>{{ connectionLabel }} <em>*</em></label><el-input v-model="form.url" :placeholder="currentType.urlPlaceholder" size="large"><template #prepend>{{ connectionPrefix }}</template></el-input><small>{{ currentType.urlHint }}</small></div>
-                <div v-if="isJdbc" class="field full-field"><label>驱动类 <em>*</em></label><el-input v-model="form.driver" :placeholder="currentType.driver" /><small>平台已内置推荐驱动，一般无需修改。</small></div>
-                <div class="field"><label>用户名</label><el-input v-model="form.username" autocomplete="off" placeholder="未启用认证可留空" /></div>
-                <div class="field"><label>密码</label><el-input v-model="form.password" type="password" show-password autocomplete="new-password" :placeholder="editingId ? '留空则保持原密码' : '请输入连接密码'" /></div>
+                <div v-if="isJdbc" class="field full-field"><label>{{ t('datasource.driverClass') }} <em>*</em></label><el-input v-model="form.driver" :placeholder="currentType.driver" /><small>{{ t('datasource.driverHint') }}</small></div>
+                <div class="field"><label>{{ t('datasource.username') }}</label><el-input v-model="form.username" autocomplete="off" :placeholder="t('datasource.usernamePlaceholder')" /></div>
+                <div class="field"><label>{{ t('datasource.password') }}</label><el-input v-model="form.password" type="password" show-password autocomplete="new-password" :placeholder="editingId ? t('datasource.passwordKeep') : t('datasource.passwordPlaceholder')" /></div>
               </div>
-              <div v-if="form.type === 'Doris'" class="extra-config"><div class="extra-title"><strong>Doris 节点配置</strong><span>用于 FE 管理与 BE 数据写入</span></div><div class="form-grid"><div class="field"><label>FE 节点</label><el-input v-model="form.feNodes" placeholder="fe-1:8030,fe-2:8030" /></div><div class="field"><label>BE 节点</label><el-input v-model="form.beNodes" placeholder="be-1:8040,be-2:8040" /></div></div></div>
-              <div v-if="form.type === 'Kafka'" class="config-hint"><span>i</span><p>支持多个 Broker，使用英文逗号分隔。填写账号密码时，将按 SASL/SSL + PLAIN 方式建立连接。</p></div>
-              <div v-if="form.type === 'Elastic'" class="config-hint"><span>i</span><p>支持单节点或集群代理地址，建议使用 HTTPS 并通过最小权限账号访问 Elasticsearch。</p></div>
+              <div v-if="form.type === 'Doris'" class="extra-config"><div class="extra-title"><strong>{{ t('datasource.dorisConfig') }}</strong><span>{{ t('datasource.dorisConfigDesc') }}</span></div><div class="form-grid"><div class="field"><label>{{ t('datasource.feNodes') }}</label><el-input v-model="form.feNodes" placeholder="fe-1:8030,fe-2:8030" /></div><div class="field"><label>{{ t('datasource.beNodes') }}</label><el-input v-model="form.beNodes" placeholder="be-1:8040,be-2:8040" /></div></div></div>
+              <div v-if="form.type === 'Kafka'" class="config-hint"><span>i</span><p>{{ t('datasource.kafkaHint') }}</p></div>
+              <div v-if="form.type === 'Elastic'" class="config-hint"><span>i</span><p>{{ t('datasource.elasticHint') }}</p></div>
             </div>
           </section>
 
           <section class="form-section settings-section">
-            <div class="section-heading"><div><span class="section-index">03</span><div><h3>运行设置</h3><p>控制连接池、健康探测及高级路由</p></div></div></div>
+            <div class="section-heading"><div><span class="section-index">03</span><div><h3>{{ t('datasource.runtimeSettings') }}</h3><p>{{ t('datasource.runtimeSettingsDesc') }}</p></div></div></div>
             <div class="settings-grid">
-              <div v-if="isJdbc" class="setting-card"><div><strong>连接池大小</strong><small>并发任务可用的最大 JDBC 连接数</small></div><el-input-number v-model="form.maxPoolSize" :min="1" :max="200" controls-position="right" /></div>
-              <div class="setting-card"><div><strong>健康检查</strong><small>定期探测连接并更新可用状态</small></div><el-switch v-model="form.healthCheck" active-value="ENABLE" inactive-value="DISABLE" /></div>
-              <div v-if="supportsPartitioning(form.type)" class="setting-card full-setting"><div><strong>分表规则</strong><small>可选，用于分库分表场景下的实际表路由</small></div><el-input v-model="form.partitioningAlgorithm" placeholder="例如：orders_${id % 16}" /></div>
+              <div v-if="isJdbc" class="setting-card"><div><strong>{{ t('datasource.poolSize') }}</strong><small>{{ t('datasource.poolSizeDesc') }}</small></div><el-input-number v-model="form.maxPoolSize" :min="1" :max="200" controls-position="right" /></div>
+              <div class="setting-card"><div><strong>{{ t('datasource.healthCheck') }}</strong><small>{{ t('datasource.healthCheckDesc') }}</small></div><el-switch v-model="form.healthCheck" active-value="ENABLE" inactive-value="DISABLE" /></div>
+              <div v-if="supportsPartitioning(form.type)" class="setting-card full-setting"><div><strong>{{ t('datasource.partitioning') }}</strong><small>{{ t('datasource.partitioningDesc') }}</small></div><el-input v-model="form.partitioningAlgorithm" :placeholder="t('datasource.partitioningPlaceholder')" /></div>
             </div>
           </section>
         </main>
       </div>
-      <template #footer><div class="dialog-footer"><span class="footer-tip">保存前建议先测试连接，避免任务运行时失败。</span><el-button @click="dialogVisible = false">取消</el-button><el-button :loading="testing" @click="handleTestInForm">测试连接</el-button><el-button type="primary" :loading="submitting" @click="handleSubmit">{{ editingId ? '保存修改' : '创建数据源' }}</el-button></div></template>
+      <template #footer><div class="dialog-footer"><span class="footer-tip">{{ t('datasource.footerTip') }}</span><el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button><el-button :loading="testing" @click="handleTestInForm">{{ t('datasource.testConnection') }}</el-button><el-button type="primary" :loading="submitting" @click="handleSubmit">{{ editingId ? t('datasource.saveChanges') : t('datasource.createDataSource') }}</el-button></div></template>
     </el-dialog>
 
     <el-dialog v-model="metaVisible" width="min(1000px, calc(100vw - 40px))" top="5vh" append-to-body class="metadata-dialog">
-      <template #header><div class="dialog-heading"><span class="dialog-logo metadata-logo">META</span><div><div class="dialog-title">元数据浏览</div><div class="dialog-subtitle">{{ metaName }} · 查看库表、字段与索引结构</div></div></div></template>
+      <template #header><div class="dialog-heading"><span class="dialog-logo metadata-logo">META</span><div><div class="dialog-title">{{ t('datasource.metadataTitle') }}</div><div class="dialog-subtitle">{{ metaName }} · {{ t('datasource.metadataSubtitle') }}</div></div></div></template>
       <div class="meta-body">
-        <aside class="meta-tree-panel"><div class="meta-panel-title"><strong>库表目录</strong><span>{{ metaTree.length }} 个 Schema</span></div><el-tree v-loading="metaTreeLoading" :data="metaTree" node-key="key" :props="{ label: 'label', children: 'children' }" highlight-current :expand-on-click-node="false" @node-click="onMetaNodeClick" /></aside>
+        <aside class="meta-tree-panel"><div class="meta-panel-title"><strong>{{ t('datasource.schemaCatalog') }}</strong><span>{{ t('datasource.schemaCount', { count: metaTree.length }) }}</span></div><el-tree v-loading="metaTreeLoading" :data="metaTree" node-key="key" :props="{ label: 'label', children: 'children' }" highlight-current :expand-on-click-node="false" @node-click="onMetaNodeClick" /></aside>
         <main class="meta-detail">
           <el-skeleton v-if="metaDetailLoading" :rows="8" animated />
-          <template v-else-if="metaDetail"><div class="meta-detail-head"><div><span>TABLE</span><strong>{{ metaTable }}</strong></div><p>{{ metaDetail.comment || '暂无表注释' }}</p></div><div class="meta-block-title"><strong>字段结构</strong><span>{{ metaDetail.columns.length }} 个字段</span></div><el-table :data="metaDetail.columns" border size="small" max-height="285"><el-table-column prop="name" label="字段名" min-width="140" /><el-table-column prop="type" :label="t('datasource.type')" width="125" /><el-table-column label="约束" width="95"><template #default="{ row }"><el-tag v-if="row.primaryKey" type="danger" size="small">PK</el-tag><span v-else>{{ row.notNull ? 'NOT NULL' : '-' }}</span></template></el-table-column><el-table-column prop="defaultValue" label="默认值" width="110" show-overflow-tooltip /><el-table-column prop="comment" label="注释" min-width="140" show-overflow-tooltip /></el-table><template v-if="metaDetail.indexes?.length"><div class="meta-block-title index-title"><strong>索引</strong><span>{{ metaDetail.indexes.length }} 个索引</span></div><el-table :data="metaDetail.indexes" border size="small" max-height="155"><el-table-column prop="name" label="索引名" min-width="150" /><el-table-column label="唯一" width="75"><template #default="{ row }">{{ row.unique ? '是' : '否' }}</template></el-table-column><el-table-column label="字段" min-width="180"><template #default="{ row }">{{ row.columns?.join(', ') }}</template></el-table-column></el-table></template></template>
-          <div v-else class="meta-empty"><span>▦</span><strong>选择一张数据表</strong><p>从左侧库表目录中选择数据表查看详细结构</p></div>
+          <template v-else-if="metaDetail"><div class="meta-detail-head"><div><span>TABLE</span><strong>{{ metaTable }}</strong></div><p>{{ metaDetail.comment || t('datasource.noTableComment') }}</p></div><div class="meta-block-title"><strong>{{ t('datasource.fieldStructure') }}</strong><span>{{ t('datasource.fieldCount', { count: metaDetail.columns.length }) }}</span></div><el-table :data="metaDetail.columns" border size="small" max-height="285"><el-table-column prop="name" :label="t('datasource.fieldName')" min-width="140" /><el-table-column prop="type" :label="t('datasource.type')" width="125" /><el-table-column :label="t('datasource.constraint')" width="95"><template #default="{ row }"><el-tag v-if="row.primaryKey" type="danger" size="small">PK</el-tag><span v-else>{{ row.notNull ? 'NOT NULL' : '-' }}</span></template></el-table-column><el-table-column prop="defaultValue" :label="t('datasource.defaultValue')" width="110" show-overflow-tooltip /><el-table-column prop="comment" :label="t('datasource.comment')" min-width="140" show-overflow-tooltip /></el-table><template v-if="metaDetail.indexes?.length"><div class="meta-block-title index-title"><strong>{{ t('datasource.indexes') }}</strong><span>{{ t('datasource.indexCount', { count: metaDetail.indexes.length }) }}</span></div><el-table :data="metaDetail.indexes" border size="small" max-height="155"><el-table-column prop="name" :label="t('datasource.indexName')" min-width="150" /><el-table-column :label="t('datasource.unique')" width="75"><template #default="{ row }">{{ row.unique ? t('datasource.yes') : t('datasource.no') }}</template></el-table-column><el-table-column :label="t('datasource.fields')" min-width="180"><template #default="{ row }">{{ row.columns?.join(', ') }}</template></el-table-column></el-table></template></template>
+          <div v-else class="meta-empty"><span>▦</span><strong>{{ t('datasource.selectTable') }}</strong><p>{{ t('datasource.selectTableHint') }}</p></div>
         </main>
       </div>
     </el-dialog>
@@ -110,14 +110,28 @@ const { t } = useI18n()
 
 interface TypeOption { value: string; label: string; abbr: string; category: string; protocol: string; description: string; urlPlaceholder: string; urlHint: string; driver?: string }
 
-const TYPE_OPTIONS: TypeOption[] = [
-  { value: 'MySQL', label: 'MySQL', abbr: 'MY', category: '关系型数据库', protocol: 'MySQL JDBC', description: '通过标准 JDBC 连接 MySQL 数据库', urlPlaceholder: 'jdbc:mysql://db-host:3306/database', urlHint: '格式：jdbc:mysql://主机:端口/数据库', driver: 'com.mysql.cj.jdbc.Driver' },
-  { value: 'TiDB', label: 'TiDB', abbr: 'TI', category: '分布式 SQL', protocol: 'MySQL Compatible', description: '使用 MySQL 协议连接 TiDB 集群', urlPlaceholder: 'jdbc:mysql://tidb-host:4000/database', urlHint: 'TiDB 默认 SQL 端口为 4000', driver: 'com.mysql.cj.jdbc.Driver' },
-  { value: 'Doris', label: 'Doris', abbr: 'DO', category: '分析型数据库', protocol: 'MySQL / FE / BE', description: '连接 Doris FE 查询端点并配置集群节点', urlPlaceholder: 'jdbc:mysql://fe-host:9030/database', urlHint: 'Doris FE 查询端口默认为 9030', driver: 'com.mysql.cj.jdbc.Driver' },
-  { value: 'PostgreSQL', label: 'PostgreSQL', abbr: 'PG', category: '关系型数据库', protocol: 'PostgreSQL JDBC', description: '通过标准 JDBC 连接 PostgreSQL 数据库', urlPlaceholder: 'jdbc:postgresql://db-host:5432/database', urlHint: '格式：jdbc:postgresql://主机:端口/数据库', driver: 'org.postgresql.Driver' },
-  { value: 'Kafka', label: 'Kafka', abbr: 'KF', category: '消息队列', protocol: 'Kafka Brokers', description: '连接 Kafka Broker 集群并验证管理端可用性', urlPlaceholder: 'broker-1:9092,broker-2:9092', urlHint: '多个 Broker 使用英文逗号分隔' },
-  { value: 'Elastic', label: 'Elasticsearch', abbr: 'ES', category: '搜索引擎', protocol: 'Elasticsearch HTTP', description: '通过 REST 地址连接 Elasticsearch 集群', urlPlaceholder: 'http://es-host:9200', urlHint: '支持 http:// 或 https:// 地址' }
+interface TypeBase { value: string; label: string; abbr: string; categoryKey: string; protocol: string; descriptionKey: string; urlPlaceholder: string; urlHintKey: string; driver?: string }
+
+const TYPE_BASE: TypeBase[] = [
+  { value: 'MySQL', label: 'MySQL', abbr: 'MY', categoryKey: 'catRelational', protocol: 'MySQL JDBC', descriptionKey: 'descMysql', urlPlaceholder: 'jdbc:mysql://db-host:3306/database', urlHintKey: 'hintMysql', driver: 'com.mysql.cj.jdbc.Driver' },
+  { value: 'TiDB', label: 'TiDB', abbr: 'TI', categoryKey: 'catDistributed', protocol: 'MySQL Compatible', descriptionKey: 'descTiDB', urlPlaceholder: 'jdbc:mysql://tidb-host:4000/database', urlHintKey: 'hintTiDB', driver: 'com.mysql.cj.jdbc.Driver' },
+  { value: 'Doris', label: 'Doris', abbr: 'DO', categoryKey: 'catAnalytical', protocol: 'MySQL / FE / BE', descriptionKey: 'descDoris', urlPlaceholder: 'jdbc:mysql://fe-host:9030/database', urlHintKey: 'hintDoris', driver: 'com.mysql.cj.jdbc.Driver' },
+  { value: 'PostgreSQL', label: 'PostgreSQL', abbr: 'PG', categoryKey: 'catRelational', protocol: 'PostgreSQL JDBC', descriptionKey: 'descPostgreSQL', urlPlaceholder: 'jdbc:postgresql://db-host:5432/database', urlHintKey: 'hintPostgreSQL', driver: 'org.postgresql.Driver' },
+  { value: 'Kafka', label: 'Kafka', abbr: 'KF', categoryKey: 'catQueue', protocol: 'Kafka Brokers', descriptionKey: 'descKafka', urlPlaceholder: 'broker-1:9092,broker-2:9092', urlHintKey: 'hintKafka' },
+  { value: 'Elastic', label: 'Elasticsearch', abbr: 'ES', categoryKey: 'catSearch', protocol: 'Elasticsearch HTTP', descriptionKey: 'descElastic', urlPlaceholder: 'http://es-host:9200', urlHintKey: 'hintElastic' }
 ]
+
+const typeOptions = computed<TypeOption[]>(() => TYPE_BASE.map((item) => ({
+  value: item.value,
+  label: item.label,
+  abbr: item.abbr,
+  category: t(`datasource.${item.categoryKey}`),
+  protocol: item.protocol,
+  description: t(`datasource.${item.descriptionKey}`),
+  urlPlaceholder: item.urlPlaceholder,
+  urlHint: t(`datasource.${item.urlHintKey}`),
+  driver: item.driver
+})))
 
 const loading = ref(false)
 const list = ref<DataSourceItem[]>([])
@@ -132,9 +146,9 @@ const editingId = ref(0)
 const form = reactive<DataSourceForm>(defaultForm())
 const currentType = computed(() => typeMeta(form.type))
 const isJdbc = computed(() => ['MySQL', 'TiDB', 'Doris', 'PostgreSQL'].includes(form.type))
-const connectionLabel = computed(() => form.type === 'Kafka' ? 'Bootstrap Servers' : form.type === 'Elastic' ? '集群地址' : 'JDBC URL')
+const connectionLabel = computed(() => form.type === 'Kafka' ? 'Bootstrap Servers' : form.type === 'Elastic' ? t('datasource.elasticUrlLabel') : 'JDBC URL')
 const connectionPrefix = computed(() => form.type === 'Kafka' ? 'BROKER' : form.type === 'Elastic' ? 'HTTP' : 'JDBC')
-const statusOptions = [{ label: '启用', value: 'ENABLE' }, { label: '禁用', value: 'DISABLE' }]
+const statusOptions = computed(() => [{ label: t('datasource.enable'), value: 'ENABLE' }, { label: t('datasource.disable'), value: 'DISABLE' }])
 const metaVisible = ref(false)
 const metaName = ref('')
 const metaId = ref(0)
@@ -145,7 +159,7 @@ const metaDetail = ref<TableDetail | null>(null)
 const metaTable = ref('')
 
 function defaultForm(): DataSourceForm { return { name: '', type: 'MySQL', url: '', driver: 'com.mysql.cj.jdbc.Driver', username: '', password: '', maxPoolSize: 10, status: 'ENABLE', feNodes: '', beNodes: '', partitioningAlgorithm: '', healthCheck: 'ENABLE', description: '' } }
-function typeMeta(type: string): TypeOption { return TYPE_OPTIONS.find((item) => item.value === type) ?? { ...TYPE_OPTIONS[0], value: type, label: type, abbr: type.slice(0, 2).toUpperCase() } }
+function typeMeta(type: string): TypeOption { return typeOptions.value.find((item) => item.value === type) ?? { ...typeOptions.value[0], value: type, label: type, abbr: type.slice(0, 2).toUpperCase() } }
 function typeClass(type: string) { return `type-${type.toLowerCase().replace(/[^a-z0-9]/g, '')}` }
 function supportsMetadata(type: string) { return ['MySQL', 'TiDB', 'Doris', 'PostgreSQL'].includes(type) }
 function supportsPartitioning(type: string) { return ['MySQL', 'TiDB', 'PostgreSQL'].includes(type) }
@@ -155,18 +169,18 @@ function handleSearch() { page.current = 1; load() }
 function resetSearch() { Object.assign(query, { name: '', type: '', status: '' }); handleSearch() }
 function resetForm() { Object.assign(form, defaultForm()) }
 function selectType(type: string) { if (form.type === type) return; form.type = type; form.url = ''; form.driver = typeMeta(type).driver ?? ''; form.feNodes = ''; form.beNodes = ''; form.partitioningAlgorithm = '' }
-function applyRecommendedConfig() { form.driver = currentType.value.driver ?? ''; if (!form.url) form.url = currentType.value.urlPlaceholder; if (isJdbc.value && !form.maxPoolSize) form.maxPoolSize = 10; ElMessage.success('已应用推荐连接参数，请替换示例主机和数据库名') }
+function applyRecommendedConfig() { form.driver = currentType.value.driver ?? ''; if (!form.url) form.url = currentType.value.urlPlaceholder; if (isJdbc.value && !form.maxPoolSize) form.maxPoolSize = 10; ElMessage.success(t('datasource.recommendedApplied')) }
 function openAdd() { editingId.value = 0; resetForm(); dialogVisible.value = true }
 
 async function openEdit(row: DataSourceItem) { editingId.value = row.id; resetForm(); const d = await getDataSourceDetail(row.id); Object.assign(form, { name: d.name, type: d.type, url: d.url, driver: d.driver, username: d.username, password: '', maxPoolSize: d.maxPoolSize, status: d.status, feNodes: d.feNodes, beNodes: d.beNodes, partitioningAlgorithm: d.partitioningAlgorithm, healthCheck: d.healthCheck || 'DISABLE', description: d.description }); dialogVisible.value = true }
-async function handleCopy(row: DataSourceItem) { editingId.value = 0; resetForm(); const d = await getDataSourceDetail(row.id); Object.assign(form, { name: `${d.name}_copy`, type: d.type, url: d.url, driver: d.driver, username: d.username, password: '', maxPoolSize: d.maxPoolSize, status: d.status, feNodes: d.feNodes, beNodes: d.beNodes, partitioningAlgorithm: d.partitioningAlgorithm, healthCheck: d.healthCheck || 'DISABLE', description: d.description }); dialogVisible.value = true; ElMessage.info('已复制连接配置，请重新填写密码') }
+async function handleCopy(row: DataSourceItem) { editingId.value = 0; resetForm(); const d = await getDataSourceDetail(row.id); Object.assign(form, { name: `${d.name}_copy`, type: d.type, url: d.url, driver: d.driver, username: d.username, password: '', maxPoolSize: d.maxPoolSize, status: d.status, feNodes: d.feNodes, beNodes: d.beNodes, partitioningAlgorithm: d.partitioningAlgorithm, healthCheck: d.healthCheck || 'DISABLE', description: d.description }); dialogVisible.value = true; ElMessage.info(t('datasource.copyInfo')) }
 function buildTestPayload(): DataSourceForm { return { id: editingId.value || undefined, name: form.name || 'connection-test', type: form.type, url: form.url, driver: form.driver || '-', username: form.username, password: form.password, status: form.status } }
-function validateForm() { if (!form.name?.trim()) return '请填写数据源名称'; if (!form.url?.trim()) return `请填写${connectionLabel.value}`; if (isJdbc.value && !form.driver?.trim()) return '请填写 JDBC 驱动类'; if (['MySQL', 'TiDB', 'Doris'].includes(form.type) && !form.url.startsWith('jdbc:mysql://')) return `${currentType.value.label} 需要使用 jdbc:mysql:// 开头的连接地址`; if (form.type === 'PostgreSQL' && !form.url.startsWith('jdbc:postgresql://')) return 'PostgreSQL 需要使用 jdbc:postgresql:// 开头的连接地址'; if (form.type === 'Elastic' && !/^https?:\/\//i.test(form.url)) return 'Elasticsearch 地址需要以 http:// 或 https:// 开头'; return '' }
-async function handleTestInForm() { const message = validateForm(); if (message) { ElMessage.warning(message); return }; testing.value = true; try { await testDataSource(buildTestPayload()); ElMessage.success('连接测试成功') } finally { testing.value = false } }
-async function handleTest(row: DataSourceItem) { const d = await getDataSourceDetail(row.id); testing.value = true; try { await testDataSource({ id: d.id, name: d.name, type: d.type, url: d.url, driver: d.driver || '-', username: d.username, password: d.password, status: d.status }); ElMessage.success(`「${d.name}」连接成功`) } finally { testing.value = false } }
-async function handleSubmit() { const message = validateForm(); if (message) { ElMessage.warning(message); return }; submitting.value = true; try { if (editingId.value) { await updateDataSource({ ...form, id: editingId.value }); ElMessage.success('数据源更新成功') } else { await addDataSource({ ...form }); ElMessage.success('数据源创建成功') }; dialogVisible.value = false; load() } finally { submitting.value = false } }
-async function handleDelete(row: DataSourceItem) { await ElMessageBox.confirm(`确认删除数据源「${row.name}」？删除后无法恢复。`, '删除数据源', { type: 'warning', confirmButtonText: '确认删除', cancelButtonText: '取消' }); await deleteDataSource(row.id); ElMessage.success('数据源已删除'); load() }
-async function openMeta(row: DataSourceItem) { if (!supportsMetadata(row.type)) { ElMessage.info(`${typeMeta(row.type).label} 暂不提供关系型库表元数据`); return }; metaName.value = row.name; metaId.value = row.id; metaTable.value = ''; metaDetail.value = null; metaVisible.value = true; metaTreeLoading.value = true; try { const res = await listSchemaTable(row.id); metaTree.value = res.map((item) => ({ key: item.key, label: item.label, tag: item.tag, children: (item.children ?? []).map((child) => ({ key: `${child.schema}.${child.key}`, label: child.label || child.key, schema: child.schema, table: child.key })) })) } finally { metaTreeLoading.value = false } }
+function validateForm() { if (!form.name?.trim()) return t('datasource.nameRequired'); if (!form.url?.trim()) return t('datasource.urlRequired', { label: connectionLabel.value }); if (isJdbc.value && !form.driver?.trim()) return t('datasource.driverRequired'); if (['MySQL', 'TiDB', 'Doris'].includes(form.type) && !form.url.startsWith('jdbc:mysql://')) return t('datasource.mysqlUrlHint', { label: currentType.value.label }); if (form.type === 'PostgreSQL' && !form.url.startsWith('jdbc:postgresql://')) return t('datasource.pgUrlHint'); if (form.type === 'Elastic' && !/^https?:\/\//i.test(form.url)) return t('datasource.elasticUrlHint'); return '' }
+async function handleTestInForm() { const message = validateForm(); if (message) { ElMessage.warning(message); return }; testing.value = true; try { await testDataSource(buildTestPayload()); ElMessage.success(t('datasource.testSuccess')) } finally { testing.value = false } }
+async function handleTest(row: DataSourceItem) { const d = await getDataSourceDetail(row.id); testing.value = true; try { await testDataSource({ id: d.id, name: d.name, type: d.type, url: d.url, driver: d.driver || '-', username: d.username, password: d.password, status: d.status }); ElMessage.success(t('datasource.testRowSuccess', { name: d.name })) } finally { testing.value = false } }
+async function handleSubmit() { const message = validateForm(); if (message) { ElMessage.warning(message); return }; submitting.value = true; try { if (editingId.value) { await updateDataSource({ ...form, id: editingId.value }); ElMessage.success(t('datasource.updateSuccess')) } else { await addDataSource({ ...form }); ElMessage.success(t('datasource.createSuccess')) }; dialogVisible.value = false; load() } finally { submitting.value = false } }
+async function handleDelete(row: DataSourceItem) { await ElMessageBox.confirm(t('datasource.deleteConfirm', { name: row.name }), t('datasource.deleteTitle'), { type: 'warning', confirmButtonText: t('datasource.confirmDelete'), cancelButtonText: t('common.cancel') }); await deleteDataSource(row.id); ElMessage.success(t('datasource.deleteSuccess')); load() }
+async function openMeta(row: DataSourceItem) { if (!supportsMetadata(row.type)) { ElMessage.info(t('datasource.metadataUnsupported', { label: typeMeta(row.type).label })); return }; metaName.value = row.name; metaId.value = row.id; metaTable.value = ''; metaDetail.value = null; metaVisible.value = true; metaTreeLoading.value = true; try { const res = await listSchemaTable(row.id); metaTree.value = res.map((item) => ({ key: item.key, label: item.label, tag: item.tag, children: (item.children ?? []).map((child) => ({ key: `${child.schema}.${child.key}`, label: child.label || child.key, schema: child.schema, table: child.key })) })) } finally { metaTreeLoading.value = false } }
 async function onMetaNodeClick(data: { schema?: string; table?: string; key: string }) { if (!data.schema || !data.table) return; metaTable.value = data.table; metaDetailLoading.value = true; try { metaDetail.value = await tableDetail(metaId.value, data.schema, data.table) } finally { metaDetailLoading.value = false } }
 onMounted(load)
 </script>

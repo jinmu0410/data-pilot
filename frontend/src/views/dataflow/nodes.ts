@@ -64,43 +64,45 @@ export interface FieldMappingRow {
   target: string
 }
 
+export type TranslateFn = (key: string) => string
+
 const SYNC_FIELDS: FieldDef[] = [
-  { key: 'sourceDataSourceCode', label: '源数据源', type: 'datasource', required: true },
-  { key: 'sourceSchema', label: '源库', type: 'schema', default: '' },
-  { key: 'sourceTable', label: '源表', type: 'table', required: true },
-  { key: 'readMode', label: '读取方式', type: 'input', default: 'table' },
-  { key: 'sqlText', label: '读取 SQL', type: 'sql', default: '' },
-  { key: 'whereCondition', label: '过滤条件', type: 'input', default: '' },
-  { key: 'partitionColumn', label: '分片字段', type: 'input', default: '' },
-  { key: 'partitionNum', label: '分片数', type: 'number', default: 10 },
-  { key: 'targetDataSourceCode', label: '目标数据源', type: 'datasource', required: true },
-  { key: 'targetSchema', label: '目标库', type: 'schema', default: '' },
-  { key: 'targetTable', label: '目标表', type: 'table', required: true },
-  { key: 'fieldMapping', label: '字段映射', type: 'fieldMapping', default: [] },
-  { key: 'sinkWriteStrategy', label: '写入策略', type: 'input', default: 'generated' },
-  { key: 'sinkQuery', label: '写入 SQL', type: 'sql', default: '' },
-  { key: 'schemaSaveMode', label: '表结构策略', type: 'input', default: 'ERROR_WHEN_SCHEMA_NOT_EXIST' },
-  { key: 'dataSaveMode', label: '数据策略', type: 'input', default: 'APPEND_DATA' },
-  { key: 'customSql', label: '自定义前置 SQL', type: 'sql', default: '' },
-  { key: 'primaryKeys', label: '冲突主键', type: 'tags', default: [] },
-  { key: 'fetchSize', label: '读取批次', type: 'number' },
-  { key: 'batchSize', label: '写入批次', type: 'number', default: 1000 },
-  { key: 'parallelism', label: '并行度', type: 'number', default: 1 },
-  { key: 'retryTimes', label: '失败重试', type: 'number', default: 0 },
-  { key: 'timeout', label: '超时(秒)', type: 'number', default: 600 }
+  { key: 'sourceDataSourceCode', label: 'node.field.sourceDataSource', type: 'datasource', required: true },
+  { key: 'sourceSchema', label: 'node.field.sourceSchema', type: 'schema', default: '' },
+  { key: 'sourceTable', label: 'node.field.sourceTable', type: 'table', required: true },
+  { key: 'readMode', label: 'node.field.readMode', type: 'input', default: 'table' },
+  { key: 'sqlText', label: 'node.field.readSql', type: 'sql', default: '' },
+  { key: 'whereCondition', label: 'node.field.whereCondition', type: 'input', default: '' },
+  { key: 'partitionColumn', label: 'node.field.partitionColumn', type: 'input', default: '' },
+  { key: 'partitionNum', label: 'node.field.partitionNum', type: 'number', default: 10 },
+  { key: 'targetDataSourceCode', label: 'node.field.targetDataSource', type: 'datasource', required: true },
+  { key: 'targetSchema', label: 'node.field.targetSchema', type: 'schema', default: '' },
+  { key: 'targetTable', label: 'node.field.targetTable', type: 'table', required: true },
+  { key: 'fieldMapping', label: 'node.field.fieldMapping', type: 'fieldMapping', default: [] },
+  { key: 'sinkWriteStrategy', label: 'node.field.sinkWriteStrategy', type: 'input', default: 'generated' },
+  { key: 'sinkQuery', label: 'node.field.sinkQuery', type: 'sql', default: '' },
+  { key: 'schemaSaveMode', label: 'node.field.schemaSaveMode', type: 'input', default: 'ERROR_WHEN_SCHEMA_NOT_EXIST' },
+  { key: 'dataSaveMode', label: 'node.field.dataSaveMode', type: 'input', default: 'APPEND_DATA' },
+  { key: 'customSql', label: 'node.field.customSql', type: 'sql', default: '' },
+  { key: 'primaryKeys', label: 'node.field.primaryKeys', type: 'tags', default: [] },
+  { key: 'fetchSize', label: 'node.field.fetchSize', type: 'number' },
+  { key: 'batchSize', label: 'node.field.batchSize', type: 'number', default: 1000 },
+  { key: 'parallelism', label: 'node.field.parallelism', type: 'number', default: 1 },
+  { key: 'retryTimes', label: 'node.field.retryTimes', type: 'number', default: 0 },
+  { key: 'timeout', label: 'node.field.timeout', type: 'number', default: 600 }
 ]
 
 // DataX 同步（DolphinScheduler 风格：SQL 语句 + 目标表 + 字段映射 + 前置/后置 SQL + 限流）
 const DATAX_FIELDS: FieldDef[] = [
-  { key: 'sourceDataSourceCode', label: '数据源', type: 'datasource', required: true },
-  { key: 'sourceSchema', label: '源库', type: 'schema', dependsOn: { datasource: 'sourceDataSourceCode' } },
-  { key: 'sourceTable', label: '源表', type: 'table', dependsOn: { datasource: 'sourceDataSourceCode', schema: 'sourceSchema' } },
-  { key: 'targetDataSourceCode', label: '目标数据源', type: 'datasource', required: true },
-  { key: 'targetSchema', label: '目标库', type: 'schema', dependsOn: { datasource: 'targetDataSourceCode' } },
-  { key: 'targetTable', label: '目标表', type: 'table', required: true, dependsOn: { datasource: 'targetDataSourceCode', schema: 'targetSchema' } },
+  { key: 'sourceDataSourceCode', label: 'node.field.dataSource', type: 'datasource', required: true },
+  { key: 'sourceSchema', label: 'node.field.sourceSchema', type: 'schema', dependsOn: { datasource: 'sourceDataSourceCode' } },
+  { key: 'sourceTable', label: 'node.field.sourceTable', type: 'table', dependsOn: { datasource: 'sourceDataSourceCode', schema: 'sourceSchema' } },
+  { key: 'targetDataSourceCode', label: 'node.field.targetDataSource', type: 'datasource', required: true },
+  { key: 'targetSchema', label: 'node.field.targetSchema', type: 'schema', dependsOn: { datasource: 'targetDataSourceCode' } },
+  { key: 'targetTable', label: 'node.field.targetTable', type: 'table', required: true, dependsOn: { datasource: 'targetDataSourceCode', schema: 'targetSchema' } },
   {
     key: 'fieldMapping',
-    label: '字段映射',
+    label: 'node.field.fieldMapping',
     type: 'fieldMap',
     default: [],
     dependsOn: {
@@ -112,91 +114,113 @@ const DATAX_FIELDS: FieldDef[] = [
       targetTable: 'targetTable'
     }
   },
-  { key: 'sqlText', label: 'SQL 语句', type: 'sql', required: true, default: '', height: '240px', placeholder: '抽取数据的 SQL，可用 as 别名映射目标列' },
-  { key: 'preSql', label: '目标库前置 SQL', type: 'collapsibleSql', default: '', height: '150px', placeholder: '同步前在目标库执行' },
-  { key: 'postSql', label: '目标库后置 SQL', type: 'collapsibleSql', default: '', height: '150px', placeholder: '同步后在目标库执行' },
-  { key: 'jobSpeedByte', label: '限流(字节数)', type: 'number' },
-  { key: 'jobSpeedRecord', label: '限流(记录数)', type: 'number' },
-  { key: 'fetchSize', label: '读取批次', type: 'number' },
+  { key: 'sqlText', label: 'node.field.sqlText', type: 'sql', required: true, default: '', height: '240px', placeholder: 'node.placeholder.sqlText' },
+  { key: 'preSql', label: 'node.field.targetPreSql', type: 'collapsibleSql', default: '', height: '150px', placeholder: 'node.placeholder.preSql' },
+  { key: 'postSql', label: 'node.field.targetPostSql', type: 'collapsibleSql', default: '', height: '150px', placeholder: 'node.placeholder.postSql' },
+  { key: 'jobSpeedByte', label: 'node.field.jobSpeedByte', type: 'number' },
+  { key: 'jobSpeedRecord', label: 'node.field.jobSpeedRecord', type: 'number' },
+  { key: 'fetchSize', label: 'node.field.fetchSize', type: 'number' },
   {
     key: 'writeMode',
-    label: '写入模式',
+    label: 'node.field.writeMode',
     type: 'select',
     default: 'insert',
     options: [
-      { label: 'insert（插入）', value: 'insert' },
-      { label: 'replace（替换）', value: 'replace' },
-      { label: 'update（冲突更新）', value: 'update' }
+      { label: 'node.option.writeInsert', value: 'insert' },
+      { label: 'node.option.writeReplace', value: 'replace' },
+      { label: 'node.option.writeUpdate', value: 'update' }
     ]
   },
-  { key: 'batchSize', label: '写入批次', type: 'number' },
-  { key: 'channel', label: '并发度', type: 'number', default: 3 },
-  { key: 'timeout', label: '超时(秒)', type: 'number', default: 30 }
+  { key: 'batchSize', label: 'node.field.batchSize', type: 'number' },
+  { key: 'channel', label: 'node.field.channel', type: 'number', default: 3 },
+  { key: 'timeout', label: 'node.field.timeout', type: 'number', default: 30 }
 ]
 
 export const NODE_TYPES: NodeTypeDef[] = [
   {
     type: 'SQL',
-    label: 'SQL 任务',
+    label: 'node.sql',
     icon: '🧮',
     color: '#409eff',
     fields: [
-      { key: 'datasourceCode', label: '数据源', type: 'datasource', required: true },
+      { key: 'datasourceCode', label: 'node.field.dataSource', type: 'datasource', required: true },
       {
         key: 'sqlType',
-        label: 'SQL 类型',
+        label: 'node.field.sqlType',
         type: 'select',
         default: 'QUERY',
         options: [
-          { label: '查询', value: 'QUERY' },
-          { label: '非查询', value: 'NON_QUERY' }
+          { label: 'node.option.query', value: 'QUERY' },
+          { label: 'node.option.nonQuery', value: 'NON_QUERY' }
         ]
       },
-      { key: 'sqlText', label: 'SQL 语句', type: 'sql', required: true, default: '', height: '300px' },
-      { key: 'sqlParams', label: 'SQL 参数', type: 'input', default: '', placeholder: 'key1=value1;key2=value2，SQL 内 ${key} 替换' },
-      { key: 'preSql', label: '前置 SQL', type: 'collapsibleSql', default: '', placeholder: '主 SQL 前执行，如 SET 会话变量、use db', height: '150px' },
-      { key: 'postSql', label: '后置 SQL', type: 'collapsibleSql', default: '', placeholder: '主 SQL 后执行，如清理', height: '150px' },
-      { key: 'timeout', label: '超时(秒)', type: 'number', default: 30 }
+      { key: 'sqlText', label: 'node.field.sqlText', type: 'sql', required: true, default: '', height: '300px' },
+      { key: 'sqlParams', label: 'node.field.sqlParams', type: 'input', default: '', placeholder: 'node.placeholder.sqlParams' },
+      { key: 'preSql', label: 'node.field.preSql', type: 'collapsibleSql', default: '', placeholder: 'node.placeholder.preSqlMain', height: '150px' },
+      { key: 'postSql', label: 'node.field.postSql', type: 'collapsibleSql', default: '', placeholder: 'node.placeholder.postSqlMain', height: '150px' },
+      { key: 'timeout', label: 'node.field.timeout', type: 'number', default: 30 }
     ]
   },
   {
     type: 'DATAX',
-    label: 'DataX 同步',
+    label: 'node.datax',
     icon: '🔄',
     color: '#6d5ef2',
     fields: DATAX_FIELDS
   },
   {
     type: 'SEATUNNEL',
-    label: 'SeaTunnel 同步',
+    label: 'node.seatunnel',
     icon: '🌊',
     color: '#67c23a',
     fields: SYNC_FIELDS
   },
   {
     type: 'PYTHON',
-    label: 'Python 脚本',
+    label: 'node.python',
     icon: '🐍',
     color: '#e6a23c',
     fields: [
-      { key: 'script', label: '脚本', type: 'textarea', required: true, default: '' },
-      { key: 'timeout', label: '超时(秒)', type: 'number', default: 30 }
+      { key: 'script', label: 'node.field.script', type: 'textarea', required: true, default: '' },
+      { key: 'timeout', label: 'node.field.timeout', type: 'number', default: 30 }
     ]
   },
   {
     type: 'SHELL',
-    label: 'Shell 脚本',
+    label: 'node.shell',
     icon: '⌨️',
     color: '#909399',
     fields: [
-      { key: 'script', label: '脚本', type: 'textarea', required: true, default: '' },
-      { key: 'timeout', label: '超时(秒)', type: 'number', default: 30 }
+      { key: 'script', label: 'node.field.script', type: 'textarea', required: true, default: '' },
+      { key: 'timeout', label: 'node.field.timeout', type: 'number', default: 30 }
     ]
   }
 ]
 
 export function getNodeType(type: string): NodeTypeDef | undefined {
   return NODE_TYPES.find((t) => t.type === type)
+}
+
+function translateField(field: FieldDef, t: TranslateFn): FieldDef {
+  return {
+    ...field,
+    label: t(field.label),
+    placeholder: field.placeholder ? t(field.placeholder) : undefined,
+    options: field.options?.map((opt) => ({ ...opt, label: t(opt.label) }))
+  }
+}
+
+function translateNodeTypeDef(def: NodeTypeDef, t: TranslateFn): NodeTypeDef {
+  return { ...def, label: t(def.label), fields: def.fields.map((field) => translateField(field, t)) }
+}
+
+export function translateNodeType(type: string, t: TranslateFn): NodeTypeDef | undefined {
+  const def = getNodeType(type)
+  return def ? translateNodeTypeDef(def, t) : undefined
+}
+
+export function translateNodeTypes(t: TranslateFn): NodeTypeDef[] {
+  return NODE_TYPES.map((def) => translateNodeTypeDef(def, t))
 }
 
 export function buildDefaultConfig(type: string, name: string): NodeConfig {

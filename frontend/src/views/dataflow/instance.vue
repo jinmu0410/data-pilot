@@ -124,7 +124,7 @@
                 <i></i>
                 <span>{{ TRIGGER_META[detail.triggerType] ?? detail.triggerType }}</span>
                 <i></i>
-                <span>失败后{{ FAILURE_STRATEGY_META[detail.failureStrategy] ?? detail.failureStrategy ?? t('instance.continue') }}</span>
+                <span>{{ t('instance.failureAfter', { strategy: FAILURE_STRATEGY_META[detail.failureStrategy] ?? detail.failureStrategy ?? t('instance.continue') }) }}</span>
               </div>
             </div>
 
@@ -211,7 +211,7 @@
                 <div class="content-heading">
                   <span>RESULT</span>
                   <strong>{{ t('instance.queryResult') }}</strong>
-                  <small>{{ selectedNode.rowCount ?? selectedNode.rows?.length ?? 0 }} 行{{ selectedNode.truncated ? t('instance.rowsTruncated') : '' }}</small>
+                  <small>{{ t('instance.rowsUnit', { count: selectedNode.rowCount ?? selectedNode.rows?.length ?? 0 }) }}{{ selectedNode.truncated ? t('instance.rowsTruncated') : '' }}</small>
                 </div>
                 <el-table :data="selectedNode.rows ?? []" border size="small" max-height="260" class="result-table">
                   <el-table-column

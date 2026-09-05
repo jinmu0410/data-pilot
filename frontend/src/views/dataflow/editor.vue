@@ -2,24 +2,24 @@
   <div ref="editorRef" class="editor">
     <div class="editor-header">
       <div class="header-left">
-        <el-button class="back-button" link :icon="ArrowLeft" @click="goBack">返回列表</el-button>
+        <el-button class="back-button" link :icon="ArrowLeft" @click="goBack">{{ t('editor.back') }}</el-button>
         <span class="header-divider"></span>
         <div class="flow-heading">
           <div class="flow-title-row">
-            <span class="title">{{ detail?.name || '任务流画布' }}</span>
+            <span class="title">{{ detail?.name || t('editor.flowCanvas') }}</span>
             <span class="flow-status" :class="`is-${flowStatusTone}`">{{ flowStatusText }}</span>
           </div>
           <div class="flow-subtitle">
             <span>{{ detail?.code || 'DAG WORKFLOW' }}</span>
             <span class="subtitle-dot"></span>
-            <span>{{ graphStats.nodes }} 个任务 · {{ graphStats.edges }} 条依赖</span>
+            <span>{{ t('editor.graphStats', { nodes: graphStats.nodes, edges: graphStats.edges }) }}</span>
           </div>
         </div>
       </div>
       <div class="header-right">
-        <el-button :icon="VideoPlay" plain :loading="running" @click="handleRun">运行</el-button>
-        <el-button :icon="DocumentChecked" :loading="saving" @click="handleSave(true)">保存草稿</el-button>
-        <el-button type="primary" :icon="Upload" :loading="saving" @click="handleSave(false)">发布</el-button>
+        <el-button :icon="VideoPlay" plain :loading="running" @click="handleRun">{{ t('editor.run') }}</el-button>
+        <el-button :icon="DocumentChecked" :loading="saving" @click="handleSave(true)">{{ t('editor.saveDraft') }}</el-button>
+        <el-button type="primary" :icon="Upload" :loading="saving" @click="handleSave(false)">{{ t('editor.publish') }}</el-button>
       </div>
     </div>
 
@@ -27,12 +27,12 @@
       <aside class="palette">
         <div class="panel-heading">
           <div>
-            <div class="panel-title">任务组件</div>
-            <div class="panel-subtitle">拖拽到画布创建任务</div>
+            <div class="panel-title">{{ t('editor.taskComponents') }}</div>
+            <div class="panel-subtitle">{{ t('editor.paletteSubtitle') }}</div>
           </div>
-          <span class="panel-count">{{ NODE_TYPES.length }}</span>
+          <span class="panel-count">{{ nodeTypes.length }}</span>
         </div>
-        <el-input v-model="paletteKeyword" class="palette-search" :prefix-icon="Search" placeholder="搜索任务类型" clearable />
+        <el-input v-model="paletteKeyword" class="palette-search" :prefix-icon="Search" :placeholder="t('editor.searchTaskType')" clearable />
         <div v-for="group in paletteGroups" :key="group.key" class="palette-group">
           <div class="palette-group-title">{{ group.label }}</div>
           <div
@@ -51,95 +51,95 @@
             <el-icon class="palette-drag"><Rank /></el-icon>
           </div>
         </div>
-        <div v-if="!paletteGroups.length" class="palette-empty">没有匹配的任务组件</div>
+        <div v-if="!paletteGroups.length" class="palette-empty">{{ t('editor.noPaletteMatch') }}</div>
         <div class="palette-hint">
           <span class="hint-icon">i</span>
-          点击组件可快速添加，拖拽可指定位置
+          {{ t('editor.paletteHint') }}
         </div>
       </aside>
 
       <div class="canvas-wrap" @dragover.prevent @drop.prevent="onDrop">
         <div class="canvas-toolbar">
           <div class="tool-group">
-            <el-tooltip content="撤销 Ctrl/⌘ Z" placement="bottom"><button class="tool-button" aria-label="撤销" @click="undo"><el-icon><RefreshLeft /></el-icon></button></el-tooltip>
-            <el-tooltip content="重做 Ctrl/⌘ Shift Z" placement="bottom"><button class="tool-button" aria-label="重做" @click="redo"><el-icon><RefreshRight /></el-icon></button></el-tooltip>
+            <el-tooltip :content="t('editor.undo') + ' Ctrl/⌘ Z'" placement="bottom"><button class="tool-button" :aria-label="t('editor.undo')" @click="undo"><el-icon><RefreshLeft /></el-icon></button></el-tooltip>
+            <el-tooltip :content="t('editor.redo') + ' Ctrl/⌘ Shift Z'" placement="bottom"><button class="tool-button" :aria-label="t('editor.redo')" @click="redo"><el-icon><RefreshRight /></el-icon></button></el-tooltip>
           </div>
           <span class="tool-divider"></span>
           <div class="tool-group">
-            <el-tooltip content="缩小" placement="bottom"><button class="tool-button" aria-label="缩小画布" @click="zoomOut"><el-icon><ZoomOut /></el-icon></button></el-tooltip>
-            <button class="zoom-value" title="重置为 100%" @click="resetZoom">{{ zoomPercent }}%</button>
-            <el-tooltip content="放大" placement="bottom"><button class="tool-button" aria-label="放大画布" @click="zoomIn"><el-icon><ZoomIn /></el-icon></button></el-tooltip>
+            <el-tooltip :content="t('editor.zoomOut')" placement="bottom"><button class="tool-button" :aria-label="t('editor.zoomOut')" @click="zoomOut"><el-icon><ZoomOut /></el-icon></button></el-tooltip>
+            <button class="zoom-value" :title="t('editor.resetZoom')" @click="resetZoom">{{ zoomPercent }}%</button>
+            <el-tooltip :content="t('editor.zoomIn')" placement="bottom"><button class="tool-button" :aria-label="t('editor.zoomIn')" @click="zoomIn"><el-icon><ZoomIn /></el-icon></button></el-tooltip>
           </div>
           <span class="tool-divider"></span>
           <div class="tool-group">
-            <el-tooltip content="适应画布" placement="bottom"><button class="tool-button" aria-label="适应画布" @click="fitView"><el-icon><Aim /></el-icon></button></el-tooltip>
-            <el-tooltip content="自动布局" placement="bottom"><button class="tool-button tool-button-wide" @click="autoLayout"><el-icon><MagicStick /></el-icon><span>自动布局</span></button></el-tooltip>
-            <el-tooltip content="全屏画布" placement="bottom"><button class="tool-button" aria-label="全屏画布" @click="toggleFullscreen"><el-icon><FullScreen /></el-icon></button></el-tooltip>
+            <el-tooltip :content="t('editor.fitView')" placement="bottom"><button class="tool-button" :aria-label="t('editor.fitView')" @click="fitView"><el-icon><Aim /></el-icon></button></el-tooltip>
+            <el-tooltip :content="t('editor.autoLayout')" placement="bottom"><button class="tool-button tool-button-wide" @click="autoLayout"><el-icon><MagicStick /></el-icon><span>{{ t('editor.autoLayout') }}</span></button></el-tooltip>
+            <el-tooltip :content="t('editor.fullscreen')" placement="bottom"><button class="tool-button" :aria-label="t('editor.fullscreen')" @click="toggleFullscreen"><el-icon><FullScreen /></el-icon></button></el-tooltip>
           </div>
         </div>
         <div v-if="graphStats.nodes === 0" class="canvas-empty">
           <div class="empty-visual"><el-icon><Connection /></el-icon></div>
-          <div class="empty-title">开始编排你的任务流</div>
-          <div class="empty-text">从左侧拖入任务组件，然后拖动节点锚点建立依赖关系</div>
-          <el-button type="primary" plain @click="addNode('DATAX')">添加 DataX 同步任务</el-button>
+          <div class="empty-title">{{ t('editor.emptyTitle') }}</div>
+          <div class="empty-text">{{ t('editor.emptyText') }}</div>
+          <el-button type="primary" plain @click="addNode('DATAX')">{{ t('editor.addDatax') }}</el-button>
         </div>
         <div ref="canvasRef" class="canvas"></div>
         <div class="canvas-statusbar">
-          <span class="status-ready"><i></i>画布就绪</span>
-          <span>任务 {{ graphStats.nodes }}</span>
-          <span>依赖 {{ graphStats.edges }}</span>
-          <span class="status-shortcut">Ctrl/⌘ S 保存 · Delete 删除 · 0 适应画布</span>
+          <span class="status-ready"><i></i>{{ t('editor.canvasReady') }}</span>
+          <span>{{ t('editor.taskCount', { count: graphStats.nodes }) }}</span>
+          <span>{{ t('editor.edgeCount', { count: graphStats.edges }) }}</span>
+          <span class="status-shortcut">{{ t('editor.shortcuts') }}</span>
         </div>
       </div>
 
       <aside class="config">
         <div class="panel-heading config-heading">
           <div>
-            <div class="panel-title">流程配置</div>
-            <div class="panel-subtitle">调度与依赖关系</div>
+            <div class="panel-title">{{ t('editor.flowConfig') }}</div>
+            <div class="panel-subtitle">{{ t('editor.configSubtitle') }}</div>
           </div>
           <el-icon class="config-heading-icon"><Operation /></el-icon>
         </div>
         <template v-if="selectedEdgeId">
-          <div class="section-label">依赖配置</div>
+          <div class="section-label">{{ t('editor.edgeConfig') }}</div>
           <div class="edge-card">
             <div class="edge-node">
               <span class="edge-dot source"></span>
-              <div><small>上游任务</small><strong>{{ selectedEdgeInfo.source }}</strong></div>
+              <div><small>{{ t('editor.upstream') }}</small><strong>{{ selectedEdgeInfo.source }}</strong></div>
             </div>
             <div class="edge-line"><span></span><el-icon><ArrowRight /></el-icon></div>
             <div class="edge-node">
               <span class="edge-dot target"></span>
-              <div><small>下游任务</small><strong>{{ selectedEdgeInfo.target }}</strong></div>
+              <div><small>{{ t('editor.downstream') }}</small><strong>{{ selectedEdgeInfo.target }}</strong></div>
             </div>
           </div>
           <el-form label-position="top" class="edge-form">
-            <el-form-item label="执行顺序（越小越先执行）">
+            <el-form-item :label="t('editor.edgeOrder')">
               <el-input-number v-model="edgeOrder" :min="0" :step="1" style="width: 100%" />
             </el-form-item>
           </el-form>
           <el-button type="danger" plain :icon="Delete" style="width: 100%" @click="deleteSelectedEdge">
-            删除连线
+            {{ t('editor.deleteEdge') }}
           </el-button>
-          <div class="config-help">连线表示任务依赖。仅当所有上游任务完成后，下游任务才会进入执行队列。</div>
+          <div class="config-help">{{ t('editor.edgeHelp') }}</div>
         </template>
 
         <div v-else class="config-schedule">
           <div class="overview-card">
             <div class="overview-icon"><el-icon><Connection /></el-icon></div>
             <div>
-              <strong>{{ detail?.name || '未命名任务流' }}</strong>
-              <span>{{ graphStats.nodes }} 个任务，{{ graphStats.edges }} 条依赖</span>
+              <strong>{{ detail?.name || t('editor.unnamedFlow') }}</strong>
+              <span>{{ t('editor.overviewStats', { nodes: graphStats.nodes, edges: graphStats.edges }) }}</span>
             </div>
           </div>
           <div class="metric-grid">
-            <div class="metric-item"><strong>{{ graphStats.nodes }}</strong><span>任务节点</span></div>
-            <div class="metric-item"><strong>{{ graphStats.edges }}</strong><span>依赖关系</span></div>
-            <div class="metric-item"><strong>{{ configuredCount }}</strong><span>已配置</span></div>
+            <div class="metric-item"><strong>{{ graphStats.nodes }}</strong><span>{{ t('editor.metricNodes') }}</span></div>
+            <div class="metric-item"><strong>{{ graphStats.edges }}</strong><span>{{ t('editor.metricEdges') }}</span></div>
+            <div class="metric-item"><strong>{{ configuredCount }}</strong><span>{{ t('editor.metricConfigured') }}</span></div>
           </div>
-          <div class="section-label schedule-label">调度设置</div>
+          <div class="section-label schedule-label">{{ t('editor.scheduleSettings') }}</div>
           <el-form label-position="top">
-            <el-form-item label="Cron 表达式">
+            <el-form-item :label="t('editor.cronExpr')">
               <el-popover
                 v-model:visible="cronPickerVisible"
                 placement="left-start"
@@ -151,7 +151,7 @@
                   <div class="cron-row">
                     <el-input
                       v-model="flowCron"
-                      placeholder="留空表示仅手动运行"
+                      :placeholder="t('editor.cronPlaceholder')"
                       readonly
                       clearable
                       @click="openCronPicker"
@@ -159,18 +159,18 @@
                     >
                       <template #prefix><el-icon><Calendar /></el-icon></template>
                     </el-input>
-                    <el-button :icon="Calendar" @click="openCronPicker">选择</el-button>
-                    <el-button :loading="flowCronResult.loading" @click="checkFlowCron">校验</el-button>
+                    <el-button :icon="Calendar" @click="openCronPicker">{{ t('editor.choose') }}</el-button>
+                    <el-button :loading="flowCronResult.loading" @click="checkFlowCron">{{ t('editor.validate') }}</el-button>
                   </div>
                 </template>
 
                 <div class="cron-picker">
                   <div class="cron-picker-head">
                     <div>
-                      <strong>调度周期</strong>
-                      <span>选择后自动生成 Spring Cron 表达式</span>
+                      <strong>{{ t('editor.cronTitle') }}</strong>
+                      <span>{{ t('editor.cronSubtitle') }}</span>
                     </div>
-                    <el-button link @click="cronPickerVisible = false">关闭</el-button>
+                    <el-button link @click="cronPickerVisible = false">{{ t('editor.close') }}</el-button>
                   </div>
 
                   <div class="cron-preset-grid">
@@ -187,29 +187,29 @@
                   </div>
 
                   <div class="cron-picker-section">
-                    <div class="cron-field-label">自定义频率</div>
+                    <div class="cron-field-label">{{ t('editor.cronCustom') }}</div>
                     <el-radio-group v-model="cronDraft.mode" class="cron-mode-group">
-                      <el-radio-button label="interval">按分钟</el-radio-button>
-                      <el-radio-button label="daily">每天</el-radio-button>
-                      <el-radio-button label="weekly">每周</el-radio-button>
-                      <el-radio-button label="monthly">每月</el-radio-button>
+                      <el-radio-button label="interval">{{ t('editor.cronInterval') }}</el-radio-button>
+                      <el-radio-button label="daily">{{ t('editor.cronDaily') }}</el-radio-button>
+                      <el-radio-button label="weekly">{{ t('editor.cronWeekly') }}</el-radio-button>
+                      <el-radio-button label="monthly">{{ t('editor.cronMonthly') }}</el-radio-button>
                     </el-radio-group>
                   </div>
 
                   <div v-if="cronDraft.mode === 'interval'" class="cron-picker-section">
-                    <div class="cron-field-label">间隔分钟</div>
+                    <div class="cron-field-label">{{ t('editor.cronIntervalMinutes') }}</div>
                     <el-select v-model="cronDraft.intervalMinutes">
                       <el-option
                         v-for="item in cronIntervalOptions"
                         :key="item"
-                        :label="`${item} 分钟`"
+                        :label="t('editor.cronMinutes', { n: item })"
                         :value="item"
                       />
                     </el-select>
                   </div>
 
                   <div v-else class="cron-picker-section">
-                    <div class="cron-field-label">执行时间</div>
+                    <div class="cron-field-label">{{ t('editor.cronTime') }}</div>
                     <el-time-picker
                       v-model="cronDraft.time"
                       format="HH:mm"
@@ -220,7 +220,7 @@
                   </div>
 
                   <div v-if="cronDraft.mode === 'weekly'" class="cron-picker-section">
-                    <div class="cron-field-label">执行星期</div>
+                    <div class="cron-field-label">{{ t('editor.cronWeekday') }}</div>
                     <el-checkbox-group v-model="cronDraft.weekdays" class="cron-check-grid">
                       <el-checkbox-button
                         v-for="item in cronWeekdayOptions"
@@ -233,38 +233,38 @@
                   </div>
 
                   <div v-if="cronDraft.mode === 'monthly'" class="cron-picker-section">
-                    <div class="cron-field-label">每月日期</div>
+                    <div class="cron-field-label">{{ t('editor.cronMonthDay') }}</div>
                     <el-select v-model="cronDraft.monthDays" multiple collapse-tags collapse-tags-tooltip>
                       <el-option
                         v-for="day in cronMonthDayOptions"
                         :key="day"
-                        :label="`${day} 号`"
+                        :label="t('editor.cronDay', { day })"
                         :value="day"
                       />
                     </el-select>
                   </div>
 
                   <div class="cron-preview-card">
-                    <span>生成表达式</span>
+                    <span>{{ t('editor.cronGenerate') }}</span>
                     <strong>{{ cronPreview }}</strong>
                   </div>
 
                   <div class="cron-picker-actions">
-                    <el-button @click="clearFlowCron">仅手动运行</el-button>
-                    <el-button type="primary" @click="applyCronDraft">应用表达式</el-button>
+                    <el-button @click="clearFlowCron">{{ t('editor.cronManualOnly') }}</el-button>
+                    <el-button type="primary" @click="applyCronDraft">{{ t('editor.cronApply') }}</el-button>
                   </div>
                 </div>
               </el-popover>
               <div v-if="flowCronResult.valid === true && flowCronResult.nexts.length" class="cron-nexts">
-                <div class="cron-nexts-title">最近 5 次执行时间</div>
+                <div class="cron-nexts-title">{{ t('editor.cronNextTitle') }}</div>
                 <div v-for="(t, i) in flowCronResult.nexts" :key="i" class="cron-next">{{ t }}</div>
               </div>
               <div v-else-if="flowCronResult.valid === false" class="cron-invalid">{{ flowCronResult.message }}</div>
             </el-form-item>
           </el-form>
           <div class="config-tip">
-            <div class="config-tip-title">画布操作</div>
-            <div>单击节点配置参数，拖动锚点创建依赖，单击连线可设置执行顺序。</div>
+            <div class="config-tip-title">{{ t('editor.configTipTitle') }}</div>
+            <div>{{ t('editor.configTip') }}</div>
           </div>
         </div>
       </aside>
@@ -301,7 +301,7 @@
     <el-dialog
       v-else
       v-model="nodeDialogVisible"
-      :title="`${selectedNodeType?.label ?? ''} 配置`"
+      :title="t('editor.nodeConfigTitle', { label: selectedNodeType?.label ?? '' })"
       width="720px"
       top="5vh"
       :close-on-click-modal="false"
@@ -310,7 +310,7 @@
       @closed="onNodeDialogClosed"
     >
       <el-form v-if="selectedConfig" label-position="top" class="config-form">
-        <el-form-item label="名称" required>
+        <el-form-item :label="t('editor.name')" required>
           <el-input v-model="selectedConfig.name" />
         </el-form-item>
         <el-form-item
@@ -322,7 +322,7 @@
           <el-select
             v-if="field.type === 'datasource'"
             v-model="selectedConfig[field.key]"
-            placeholder="选择数据源"
+            :placeholder="t('editor.selectDatasource')"
             clearable
             filterable
           >
@@ -348,7 +348,7 @@
           <el-select
             v-else-if="field.type === 'schema'"
             v-model="selectedConfig[field.key]"
-            placeholder="选择库"
+            :placeholder="t('editor.selectSchema')"
             clearable
             filterable
             @change="onMetaFieldChange(field)"
@@ -363,7 +363,7 @@
           <el-select
             v-else-if="field.type === 'table'"
             v-model="selectedConfig[field.key]"
-            placeholder="选择表"
+            :placeholder="t('editor.selectTable')"
             clearable
             filterable
             @change="onMetaFieldChange(field)"
@@ -378,7 +378,7 @@
           <el-select
             v-else-if="field.type === 'columns'"
             v-model="selectedConfig[field.key]"
-            placeholder="选择字段（留空=全部）"
+            :placeholder="t('editor.selectColumns')"
             multiple
             clearable
             filterable
@@ -394,7 +394,7 @@
           </el-select>
           <div v-else-if="field.type === 'fieldMap'" class="field-map">
             <div v-for="(row, idx) in selectedConfig[field.key]" :key="idx" class="field-map-row">
-              <el-select v-model="row.source" placeholder="源字段" clearable filterable @change="onFieldMapChange">
+              <el-select v-model="row.source" :placeholder="t('editor.sourceField')" clearable filterable @change="onFieldMapChange">
                 <el-option
                   v-for="opt in fieldMapSourceOptions(field)"
                   :key="opt.value"
@@ -403,7 +403,7 @@
                 />
               </el-select>
               <span class="mapping-arrow">→</span>
-              <el-select v-model="row.target" placeholder="目标字段" clearable filterable @change="onFieldMapChange">
+              <el-select v-model="row.target" :placeholder="t('editor.targetField')" clearable filterable @change="onFieldMapChange">
                 <el-option
                   v-for="opt in fieldMapTargetOptions(field)"
                   :key="opt.value"
@@ -411,9 +411,9 @@
                   :value="opt.value"
                 />
               </el-select>
-              <el-button link type="danger" @click="removeFieldMapRow(field.key, idx)">删除</el-button>
+              <el-button link type="danger" @click="removeFieldMapRow(field.key, idx)">{{ t('editor.remove') }}</el-button>
             </div>
-            <el-button link type="primary" @click="addFieldMapRow(field.key)">+ 添加映射</el-button>
+            <el-button link type="primary" @click="addFieldMapRow(field.key)">{{ t('editor.addMapping') }}</el-button>
           </div>
           <el-select
             v-else-if="field.type === 'tags'"
@@ -423,7 +423,7 @@
             allow-create
             default-first-option
             :reserve-keyword="false"
-            placeholder="输入后回车添加，可多个"
+            :placeholder="t('editor.tagsPlaceholder')"
             style="width: 100%"
           />
           <el-input-number
@@ -450,12 +450,12 @@
           </div>
           <div v-else-if="field.type === 'fieldMapping'" class="field-mapping">
             <div v-for="(row, idx) in selectedConfig[field.key]" :key="idx" class="mapping-row">
-              <el-input v-model="row.source" placeholder="源字段" />
+              <el-input v-model="row.source" :placeholder="t('editor.sourceField')" />
               <span class="mapping-arrow">→</span>
-              <el-input v-model="row.target" placeholder="目标字段" />
-              <el-button link type="danger" @click="removeMapping(field.key, idx)">删除</el-button>
+              <el-input v-model="row.target" :placeholder="t('editor.targetField')" />
+              <el-button link type="danger" @click="removeMapping(field.key, idx)">{{ t('editor.remove') }}</el-button>
             </div>
-            <el-button link type="primary" @click="addMapping(field.key)">+ 添加映射</el-button>
+            <el-button link type="primary" @click="addMapping(field.key)">{{ t('editor.addMapping') }}</el-button>
           </div>
           <el-input
             v-else
@@ -467,8 +467,8 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="danger" plain @click="deleteSelectedNode">删除节点</el-button>
-        <el-button @click="nodeDialogVisible = false">关闭</el-button>
+        <el-button type="danger" plain @click="deleteSelectedNode">{{ t('editor.deleteNode') }}</el-button>
+        <el-button @click="nodeDialogVisible = false">{{ t('editor.close') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -477,6 +477,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Aim,
@@ -500,7 +501,7 @@ import {
 } from '@element-plus/icons-vue'
 import LogicFlow, { HtmlNode, HtmlNodeModel } from '@logicflow/core'
 import '@logicflow/core/dist/index.css'
-import { NODE_TYPES, getNodeType, buildDefaultConfig, type NodeConfig, type FieldMappingRow, type FieldDef } from './nodes'
+import { translateNodeTypes, translateNodeType, buildDefaultConfig, type NodeConfig, type FieldMappingRow, type FieldDef } from './nodes'
 import SqlEditor from '../../components/SqlEditor.vue'
 import DataXTaskDialog from './DataXTaskDialog.vue'
 import SeaTunnelTaskDialog from './SeaTunnelTaskDialog.vue'
@@ -517,6 +518,12 @@ import { cronValid, cronNexts } from '../../api/cron'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
+const tt = (key: string) => t(key)
+const nodeTypes = computed(() => translateNodeTypes(tt))
+function getNodeTypeLocalized(type: string) {
+  return translateNodeType(type, tt)
+}
 
 const editorRef = ref<HTMLElement>()
 const canvasRef = ref<HTMLElement>()
@@ -698,25 +705,25 @@ const cronDraft = reactive({
 })
 const cronIntervalOptions = [5, 10, 15, 30]
 const cronMonthDayOptions = Array.from({ length: 31 }, (_, i) => i + 1)
-const cronWeekdayOptions = [
-  { label: '周一', value: 'MON' },
-  { label: '周二', value: 'TUE' },
-  { label: '周三', value: 'WED' },
-  { label: '周四', value: 'THU' },
-  { label: '周五', value: 'FRI' },
-  { label: '周六', value: 'SAT' },
-  { label: '周日', value: 'SUN' }
-]
-const cronPresets = [
-  { label: '每 5 分钟', expression: '0 */5 * * * ?' },
-  { label: '每 15 分钟', expression: '0 */15 * * * ?' },
-  { label: '每小时', expression: '0 0 * * * ?' },
-  { label: '每天 00:00', expression: '0 0 0 * * ?' },
-  { label: '每天 09:00', expression: '0 0 9 * * ?' },
-  { label: '工作日 09:00', expression: '0 0 9 ? * MON-FRI' },
-  { label: '每月 1 号', expression: '0 0 0 1 * ?' },
-  { label: '每月 1/15 号', expression: '0 0 0 1,15 * ?' }
-]
+const cronWeekdayOptions = computed(() => [
+  { label: t('editor.weekdayMon'), value: 'MON' },
+  { label: t('editor.weekdayTue'), value: 'TUE' },
+  { label: t('editor.weekdayWed'), value: 'WED' },
+  { label: t('editor.weekdayThu'), value: 'THU' },
+  { label: t('editor.weekdayFri'), value: 'FRI' },
+  { label: t('editor.weekdaySat'), value: 'SAT' },
+  { label: t('editor.weekdaySun'), value: 'SUN' }
+])
+const cronPresets = computed(() => [
+  { label: t('editor.cronPreset5min'), expression: '0 */5 * * * ?' },
+  { label: t('editor.cronPreset15min'), expression: '0 */15 * * * ?' },
+  { label: t('editor.cronPresetHourly'), expression: '0 0 * * * ?' },
+  { label: t('editor.cronPresetDaily0'), expression: '0 0 0 * * ?' },
+  { label: t('editor.cronPresetDaily9'), expression: '0 0 9 * * ?' },
+  { label: t('editor.cronPresetWeekday9'), expression: '0 0 9 ? * MON-FRI' },
+  { label: t('editor.cronPresetMonthly1'), expression: '0 0 0 1 * ?' },
+  { label: t('editor.cronPresetMonthly115'), expression: '0 0 0 1,15 * ?' }
+])
 const cronPreview = computed(() => buildCronFromDraft())
 
 const flowId = Number(route.params.id)
@@ -724,33 +731,44 @@ const flowId = Number(route.params.id)
 const selectedConfig = computed(() =>
   selectedNodeId.value ? nodeConfigs[selectedNodeId.value] : null
 )
-const selectedNodeType = computed(() => getNodeType(selectedConfig.value?.__type ?? ''))
-const flowStatusText = computed(() => {
+const selectedNodeType = computed(() => getNodeTypeLocalized(selectedConfig.value?.__type ?? ''))
+const flowStatus = computed(() => {
   const status = detail.value?.status?.toUpperCase()
-  if (status === 'ONLINE' || status === 'PUBLISHED') return '已发布'
-  if (status === 'RUNNING') return '运行中'
-  if (status === 'PAUSE' || status === 'PAUSED' || status === 'STOP' || status === 'STOPPED') return '已暂停'
-  if (status === 'WAIT_PUBLISH' || status === 'PENDING') return '待发布'
-  return '草稿'
+  if (status === 'ONLINE' || status === 'PUBLISHED') return 'published'
+  if (status === 'RUNNING') return 'running'
+  if (status === 'PAUSE' || status === 'PAUSED' || status === 'STOP' || status === 'STOPPED') return 'paused'
+  if (status === 'WAIT_PUBLISH' || status === 'PENDING') return 'pending'
+  return 'draft'
+})
+const flowStatusText = computed(() => {
+  const map: Record<string, string> = {
+    published: 'editor.statusPublished',
+    running: 'editor.statusRunning',
+    paused: 'editor.statusPaused',
+    pending: 'editor.statusPending',
+    draft: 'editor.statusDraft'
+  }
+  return t(map[flowStatus.value] ?? 'editor.statusDraft')
 })
 const flowStatusTone = computed(() => {
-  if (flowStatusText.value === '已发布') return 'success'
-  if (flowStatusText.value === '运行中') return 'running'
-  if (flowStatusText.value === '已暂停' || flowStatusText.value === '待发布') return 'warning'
+  if (flowStatus.value === 'published') return 'success'
+  if (flowStatus.value === 'running') return 'running'
+  if (flowStatus.value === 'paused' || flowStatus.value === 'pending') return 'warning'
   return 'draft'
 })
 
-const PALETTE_GROUPS = [
-  { key: 'sync', label: '数据同步', types: ['DATAX', 'SEATUNNEL'] },
-  { key: 'process', label: '数据处理', types: ['SQL'] },
-  { key: 'script', label: '脚本任务', types: ['PYTHON', 'SHELL'] }
+const PALETTE_GROUP_KEYS = [
+  { key: 'sync', labelKey: 'editor.groupSync', types: ['DATAX', 'SEATUNNEL'] },
+  { key: 'process', labelKey: 'editor.groupProcess', types: ['SQL'] },
+  { key: 'script', labelKey: 'editor.groupScript', types: ['PYTHON', 'SHELL'] }
 ]
 
 const paletteGroups = computed(() => {
   const keyword = paletteKeyword.value.trim().toLowerCase()
-  return PALETTE_GROUPS.map((group) => ({
-    ...group,
-    items: NODE_TYPES.filter((item) =>
+  return PALETTE_GROUP_KEYS.map((group) => ({
+    key: group.key,
+    label: t(group.labelKey),
+    items: nodeTypes.value.filter((item) =>
       group.types.includes(item.type) &&
       (!keyword || item.label.toLowerCase().includes(keyword) || item.type.toLowerCase().includes(keyword))
     )
@@ -771,7 +789,7 @@ function hasConfigValue(value: unknown) {
 
 function isNodeConfigured(config: NodeConfig | undefined) {
   if (!config) return false
-  const def = getNodeType(config.__type ?? '')
+  const def = getNodeTypeLocalized(config.__type ?? '')
   return Boolean(config.name?.trim()) && (def?.fields ?? []).filter((field) => field.required).every((field) => hasConfigValue(config[field.key]))
 }
 
@@ -803,9 +821,9 @@ function genId(prefix: string) {
 }
 
 function registerNodes() {
-  for (const t of NODE_TYPES) {
+  for (const nt of nodeTypes.value) {
     lf!.register({
-      type: t.type,
+      type: nt.type,
       model: class FlowNodeModel extends HtmlNodeModel {
         setAttributes() {
           this.width = 220
@@ -816,7 +834,7 @@ function registerNodes() {
         setHtml(rootEl: SVGForeignObjectElement) {
           const el = rootEl as unknown as HTMLElement
           const model = this.props.model as unknown as { type: string; properties: NodeConfig }
-          const def = getNodeType(model.type)
+          const def = getNodeTypeLocalized(model.type)
           const name = model.properties?.name ?? ''
           const configured = isNodeConfigured(model.properties)
           el.innerHTML = `
@@ -827,7 +845,7 @@ function registerNodes() {
                 <div class="flow-node-name">${escapeHtml(name)}</div>
                 <div class="flow-node-type">${def?.label ?? model.type} · ${model.type}</div>
               </div>
-              <span class="flow-node-state ${configured ? 'is-ready' : ''}"><i></i>${configured ? '已配置' : '待配置'}</span>
+              <span class="flow-node-state ${configured ? 'is-ready' : ''}"><i></i>${configured ? t('editor.configured') : t('editor.pending')}</span>
             </div>
           `
         }
@@ -955,7 +973,7 @@ function onDrop(e: DragEvent) {
 }
 
 function addNode(type: string, x?: number, y?: number) {
-  const def = getNodeType(type)
+  const def = getNodeTypeLocalized(type)
   if (!def) return
   const id = genId(type)
   const config = buildDefaultConfig(type, `${def.label}_${Object.keys(nodeConfigs).length + 1}`)
@@ -1002,11 +1020,11 @@ async function checkFlowCron() {
     const [valid, nexts] = await Promise.all([cronValid(cron), cronNexts(cron)])
     flowCronResult.valid = valid
     flowCronResult.nexts = nexts ?? []
-    flowCronResult.message = valid ? '' : 'Cron 表达式无效'
+    flowCronResult.message = valid ? '' : t('editor.cronInvalid')
   } catch {
     flowCronResult.valid = false
     flowCronResult.nexts = []
-    flowCronResult.message = '校验失败，请检查表达式'
+    flowCronResult.message = t('editor.cronValidateFailed')
   } finally {
     flowCronResult.loading = false
   }
@@ -1069,7 +1087,7 @@ function syncCronDraft(expression: string) {
       if (weekday === 'MON-FRI') {
         cronDraft.weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI']
       } else {
-        const selected = weekday.split(',').filter((item) => cronWeekdayOptions.some((option) => option.value === item))
+        const selected = weekday.split(',').filter((item) => cronWeekdayOptions.value.some((option) => option.value === item))
         if (selected.length) cronDraft.weekdays = selected
       }
       return
@@ -1139,7 +1157,7 @@ function syncNodeConfigsFromGraph() {
   for (const node of graph.nodes ?? []) {
     if (!nodeConfigs[node.id]) {
       const properties = node.properties ?? ({} as NodeConfig)
-      nodeConfigs[node.id] = { ...properties, name: properties.name || getNodeType(node.type)?.label || node.type, __type: node.type }
+      nodeConfigs[node.id] = { ...properties, name: properties.name || getNodeTypeLocalized(node.type)?.label || node.type, __type: node.type }
     }
   }
 }
@@ -1195,7 +1213,7 @@ function autoLayout() {
   })
   lf.translateCenter()
   updateZoomPercent()
-  ElMessage.success('已完成自动布局')
+  ElMessage.success(t('editor.autoLayoutDone'))
 }
 
 async function toggleFullscreen() {
@@ -1205,7 +1223,7 @@ async function toggleFullscreen() {
     else await editorRef.value.requestFullscreen()
     window.setTimeout(() => lf?.resize())
   } catch {
-    ElMessage.warning('当前浏览器不支持全屏画布')
+    ElMessage.warning(t('editor.fullscreenUnsupported'))
   }
 }
 
@@ -1260,7 +1278,7 @@ async function handleSave(isDraft: boolean) {
   if (!lf) return
   const graphData = lf.getGraphData() as { nodes: unknown[] }
   if (!graphData.nodes?.length) {
-    ElMessage.warning('请先添加组件')
+    ElMessage.warning(t('editor.pleaseAddNode'))
     return
   }
   saving.value = true
@@ -1268,7 +1286,7 @@ async function handleSave(isDraft: boolean) {
     const design = JSON.stringify(buildDesign())
     await updateDataFlow({ id: flowId, design, temporarily: isDraft, cron: flowCron.value })
     if (isDraft) {
-      ElMessage.success('已保存')
+      ElMessage.success(t('editor.saved'))
     } else {
       await doPublish()
     }
@@ -1280,12 +1298,12 @@ async function handleSave(isDraft: boolean) {
 }
 
 async function doPublish() {
-  const { value } = await ElMessageBox.prompt('请输入发布说明', '发布数据流', {
-    confirmButtonText: '发布',
-    cancelButtonText: '取消'
+  const { value } = await ElMessageBox.prompt(t('editor.publishPrompt'), t('editor.publishTitle'), {
+    confirmButtonText: t('editor.publish'),
+    cancelButtonText: t('common.cancel')
   })
-  await publishDataFlow(flowId, value || '发布')
-  ElMessage.success('发布成功')
+  await publishDataFlow(flowId, value || t('editor.publishDefault'))
+  ElMessage.success(t('editor.publishSuccess'))
   goBack()
 }
 
@@ -1293,7 +1311,7 @@ async function handleRun() {
   if (!lf) return
   const graphData = lf.getGraphData() as { nodes: unknown[] }
   if (!graphData.nodes?.length) {
-    ElMessage.warning('请先添加组件')
+    ElMessage.warning(t('editor.pleaseAddNode'))
     return
   }
   running.value = true
@@ -1301,7 +1319,7 @@ async function handleRun() {
     const design = JSON.stringify(buildDesign())
     await updateDataFlow({ id: flowId, design, temporarily: true, cron: flowCron.value })
     await runDataFlow(flowId)
-    ElMessage.success('已提交运行')
+    ElMessage.success(t('editor.runSubmitted'))
     router.push({ path: '/dataflow/instance', query: { flowId, flowName: detail.value?.name ?? '' } })
   } catch {
     // 错误提示已在拦截器处理
@@ -1326,7 +1344,7 @@ onMounted(async () => {
     flowCron.value = d.cron ?? ''
     datasources.value = (ds.records ?? []).map((r) => ({ id: r.id, code: r.code, name: r.name, type: r.type }))
   } catch {
-    ElMessage.error('加载数据流失败')
+    ElMessage.error(t('editor.loadFailed'))
     goBack()
     return
   }
@@ -1401,7 +1419,7 @@ watch(
   (cfg) => {
     if (!cfg || !cfg.__type) return
     if (cfg.__type === 'DATAX') return
-    const def = getNodeType(cfg.__type)
+    const def = getNodeTypeLocalized(cfg.__type)
     for (const field of def?.fields ?? []) {
       if (!field.dependsOn) continue
       const dsCode = field.dependsOn.datasource ? cfg[field.dependsOn.datasource] : ''
