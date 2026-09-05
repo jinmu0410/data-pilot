@@ -5,6 +5,7 @@ import cn.datapilot.common.vo.base.PlainResult;
 import cn.datapilot.web.service.api.QueryTemplateService;
 import cn.datapilot.web.vo.data.service.QueryCallRequest;
 import cn.datapilot.web.vo.data.service.QueryCallResponse;
+import com.alibaba.fastjson2.JSON;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,14 +28,19 @@ public class QueryApiController {
      *
      * @param code    模板编码
      * @param secret  请求头 X-Secret
-     * @param request 调用请求
+     * @param requestBody 原始调用请求
      * @return r
      */
     @PostMapping("{code}")
     public PlainResult<QueryCallResponse> call(@PathVariable String code,
                                                @RequestHeader(value = "X-Secret", required = false) String secret,
-                                               @RequestBody QueryCallRequest request) {
-        return new PlainResult<>(this.queryTemplateService.call(code, secret, request, IPUtils.getRequestIp()));
+                                               @RequestHeader(value = "X-Timestamp", required = false) String timestamp,
+                                               @RequestHeader(value = "X-Nonce", required = false) String nonce,
+                                               @RequestHeader(value = "X-Signature", required = false) String signature,
+                                               @RequestBody String requestBody) {
+        QueryCallRequest request = JSON.parseObject(requestBody, QueryCallRequest.class);
+        return new PlainResult<>(this.queryTemplateService.call(code, secret, timestamp, nonce, signature,
+                requestBody, request, IPUtils.getRequestIp()));
     }
 
 }

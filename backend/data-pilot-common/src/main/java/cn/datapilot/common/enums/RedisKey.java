@@ -91,6 +91,10 @@ public enum RedisKey {
      */
     QUERY_TEMPLATE_LIMIT("dp:query-template:limit:", "查询模板限流"),
     /**
+     * 查询 API HMAC 防重放随机数
+     */
+    QUERY_TEMPLATE_NONCE("dp:query-template:nonce:", "查询 API 签名随机数"),
+    /**
      * (@Scheduled)定时任务全局锁
      */
     SCHEDULED_LOCK("dp:scheduled:lock:", "定时任务全局锁"),

@@ -33,6 +33,10 @@ public class QueryTemplateDetailResponse {
 
     private String secret;
 
+    private String authType;
+
+    private Boolean hasSecret;
+
     private String currentVersion;
 
     private String publishVersion;

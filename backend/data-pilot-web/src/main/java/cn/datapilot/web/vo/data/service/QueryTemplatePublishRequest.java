@@ -22,6 +22,11 @@ public class QueryTemplatePublishRequest {
     private String secret;
 
     /**
+     * PUBLIC/API_KEY/HMAC_SHA256
+     */
+    private String authType;
+
+    /**
      * ENABLE/DISABLE
      */
     private String enableCache;
@@ -30,6 +35,11 @@ public class QueryTemplatePublishRequest {
      * ENABLE/DISABLE
      */
     private String enableLimiting;
+
+    /**
+     * GLOBAL/IP
+     */
+    private String limitType;
 
     private Integer limitRate;
 

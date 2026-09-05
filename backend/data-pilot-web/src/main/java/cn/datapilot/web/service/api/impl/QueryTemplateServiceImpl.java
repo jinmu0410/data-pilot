@@ -4,6 +4,7 @@ import cn.datapilot.common.component.OrikaMapper;
 import cn.datapilot.common.enums.RedisKey;
 import cn.datapilot.common.enums.Status;
 import cn.datapilot.common.exception.ApiException;
+import cn.datapilot.common.util.AesUtils;
 import cn.datapilot.common.vo.base.PageBase;
 import cn.datapilot.common.vo.base.PageRequest;
 import cn.datapilot.common.vo.base.PageResult;
@@ -33,10 +34,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RRateLimiter;
 import org.redisson.api.RateType;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.sql.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -83,6 +88,16 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
      */
     private static final Set<String> METHODS = Set.of("one", "count", "list", "page");
 
+    private static final String AUTH_PUBLIC = "PUBLIC";
+    private static final String AUTH_API_KEY = "API_KEY";
+    private static final String AUTH_HMAC_SHA256 = "HMAC_SHA256";
+    private static final String API_KEY_HASH_PREFIX = "key$";
+    private static final String API_KEY_ENCRYPTED_PREFIX = "api$";
+    private static final String HMAC_PREFIX = "hmac$";
+    private static final String LIMIT_GLOBAL = "ENABLE";
+    private static final String LIMIT_IP = "LIMIT_IP";
+    private static final long SIGNATURE_TOLERANCE_SECONDS = 300;
+
     /**
      * 进程内结果缓存（TTL 60s）
      */
@@ -100,6 +115,9 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
     private RedissonClient redissonClient;
     @Resource
     private ThreadPoolTaskExecutor taskExecutor;
+
+    @Value("${dp.password.secret-key:0200300020000001}")
+    private String apiEncryptionKey;
 
     @Override
     public PageResult<QueryTemplateListResponse> list(PageRequest<QueryTemplateListRequest> pageRequest) {
@@ -143,6 +161,10 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
         }
         QueryTemplateDetailResponse response = new QueryTemplateDetailResponse();
         this.orikaMapper.map(template, response);
+        AuthConfig auth = this.resolveAuth(template.getSecret());
+        response.setAuthType(auth.type());
+        response.setSecret(null);
+        response.setHasSecret(StrUtil.isNotBlank(template.getSecret()));
         if (StrUtil.isNotBlank(template.getDataSourceCode())) {
             Map<String, String> dsNameMap = this.dataSourceNameMap(template.getWorkspaceCode(), Set.of(template.getDataSourceCode()));
             response.setDataSourceName(dsNameMap.get(template.getDataSourceCode()));
@@ -238,6 +260,24 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
             }
         }
 
+        String authType = StrUtil.blankToDefault(request.getAuthType(), AUTH_API_KEY).toUpperCase(Locale.ROOT);
+        if (!Set.of(AUTH_PUBLIC, AUTH_API_KEY, AUTH_HMAC_SHA256).contains(authType)) {
+            throw new ApiException("不支持的鉴权方式: {}", authType);
+        }
+        String rawSecret = StrUtil.trim(request.getSecret());
+        AuthConfig currentAuth = this.resolveAuth(template.getSecret());
+        boolean keepCurrentSecret = StrUtil.isBlank(rawSecret) && authType.equals(currentAuth.type())
+                && StrUtil.isNotBlank(template.getSecret());
+        if (!AUTH_PUBLIC.equals(authType) && StrUtil.isBlank(rawSecret) && !keepCurrentSecret) {
+            throw new ApiException("启用鉴权时必须配置密钥");
+        }
+        if (StrUtil.isNotBlank(rawSecret) && rawSecret.getBytes(StandardCharsets.UTF_8).length < 16) {
+            throw new ApiException("密钥长度不能少于 16 个 UTF-8 字节");
+        }
+        if (rawSecret != null && rawSecret.getBytes(StandardCharsets.UTF_8).length > 60) {
+            throw new ApiException("密钥长度不能超过 60 个 UTF-8 字节");
+        }
+
         QueryTemplatePublish publish = new QueryTemplatePublish();
         publish.setName(template.getName());
         publish.setCode(template.getCode());
@@ -247,9 +287,12 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
         publish.setDescription(template.getDescription());
         publish.setDataSourceCode(template.getDataSourceCode());
         publish.setTimeout(template.getTimeout());
-        publish.setSecret(StrUtil.isBlank(request.getSecret()) ? null : request.getSecret().trim());
+        publish.setSecret(AUTH_PUBLIC.equals(authType) ? null
+                : (keepCurrentSecret ? template.getSecret() : this.encodeAuth(authType, rawSecret)));
         publish.setEnableCache("ENABLE".equals(request.getEnableCache()) ? "ENABLE" : "DISABLE");
-        publish.setEnableLimiting("ENABLE".equals(request.getEnableLimiting()) ? "ENABLE" : "DISABLE");
+        String limitType = "IP".equalsIgnoreCase(request.getLimitType()) ? "IP" : "GLOBAL";
+        publish.setEnableLimiting("ENABLE".equals(request.getEnableLimiting())
+                ? ("IP".equals(limitType) ? LIMIT_IP : LIMIT_GLOBAL) : "DISABLE");
         publish.setLimitRate(request.getLimitRate());
         publish.setLimitRefreshInterval(request.getLimitRefreshInterval());
         publish.setLimitTimeUnit(request.getLimitTimeUnit());
@@ -268,6 +311,9 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
 
         QueryTemplatePublishResponse response = new QueryTemplatePublishResponse();
         this.orikaMapper.map(publish, response);
+        response.setAuthType(authType);
+        response.setSecret(null);
+        response.setLimitType(limitType);
         return response;
     }
 
@@ -303,7 +349,8 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
     }
 
     @Override
-    public QueryCallResponse call(String code, String secret, QueryCallRequest request, String ip) {
+    public QueryCallResponse call(String code, String secret, String timestamp, String nonce, String signature,
+                                  String requestBody, QueryCallRequest request, String ip) {
         QueryTemplatePublish publish = this.queryTemplatePublishMapper.selectOne(
                 new LambdaQueryWrapper<QueryTemplatePublish>()
                         .eq(QueryTemplatePublish::getCode, code)
@@ -312,6 +359,9 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
                         .last("LIMIT 1"));
         if (publish == null) {
             throw new ApiException("接口不存在或未发布");
+        }
+        if (request == null) {
+            throw new ApiException("请求体不能为空");
         }
         String requestId = TraceInterceptor.getRequestId();
         String method = StrUtil.isBlank(request.getMethod()) ? "list" : request.getMethod().toLowerCase();
@@ -335,10 +385,8 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
         queryLog.setHitCache("NO");
 
         try {
-            if (StrUtil.isNotBlank(publish.getSecret()) && !publish.getSecret().equals(secret)) {
-                throw new ApiException("密钥校验失败");
-            }
-            this.checkRateLimit(publish);
+            this.verifyAuth(publish, secret, timestamp, nonce, signature, requestBody);
+            this.checkRateLimit(publish, ip);
             QueryCallResponse response;
             if ("ENABLE".equals(publish.getEnableCache())) {
                 String cacheKey = this.buildCacheKey(publish.getCode(), publish.getVersion(), method, params, pageNum, pageSize);
@@ -615,14 +663,113 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
         }
     }
 
-    private void checkRateLimit(QueryTemplatePublish publish) {
-        if (!"ENABLE".equals(publish.getEnableLimiting())) {
+    private void verifyAuth(QueryTemplatePublish publish, String providedSecret, String timestamp, String nonce,
+                            String signature, String requestBody) {
+        AuthConfig auth = this.resolveAuth(publish.getSecret());
+        if (AUTH_PUBLIC.equals(auth.type())) {
+            return;
+        }
+        if (AUTH_API_KEY.equals(auth.type())) {
+            String candidate = auth.hashed() ? this.sha256Hex(StrUtil.nullToEmpty(providedSecret)) : providedSecret;
+            if (StrUtil.isBlank(providedSecret) || !this.constantTimeEquals(auth.secret(), candidate)) {
+                throw new ApiException("API Key 校验失败");
+            }
+            return;
+        }
+        if (StrUtil.isBlank(timestamp) || StrUtil.isBlank(nonce) || StrUtil.isBlank(signature)) {
+            throw new ApiException("HMAC 鉴权缺少 X-Timestamp、X-Nonce 或 X-Signature");
+        }
+        long requestTimestamp;
+        try {
+            requestTimestamp = Long.parseLong(timestamp);
+        } catch (NumberFormatException e) {
+            throw new ApiException("X-Timestamp 必须是 Unix 秒级时间戳");
+        }
+        long now = System.currentTimeMillis() / 1000;
+        if (Math.abs(now - requestTimestamp) > SIGNATURE_TOLERANCE_SECONDS) {
+            throw new ApiException("HMAC 签名已过期，请校准调用方时间");
+        }
+        if (!nonce.matches("[a-zA-Z0-9_-]{8,64}")) {
+            throw new ApiException("X-Nonce 必须为 8-64 位字母、数字、下划线或横线");
+        }
+        String bodyHash = this.sha256Hex(StrUtil.nullToEmpty(requestBody));
+        String signingContent = timestamp + "\n" + nonce + "\n" + bodyHash;
+        String expected = this.hmacSha256Hex(auth.secret(), signingContent);
+        if (!this.constantTimeEquals(expected, signature.toLowerCase(Locale.ROOT))) {
+            throw new ApiException("HMAC 签名校验失败");
+        }
+        String nonceKey = RedisKey.QUERY_TEMPLATE_NONCE.build(publish.getCode() + ":" + nonce);
+        boolean accepted = this.redissonClient.getBucket(nonceKey).setIfAbsent("1", Duration.ofSeconds(SIGNATURE_TOLERANCE_SECONDS));
+        if (!accepted) {
+            throw new ApiException("HMAC 请求已被使用，请更换 X-Nonce");
+        }
+    }
+
+    private AuthConfig resolveAuth(String storedSecret) {
+        if (StrUtil.isBlank(storedSecret)) {
+            return new AuthConfig(AUTH_PUBLIC, null, false);
+        }
+        if (storedSecret.startsWith(HMAC_PREFIX)) {
+            return new AuthConfig(AUTH_HMAC_SHA256,
+                    AesUtils.decryptGcm(storedSecret.substring(HMAC_PREFIX.length()), this.apiEncryptionKey), false);
+        }
+        if (storedSecret.startsWith(API_KEY_HASH_PREFIX)) {
+            return new AuthConfig(AUTH_API_KEY, storedSecret.substring(API_KEY_HASH_PREFIX.length()), true);
+        }
+        if (storedSecret.startsWith(API_KEY_ENCRYPTED_PREFIX)) {
+            return new AuthConfig(AUTH_API_KEY,
+                    AesUtils.decryptGcm(storedSecret.substring(API_KEY_ENCRYPTED_PREFIX.length()), this.apiEncryptionKey), false);
+        }
+        // 兼容升级前直接存储的 X-Secret。
+        return new AuthConfig(AUTH_API_KEY, storedSecret, false);
+    }
+
+    private String encodeAuth(String authType, String secret) {
+        if (AUTH_PUBLIC.equals(authType)) {
+            return null;
+        }
+        if (AUTH_API_KEY.equals(authType)) {
+            return API_KEY_HASH_PREFIX + this.sha256Hex(secret);
+        }
+        return HMAC_PREFIX + AesUtils.encryptGcm(secret, this.apiEncryptionKey);
+    }
+
+    private String sha256Hex(String value) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new IllegalStateException("SHA-256 计算失败", e);
+        }
+    }
+
+    private String hmacSha256Hex(String secret, String value) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            return HexFormat.of().formatHex(mac.doFinal(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new IllegalStateException("HMAC-SHA256 计算失败", e);
+        }
+    }
+
+    private boolean constantTimeEquals(String expected, String actual) {
+        if (expected == null || actual == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8), actual.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private void checkRateLimit(QueryTemplatePublish publish, String ip) {
+        if (StrUtil.isBlank(publish.getEnableLimiting())
+                || !Set.of(LIMIT_GLOBAL, LIMIT_IP).contains(publish.getEnableLimiting())) {
             return;
         }
         long rate = publish.getLimitRate() == null ? 10 : publish.getLimitRate();
         long interval = publish.getLimitRefreshInterval() == null ? 1 : publish.getLimitRefreshInterval();
         ChronoUnit unit = this.parseTimeUnit(publish.getLimitTimeUnit());
-        String key = RedisKey.QUERY_TEMPLATE_LIMIT.build(publish.getCode());
+        String dimension = LIMIT_IP.equals(publish.getEnableLimiting()) ? ":ip:" + StrUtil.blankToDefault(ip, "unknown") : ":global";
+        String key = RedisKey.QUERY_TEMPLATE_LIMIT.build(publish.getCode() + ":" + publish.getVersion() + dimension);
         RRateLimiter rateLimiter = this.redissonClient.getRateLimiter(key);
         if (!rateLimiter.isExists()) {
             rateLimiter.trySetRate(RateType.OVERALL, rate, Duration.of(interval, unit));
@@ -751,6 +898,9 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
      * 解析后的 SQL 与绑定值
      */
     private record PreparedSql(String sql, List<Object> bindValues) {
+    }
+
+    private record AuthConfig(String type, String secret, boolean hashed) {
     }
 
 }

@@ -193,7 +193,8 @@
     </el-dialog>
 
     <!-- 发布 -->
-    <el-dialog v-model="publishVisible" title="发布 API" width="560px" top="5vh" class="publish-dialog" destroy-on-close>
+    <el-dialog v-model="publishVisible" width="min(720px, calc(100vw - 40px))" top="4vh" append-to-body class="api-publish-dialog" destroy-on-close :close-on-click-modal="false">
+      <template #header><div class="dialog-heading"><span class="dialog-logo publish-logo">PUB</span><div><div class="dialog-title">发布 API 服务</div><div class="dialog-subtitle">配置访问鉴权、接口限流和运行观测策略</div></div><span class="dialog-mode">SECURITY POLICY</span></div></template>
       <div class="publish-target">
         <el-icon class="publish-target-icon"><Promotion /></el-icon>
         <div class="publish-target-info">
@@ -202,9 +203,15 @@
         </div>
       </div>
 
-      <div class="section-title">访问安全</div>
-      <div class="field-label">密钥 secret</div>
-      <el-input v-model="publishForm.secret" placeholder="留空 = 公开调用，无需鉴权" clearable show-password />
+      <div class="section-title">访问鉴权</div>
+      <div class="auth-options">
+        <button v-for="item in AUTH_OPTIONS" :key="item.value" type="button" :class="{ active: publishForm.authType === item.value }" @click="publishForm.authType = item.value"><span>{{ item.icon }}</span><div><strong>{{ item.label }}</strong><small>{{ item.description }}</small></div><i>✓</i></button>
+      </div>
+      <div v-if="publishForm.authType !== 'PUBLIC'" class="secret-field">
+        <div class="field-label"><span>{{ publishForm.authType === 'HMAC_SHA256' ? '签名密钥' : 'API Key' }}</span><small>{{ publishForm.authType === 'HMAC_SHA256' ? 'AES-GCM 加密存储' : 'SHA-256 单向摘要存储' }}</small></div>
+        <el-input v-model="publishForm.secret" maxlength="60" :placeholder="canKeepPublishedSecret ? '留空保持当前密钥，填写则轮换' : '输入至少 16 位密钥或自动生成'" clearable show-password><template #append><el-button @click="generateSecret">自动生成</el-button></template></el-input>
+        <div v-if="publishForm.authType === 'HMAC_SHA256'" class="security-hint">请求需要携带时间戳、随机数与 HMAC-SHA256 签名，签名有效期 5 分钟且随机数不可重复。</div>
+      </div>
 
       <div class="section-title">运行配置</div>
       <div class="switch-row">
@@ -222,16 +229,10 @@
         <el-switch v-model="publishForm.limitOn" />
       </div>
       <div v-if="publishForm.limitOn" class="limit-config">
-        <span>每</span>
-        <el-input-number v-model="publishForm.limitRefreshInterval" :min="1" :max="86400" controls-position="right" />
-        <el-select v-model="publishForm.limitTimeUnit">
-          <el-option label="秒" value="SECONDS" />
-          <el-option label="分钟" value="MINUTES" />
-          <el-option label="小时" value="HOURS" />
-        </el-select>
-        <span>允许</span>
-        <el-input-number v-model="publishForm.limitRate" :min="1" :max="100000" controls-position="right" />
-        <span>次</span>
+        <div><label>限流维度</label><el-segmented v-model="publishForm.limitType" :options="limitTypeOptions" block /></div>
+        <div><label>时间窗口</label><div class="inline-control"><el-input-number v-model="publishForm.limitRefreshInterval" :min="1" :max="86400" controls-position="right" /><el-select v-model="publishForm.limitTimeUnit"><el-option label="秒" value="SECONDS" /><el-option label="分钟" value="MINUTES" /><el-option label="小时" value="HOURS" /></el-select></div></div>
+        <div><label>窗口内最大请求</label><div class="inline-control"><el-input-number v-model="publishForm.limitRate" :min="1" :max="100000" controls-position="right" /><span>次</span></div></div>
+        <p>{{ publishForm.limitType === 'IP' ? '每个来源 IP 独立计数，适合开放平台。' : '所有调用方共享额度，适合保护数据库总体负载。' }}</p>
       </div>
       <div class="switch-row">
         <div class="switch-row-text">
@@ -278,6 +279,7 @@
       </div>
       <div class="curl-block">
         <div class="curl-head"><div><strong>外部调用示例</strong><span>选择响应模式后自动生成 cURL</span></div><div class="curl-head-right"><el-select v-model="testMethod" size="small" style="width:105px"><el-option label="单条 one" value="one" /><el-option label="数量 count" value="count" /><el-option label="列表 list" value="list" /><el-option label="分页 page" value="page" /></el-select><template v-if="testMethod === 'page'"><el-input-number v-model="testPageNum" size="small" :min="1" :max="100000" controls-position="right" style="width:95px" /><el-input-number v-model="testPageSize" size="small" :min="1" :max="1000" controls-position="right" style="width:95px" /></template><el-button link type="primary" size="small" @click="copyCurl">复制 cURL</el-button></div></div>
+        <div v-if="testAuthType !== 'PUBLIC'" class="test-credential"><span>{{ testAuthType === 'HMAC_SHA256' ? 'HMAC 签名密钥' : 'API Key' }}</span><el-input v-model="testSecret" type="password" show-password placeholder="仅用于本地生成示例，不会保存或回传" /></div>
         <pre class="curl-code">{{ curlText }}</pre>
       </div>
     </el-dialog>
@@ -394,6 +396,8 @@ import {
 
 const JDBC_TYPES = ['Doris', 'MySQL', 'TiDB', 'PostgreSQL']
 type ParameterType = 'string' | 'number' | 'boolean' | 'null'
+type AuthType = 'PUBLIC' | 'API_KEY' | 'HMAC_SHA256'
+type LimitType = 'GLOBAL' | 'IP'
 interface ParameterRow { name: string; type: ParameterType; value: string; description: string }
 const PARAM_TYPES: Array<{ label: string; value: ParameterType }> = [
   { label: '文本', value: 'string' },
@@ -401,6 +405,12 @@ const PARAM_TYPES: Array<{ label: string; value: ParameterType }> = [
   { label: '布尔', value: 'boolean' },
   { label: '空值', value: 'null' }
 ]
+const AUTH_OPTIONS: Array<{ value: AuthType; label: string; description: string; icon: string }> = [
+  { value: 'PUBLIC', label: '公开访问', description: '无需凭证，适合公开数据', icon: 'OPEN' },
+  { value: 'API_KEY', label: 'API Key', description: '请求头携带固定访问密钥', icon: 'KEY' },
+  { value: 'HMAC_SHA256', label: 'HMAC 签名', description: '防篡改、带时效并防重放', icon: 'SIGN' }
+]
+const limitTypeOptions = [{ label: '全局共享', value: 'GLOBAL' }, { label: '按来源 IP', value: 'IP' }]
 
 const loading = ref(false)
 const list = ref<QueryTemplateItem[]>([])
@@ -444,15 +454,20 @@ const editorDialect = computed<'mysql' | 'postgresql'>(() => {
 const publishVisible = ref(false)
 const publishing = ref(false)
 const publishTarget = ref<QueryTemplateItem | null>(null)
+const publishedAuthType = ref<AuthType>('PUBLIC')
+const hasPublishedSecret = ref(false)
 const publishForm = reactive({
+  authType: 'API_KEY' as AuthType,
   secret: '',
   cacheOn: false,
   limitOn: false,
   limitRate: 10,
   limitRefreshInterval: 1,
   limitTimeUnit: 'SECONDS',
+  limitType: 'GLOBAL' as LimitType,
   logOn: true
 })
+const canKeepPublishedSecret = computed(() => hasPublishedSecret.value && publishForm.authType === publishedAuthType.value)
 
 const testVisible = ref(false)
 const testing = ref(false)
@@ -460,6 +475,7 @@ const testId = ref(0)
 const testName = ref('')
 const testCode = ref('')
 const testSecret = ref('')
+const testAuthType = ref<AuthType>('PUBLIC')
 const testParamsJson = ref('{}')
 const testParameterRows = ref<ParameterRow[]>([])
 const advancedParams = ref(false)
@@ -480,17 +496,29 @@ const logDetail = ref<QueryLogDetail | null>(null)
 
 const curlText = computed(() => {
   const origin = window.location.origin
-  const secretHeader = testSecret.value ? `  -H 'X-Secret: ${testSecret.value}' \\\n` : ''
   const body: Record<string, unknown> = { method: testMethod.value, params: currentTestParams(false) ?? {} }
   if (testMethod.value === 'page') {
     body.pageNum = testPageNum.value
     body.pageSize = testPageSize.value
   }
-  return `curl -X POST '${origin}/dp-web/open/api/${testCode.value}' \\\n` +
+  const bodyJson = JSON.stringify(body)
+  const credential = testSecret.value || (testAuthType.value === 'HMAC_SHA256' ? '<YOUR_HMAC_SECRET>' : '<YOUR_API_KEY>')
+  const baseCurl = `curl -X POST '${origin}/dp-web/open/api/${testCode.value}' \\\n` +
     `  -H 'Content-Type: application/json' \\\n` +
-    secretHeader +
-    `  -d '${JSON.stringify(body)}'`
+    (testAuthType.value === 'API_KEY' ? `  -H ${shellSingleQuote(`X-Secret: ${credential}`)} \\\n` : '')
+  if (testAuthType.value !== 'HMAC_SHA256') return baseCurl + `  -d ${shellSingleQuote(bodyJson)}`
+  return `BODY=${shellSingleQuote(bodyJson)}
+TIMESTAMP=$(date +%s)
+NONCE=$(uuidgen | tr -d '-')
+BODY_SHA=$(printf '%s' "$BODY" | shasum -a 256 | awk '{print $1}')
+SIGNATURE=$(printf '%s\\n%s\\n%s' "$TIMESTAMP" "$NONCE" "$BODY_SHA" | openssl dgst -sha256 -hmac ${shellSingleQuote(credential)} | awk '{print $2}')
+
+${baseCurl}  -H "X-Timestamp: $TIMESTAMP" \\\n+  -H "X-Nonce: $NONCE" \\\n+  -H "X-Signature: $SIGNATURE" \\\n+  -d "$BODY"`
 })
+
+function shellSingleQuote(value: string) {
+  return `'${value.replace(/'/g, `'"'"'`)}'`
+}
 
 function isReadOnlySql(sql: string) {
   return /^(select|with)\b/i.test(sql.trim()) && !/;\s*\S/.test(sql.trim())
@@ -686,28 +714,54 @@ async function openPublish(row: QueryTemplateItem) {
   publishTarget.value = row
   try {
     const detail = await getTemplateDetail(row.id)
-    publishForm.secret = detail?.secret ?? ''
+    publishForm.secret = ''
+    publishForm.authType = detail?.authType ?? (detail?.secret ? 'API_KEY' : 'PUBLIC')
+    publishedAuthType.value = publishForm.authType
+    hasPublishedSecret.value = detail?.hasSecret ?? !!detail?.secret
   } catch {
     publishForm.secret = ''
+    publishForm.authType = 'API_KEY'
+    publishedAuthType.value = 'PUBLIC'
+    hasPublishedSecret.value = false
   }
   publishForm.cacheOn = false
   publishForm.limitOn = false
   publishForm.limitRate = 10
   publishForm.limitRefreshInterval = 1
   publishForm.limitTimeUnit = 'SECONDS'
+  publishForm.limitType = 'GLOBAL'
   publishForm.logOn = true
   publishVisible.value = true
 }
 
+function generateSecret() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
+  const length = publishForm.authType === 'HMAC_SHA256' ? 48 : 32
+  const random = new Uint32Array(length)
+  crypto.getRandomValues(random)
+  publishForm.secret = Array.from(random, (item) => alphabet[item % alphabet.length]).join('')
+  ElMessage.success('已生成高强度随机密钥')
+}
+
 async function handlePublish() {
   if (!publishTarget.value) return
+  if (publishForm.authType !== 'PUBLIC' && !publishForm.secret.trim() && !canKeepPublishedSecret.value) {
+    ElMessage.warning('当前鉴权方式需要配置密钥')
+    return
+  }
+  if (publishForm.secret && new TextEncoder().encode(publishForm.secret).length < 16) {
+    ElMessage.warning('密钥长度不能少于 16 个 UTF-8 字节')
+    return
+  }
   publishing.value = true
   try {
     const res = await publishTemplate({
       id: publishTarget.value.id,
-      secret: publishForm.secret || undefined,
+      authType: publishForm.authType,
+      secret: publishForm.authType === 'PUBLIC' ? undefined : publishForm.secret,
       enableCache: publishForm.cacheOn ? 'ENABLE' : 'DISABLE',
       enableLimiting: publishForm.limitOn ? 'ENABLE' : 'DISABLE',
+      limitType: publishForm.limitType,
       limitRate: publishForm.limitOn ? publishForm.limitRate : undefined,
       limitRefreshInterval: publishForm.limitOn ? publishForm.limitRefreshInterval : undefined,
       limitTimeUnit: publishForm.limitOn ? publishForm.limitTimeUnit : undefined,
@@ -723,10 +777,12 @@ async function handlePublish() {
 
 async function openTest(row: QueryTemplateItem) {
   let secret = ''
+  let authType: AuthType = 'PUBLIC'
   let template = ''
   try {
     const d = await getTemplateDetail(row.id)
-    secret = d?.secret ?? ''
+    secret = ''
+    authType = d?.authType ?? (d?.secret ? 'API_KEY' : 'PUBLIC')
     template = d?.template ?? ''
   } catch {
     /* ignore */
@@ -735,6 +791,7 @@ async function openTest(row: QueryTemplateItem) {
   testName.value = row.name
   testCode.value = row.code
   testSecret.value = secret
+  testAuthType.value = authType
   const names = [...new Set((template.match(/\$\{([a-zA-Z0-9_]+)\}/g) ?? []).map((item) => item.slice(2, -1)))]
   testParameterRows.value = names.map((name) => ({ name, type: 'string', value: '', description: '' }))
   testParamsJson.value = JSON.stringify(Object.fromEntries(names.map((name) => [name, ''])), null, 2)
@@ -1235,16 +1292,17 @@ onMounted(async () => {
 .config-content { min-width: 0; overflow-y: auto; padding: 24px 27px; background: #fff; }.form-section + .form-section { margin-top: 25px; padding-top: 23px; border-top: 1px solid #eceef3; }.section-heading { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }.section-heading > div { display: flex; align-items: flex-start; gap: 10px; }.section-index { width: 25px; height: 25px; display: grid; place-items: center; flex-shrink: 0; border-radius: 7px; color: #635bff; background: #eeecff; font-size: 8px; font-weight: 800; }.section-heading h3 { margin: 0; color: #293247; font-size: 13px; }.section-heading p { margin: 4px 0 0; color: #929aaa; font-size: 9px; }.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }.field { min-width: 0; }.field label { display: block; margin-bottom: 7px; color: #4f596c; font-size: 10px; font-weight: 650; }.field label em { color: #ef5361; font-style: normal; }.wide-field { grid-column: 1 / -1; }.format-action { display: inline-flex; align-items: center; gap: 5px; padding: 6px 9px; border: 1px solid #dfe2e9; border-radius: 6px; color: #667085; background: #fff; font-size: 9px; cursor: pointer; }.format-action:hover { color: #635bff; border-color: #bdb7f8; }
 .editor-panel { border: 1px solid #343542; border-radius: 9px; box-shadow: none; }.editor-toolbar { padding: 8px 12px; background: #252630; }.editor-lang { font-size: 9px; }.editor-toolbar-hint { font-size: 9px; }.editor-wrap { height: 245px; }.sql-hint { display: flex; align-items: flex-start; gap: 9px; margin-top: 10px; padding: 10px 12px; border-radius: 7px; color: #667085; background: #f5f7fb; }.sql-hint span { width: 17px; height: 17px; display: grid; place-items: center; flex-shrink: 0; border-radius: 50%; color: #fff; background: #7b72e8; font-size: 9px; font-weight: 700; }.sql-hint p { margin: 1px 0 0; font-size: 9px; line-height: 1.55; }.param-counter { padding: 4px 7px; border-radius: 5px; color: #6758e8; background: #f0efff; font-size: 8px; font-weight: 700; }
 .parameter-table { overflow: hidden; border: 1px solid #e5e8ef; border-radius: 9px; }.parameter-head, .parameter-row { display: grid; grid-template-columns: 1.1fr .75fr 1.2fr 1.3fr; align-items: center; gap: 10px; padding: 9px 12px; }.parameter-head { color: #8992a3; background: #f7f8fa; font-size: 8px; font-weight: 700; }.parameter-row + .parameter-row { border-top: 1px solid #edf0f4; }.parameter-name { min-width: 0; }.parameter-name code { display: block; overflow: hidden; color: #635bff; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }.parameter-name small { display: block; margin-top: 3px; color: #eb5967; font-size: 8px; }.parameter-empty { display: flex; align-items: center; gap: 13px; padding: 18px; border: 1px dashed #dfe3ea; border-radius: 9px; background: #fafbfc; }.parameter-empty > span { width: 37px; height: 37px; display: grid; place-items: center; border-radius: 9px; color: #7469df; background: #eeecff; font-family: monospace; font-size: 12px; }.parameter-empty strong, .parameter-empty p { display: block; }.parameter-empty strong { color: #566176; font-size: 10px; }.parameter-empty p { margin: 4px 0 0; color: #9aa2b1; font-size: 8px; }.runtime-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }.setting-card { display: flex; align-items: center; gap: 9px; padding: 13px 14px; border: 1px solid #e8eaf0; border-radius: 8px; background: #fafbfc; }.setting-card > div { min-width: 0; flex: 1; }.setting-card strong, .setting-card small { display: block; }.setting-card strong { color: #4b5568; font-size: 10px; }.setting-card small { margin-top: 4px; color: #969ead; font-size: 8px; }.setting-card > span { color: #8f98a8; font-size: 9px; }.dialog-footer { width: 100%; display: flex; align-items: center; }.footer-tip { margin-right: auto; color: #8f98a8; font-size: 9px; }
-.test-shell { display: grid; grid-template-columns: 320px minmax(0,1fr); overflow: hidden; min-height: 350px; border: 1px solid #e5e8ef; border-radius: 10px; }.test-params-panel, .test-result-panel { min-width: 0; padding: 16px; }.test-params-panel { border-right: 1px solid #e5e8ef; background: #fafbfc; }.test-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }.test-panel-head > div strong, .test-panel-head > div span { display: block; }.test-panel-head strong { color: #3c4659; font-size: 11px; }.test-panel-head > div span { margin-top: 3px; color: #9aa2b1; font-size: 8px; }.test-param-list { display: grid; gap: 12px; max-height: 245px; overflow-y: auto; padding-right: 3px; }.test-param-item { padding: 10px; border: 1px solid #e5e8ef; border-radius: 8px; background: #fff; }.test-param-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }.test-param-label code { color: #635bff; font-size: 10px; font-weight: 700; }.test-param-label span { color: #e45564; font-size: 8px; }.test-param-control { display: flex; gap: 7px; }.test-actions { margin: 14px 0 0; }.parameter-empty.compact { padding: 14px; }.json-hint { margin-top: 5px; color: #9aa2b1; font-size: 8px; }.test-logo { font-size: 7px; background: linear-gradient(145deg,#0ea5a4,#3b82f6); }.result-table { width: 100%; }.curl-block { margin-top: 14px; border-radius: 9px; }.curl-head { padding: 9px 12px; }.curl-head > div:first-child strong, .curl-head > div:first-child span { display: block; }.curl-head > div:first-child strong { font-size: 10px; }.curl-head > div:first-child span { margin-top: 3px; color: #929aaa; font-size: 8px; font-weight: 400; }.curl-code { max-height: 145px; font-size: 10px; }
-.publish-target { border-radius: 9px; }.log-block { border-radius: 8px; }.muted { color: #c0c4cc; }
+.test-shell { display: grid; grid-template-columns: 320px minmax(0,1fr); overflow: hidden; min-height: 350px; border: 1px solid #e5e8ef; border-radius: 10px; }.test-params-panel, .test-result-panel { min-width: 0; padding: 16px; }.test-params-panel { border-right: 1px solid #e5e8ef; background: #fafbfc; }.test-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }.test-panel-head > div strong, .test-panel-head > div span { display: block; }.test-panel-head strong { color: #3c4659; font-size: 11px; }.test-panel-head > div span { margin-top: 3px; color: #9aa2b1; font-size: 8px; }.test-param-list { display: grid; gap: 12px; max-height: 245px; overflow-y: auto; padding-right: 3px; }.test-param-item { padding: 10px; border: 1px solid #e5e8ef; border-radius: 8px; background: #fff; }.test-param-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }.test-param-label code { color: #635bff; font-size: 10px; font-weight: 700; }.test-param-label span { color: #e45564; font-size: 8px; }.test-param-control { display: flex; gap: 7px; }.test-actions { margin: 14px 0 0; }.parameter-empty.compact { padding: 14px; }.json-hint { margin-top: 5px; color: #9aa2b1; font-size: 8px; }.test-logo { font-size: 7px; background: linear-gradient(145deg,#0ea5a4,#3b82f6); }.result-table { width: 100%; }.curl-block { margin-top: 14px; border-radius: 9px; }.curl-head { padding: 9px 12px; }.curl-head > div:first-child strong, .curl-head > div:first-child span { display: block; }.curl-head > div:first-child strong { font-size: 10px; }.curl-head > div:first-child span { margin-top: 3px; color: #929aaa; font-size: 8px; font-weight: 400; }.test-credential { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-top: 1px solid #eef0f4; background: #fafbfc; }.test-credential > span { min-width: 92px; color: #596579; font-size: 9px; font-weight: 650; }.curl-code { max-height: 145px; font-size: 10px; }
+.publish-target { border-radius: 9px; }.publish-logo { font-size: 7px; background: linear-gradient(145deg,#6c5ce7,#ec5f88); }.auth-options { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }.auth-options button { position: relative; min-width: 0; display: flex; align-items: center; gap: 9px; padding: 11px 9px; overflow: hidden; border: 1px solid #e4e7ed; border-radius: 9px; color: #687286; text-align: left; background: #fff; cursor: pointer; }.auth-options button:hover { border-color: #cfcaf8; }.auth-options button.active { border-color: #bdb6ff; background: #f2f0ff; box-shadow: 0 0 0 2px rgba(99,91,255,.06); }.auth-options button > span { width: 31px; height: 31px; display: grid; place-items: center; flex-shrink: 0; border-radius: 8px; color: #fff; background: linear-gradient(145deg,#6976de,#8f75ed); font-size: 7px; font-weight: 800; }.auth-options button div { min-width: 0; }.auth-options strong, .auth-options small { display: block; }.auth-options strong { color: #465166; font-size: 10px; }.auth-options small { margin-top: 3px; overflow: hidden; color: #969ead; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }.auth-options button > i { display: none; position: absolute; top: 5px; right: 6px; color: #635bff; font-size: 9px; font-style: normal; }.auth-options button.active > i { display: block; }.secret-field { margin-top: 12px; padding: 12px; border-radius: 9px; background: #f7f8fb; }.secret-field .field-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }.secret-field .field-label span { color: #566176; font-size: 10px; font-weight: 650; }.secret-field .field-label small { color: #8c96a7; font-size: 8px; }.security-hint { margin-top: 7px; color: #8a6a25; font-size: 8px; line-height: 1.5; }.limit-config { display: grid; grid-template-columns: .9fr 1.15fr 1fr; align-items: end; gap: 11px; padding: 13px; }.limit-config > div > label { display: block; margin-bottom: 6px; color: #687286; font-size: 9px; font-weight: 650; }.limit-config :deep(.el-input-number), .limit-config :deep(.el-select) { width: 100%; }.inline-control { display: grid; grid-template-columns: 1fr 88px; align-items: center; gap: 6px; }.inline-control > span { color: #8c96a7; font-size: 9px; }.limit-config > p { grid-column: 1/-1; margin: 0; color: #929aaa; font-size: 8px; }.log-block { border-radius: 8px; }.muted { color: #c0c4cc; }
 @media (max-width: 900px) { .page-hero { align-items: flex-start; flex-wrap: wrap; }.hero-stats { order: 3; width: 100%; }.hero-stats > div:first-child { border-left: 0; }.config-shell { grid-template-columns: 185px minmax(0,1fr); }.config-content { padding: 21px 18px; }.parameter-head, .parameter-row { grid-template-columns: 1fr 90px 1fr; }.parameter-head span:last-child, .parameter-row > :last-child { display: none; }.test-shell { grid-template-columns: 280px minmax(0,1fr); } }
-@media (max-width: 680px) { .page-hero { gap: 16px; padding: 18px; }.hero-copy { min-width: 0; width: 100%; }.page-hero p, .support-tip { display: none; }.hero-stats > div { min-width: 0; flex: 1; padding: 3px 9px; }.list-heading { padding: 0 14px; }.dialog-heading { gap: 9px; padding-right: 28px; }.dialog-logo { width: 34px; height: 34px; }.dialog-subtitle, .dialog-mode { display: none; }.dialog-title { font-size: 15px; white-space: nowrap; }.config-shell { height: calc(94vh - 138px); min-height: 0; display: block; overflow-y: auto; }.config-sidebar { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; padding: 10px; border-right: 0; border-bottom: 1px solid #e7e9f0; }.sidebar-label { grid-column: 1/-1; }.step-card { padding: 7px; }.step-card small, .service-summary { display: none; }.config-content { overflow: visible; padding: 18px 13px; }.form-grid, .runtime-grid { grid-template-columns: 1fr; }.wide-field { grid-column: auto; }.parameter-head { display: none; }.parameter-row { grid-template-columns: 1fr; gap: 7px; padding: 12px; }.parameter-row > :last-child { display: flex; }.parameter-row + .parameter-row { border-top: 1px solid #e7e9f0; }.footer-tip { display: none; }.dialog-footer { gap: 5px; }.dialog-footer .el-button { min-width: 0; margin-left: 0; padding: 8px 9px; font-size: 11px; }.test-shell { display: block; max-height: calc(92vh - 340px); overflow-y: auto; }.test-params-panel { border-right: 0; border-bottom: 1px solid #e5e8ef; }.curl-head { align-items: flex-start; gap: 9px; }.curl-head-right { flex-wrap: wrap; justify-content: flex-end; } }
+@media (max-width: 680px) { .page-hero { gap: 16px; padding: 18px; }.hero-copy { min-width: 0; width: 100%; }.page-hero p, .support-tip { display: none; }.hero-stats > div { min-width: 0; flex: 1; padding: 3px 9px; }.list-heading { padding: 0 14px; }.dialog-heading { gap: 9px; padding-right: 28px; }.dialog-logo { width: 34px; height: 34px; }.dialog-subtitle, .dialog-mode { display: none; }.dialog-title { font-size: 15px; white-space: nowrap; }.config-shell { height: calc(94vh - 138px); min-height: 0; display: block; overflow-y: auto; }.config-sidebar { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; padding: 10px; border-right: 0; border-bottom: 1px solid #e7e9f0; }.sidebar-label { grid-column: 1/-1; }.step-card { padding: 7px; }.step-card small, .service-summary { display: none; }.config-content { overflow: visible; padding: 18px 13px; }.form-grid, .runtime-grid { grid-template-columns: 1fr; }.wide-field { grid-column: auto; }.parameter-head { display: none; }.parameter-row { grid-template-columns: 1fr; gap: 7px; padding: 12px; }.parameter-row > :last-child { display: flex; }.parameter-row + .parameter-row { border-top: 1px solid #e7e9f0; }.footer-tip { display: none; }.dialog-footer { gap: 5px; }.dialog-footer .el-button { min-width: 0; margin-left: 0; padding: 8px 9px; font-size: 11px; }.auth-options { grid-template-columns: 1fr; }.auth-options button { padding: 8px; }.auth-options small { white-space: normal; }.limit-config { min-width: 0; grid-template-columns: 1fr; overflow: hidden; }.limit-config > div { min-width: 0; }.limit-config > p { grid-column: auto; }.limit-config .inline-control { grid-template-columns: minmax(0,1fr) 72px; }.test-shell { display: block; max-height: calc(92vh - 340px); overflow-y: auto; }.test-params-panel { border-right: 0; border-bottom: 1px solid #e5e8ef; }.curl-head { align-items: flex-start; gap: 9px; }.curl-head-right { flex-wrap: wrap; justify-content: flex-end; } }
 </style>
 
 <style>
-.api-config-dialog.el-dialog, .api-test-dialog.el-dialog { overflow: hidden; border-radius: 14px; }
-.api-config-dialog .el-dialog__header, .api-test-dialog .el-dialog__header { margin-right: 0; padding: 18px 22px 14px; border-bottom: 1px solid #edf0f4; }
-.api-config-dialog .el-dialog__body, .api-test-dialog .el-dialog__body { padding: 16px 20px; }
+.api-config-dialog.el-dialog, .api-test-dialog.el-dialog, .api-publish-dialog.el-dialog { overflow: hidden; border-radius: 14px; }
+.api-config-dialog .el-dialog__header, .api-test-dialog .el-dialog__header, .api-publish-dialog .el-dialog__header { margin-right: 0; padding: 18px 22px 14px; border-bottom: 1px solid #edf0f4; }
+.api-config-dialog .el-dialog__body, .api-test-dialog .el-dialog__body, .api-publish-dialog .el-dialog__body { max-height: calc(92vh - 145px); overflow-y: auto; padding: 16px 20px; }
+.api-publish-dialog .el-dialog__body { overflow-x: hidden; }
 .api-config-dialog .el-dialog__footer { padding: 13px 20px 17px; border-top: 1px solid #edf0f4; }
-@media (max-width:680px) { .api-config-dialog .el-dialog__header, .api-test-dialog .el-dialog__header { padding: 14px 13px 11px; }.api-config-dialog .el-dialog__body, .api-test-dialog .el-dialog__body { padding: 10px; }.api-config-dialog .el-dialog__footer { padding: 10px 12px 12px; } }
+@media (max-width:680px) { .api-config-dialog .el-dialog__header, .api-test-dialog .el-dialog__header, .api-publish-dialog .el-dialog__header { padding: 14px 13px 11px; }.api-config-dialog .el-dialog__body, .api-test-dialog .el-dialog__body, .api-publish-dialog .el-dialog__body { padding: 10px; }.api-config-dialog .el-dialog__footer { padding: 10px 12px 12px; } }
 </style>

@@ -76,11 +76,16 @@ public interface QueryTemplateService extends IService<QueryTemplate> {
      *
      * @param code    模板编码
      * @param secret  请求头密钥
+     * @param timestamp HMAC 时间戳
+     * @param nonce HMAC 随机数
+     * @param signature HMAC 签名
+     * @param requestBody 原始请求体
      * @param request 调用请求
      * @param ip      调用方 IP
      * @return r
      */
-    QueryCallResponse call(String code, String secret, QueryCallRequest request, String ip);
+    QueryCallResponse call(String code, String secret, String timestamp, String nonce, String signature,
+                           String requestBody, QueryCallRequest request, String ip);
 
     /**
      * 调用日志列表

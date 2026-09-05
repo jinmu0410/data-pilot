@@ -31,11 +31,15 @@ public class QueryTemplatePublishResponse {
 
     private String secret;
 
+    private String authType;
+
     private Integer timeout;
 
     private String enableCache;
 
     private String enableLimiting;
+
+    private String limitType;
 
     private Integer limitRate;
 

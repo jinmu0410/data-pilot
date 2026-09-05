@@ -19,6 +19,8 @@ export interface QueryTemplateItem {
 export interface QueryTemplateDetail extends QueryTemplateItem {
   template: string
   secret: string
+  authType: 'PUBLIC' | 'API_KEY' | 'HMAC_SHA256'
+  hasSecret: boolean
 }
 
 export interface QueryTemplateForm {
@@ -40,8 +42,10 @@ export interface QueryTemplateListRequest {
 export interface QueryTemplatePublishRequest {
   id: number
   secret?: string
+  authType?: 'PUBLIC' | 'API_KEY' | 'HMAC_SHA256'
   enableCache?: string
   enableLimiting?: string
+  limitType?: 'GLOBAL' | 'IP'
   limitRate?: number
   limitRefreshInterval?: number
   limitTimeUnit?: string
@@ -57,9 +61,11 @@ export interface QueryTemplatePublishResult {
   dataSourceCode: string
   status: string
   secret: string
+  authType: string
   timeout: number
   enableCache: string
   enableLimiting: string
+  limitType: string
   limitRate: number
   limitRefreshInterval: number
   limitTimeUnit: string
