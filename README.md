@@ -18,7 +18,7 @@ DataPilot 提供从数据源接入、任务开发、工作流调度，到运行�
 | --- | --- |
 | 工作台 | 汇总数据源、任务流、API 服务和任务实例，展示运行成功率、最近任务与快捷入口。 |
 | 数据源 | 统一管理 MySQL、TiDB、Doris、PostgreSQL、Kafka、Elasticsearch，支持连接测试、元数据浏览和密码加密。 |
-| 数据集成 | 提供 DataX 四步配置向导和 SeaTunnel 同步节点，支持整表/自定义 SQL、字段映射、批次、并发和限速。 |
+| 数据集成 | 提供 DataX 四步向导和 SeaTunnel 五步向导；支持整表/自定义 SQL、元数据字段映射、主键 Upsert、保存策略、分片和并行度配置。 |
 | 数据研发 | 在统一风格的 Monaco 编辑器中开发 SQL、Python、Shell 任务，支持参数、超时和运行配置。 |
 | 任务流 | 基于 LogicFlow 的 DAG 画布，支持拖拽编排、依赖连线、自动布局、草稿/发布、手动运行和可视化 Cron。 |
 | 运行观测 | 查看任务流实例、节点执行轨迹、耗时、影响行数、查询结果、错误信息和实时日志。 |
@@ -44,6 +44,10 @@ DataPilot 提供从数据源接入、任务开发、工作流调度，到运行�
 DataX 使用四步向导组织任务定义、数据端点、字段映射和运行策略，并根据目标端能力处理 Insert、Replace、Update 与冲突键配置。
 
 ![DataX 同步任务向导](docs/images/datax-task.png)
+
+### SeaTunnel 同步任务
+
+SeaTunnel 使用 Source、FieldMapper、Sink 五步向导组织 JDBC 批同步配置，支持表读取或自定义 SQL、过滤与分片、字段重命名、主键冲突处理、表结构/已有数据策略和脱敏 HOCON 预览。当前稳定适配 MySQL、TiDB、PostgreSQL；Doris、Kafka、Elasticsearch 使用专用 Connector 后开放。
 
 ### 任务实例详情
 

@@ -1,9 +1,10 @@
 package cn.datapilot.web.service.sync.engine;
 
+import cn.datapilot.web.service.SystemConfigService;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONWriter;
-import org.springframework.beans.factory.annotation.Value;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -21,8 +22,12 @@ import java.util.stream.Collectors;
 @Component
 public class DataXSyncEngine implements SyncEngine {
 
-    @Value("${dp.sync.datax.home:/usr/local/datax}")
-    private String dataxHome;
+    @Resource
+    private SystemConfigService systemConfigService;
+
+    private String dataxHome() {
+        return this.systemConfigService.getValue("sync.datax.home", "/usr/local/datax");
+    }
 
     @Override
     public String type() {
@@ -124,7 +129,7 @@ public class DataXSyncEngine implements SyncEngine {
 
     @Override
     public List<String> buildCommand(String configPath) {
-        return List.of(dataxHome + "/bin/datax.py", configPath);
+        return List.of(this.dataxHome() + "/bin/datax.py", configPath);
     }
 
     /**

@@ -1298,8 +1298,42 @@ ON DUPLICATE KEY UPDATE name = VALUES(name);
 INSERT INTO `permission` (id, code, name, create_user_id)
 VALUES (150, 'system:file:upload', '文件上传', 1)
 ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (151, 'system:config', '配置管理', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (152, 'system:config:list', '列表', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (153, 'system:config:add', '新增', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (154, 'system:config:update', '修改', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO `permission` (id, code, name, create_user_id)
+VALUES (155, 'system:config:delete', '删除', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 INSERT INTO `role_permission` (role_id, permission_id, create_user_id)
 SELECT 1, id, 1
 FROM `permission`
 WHERE id NOT IN (SELECT permission_id FROM `role_permission` WHERE role_id = 1);
+
+create table if not exists system_config
+(
+    id           bigint auto_increment primary key,
+    config_key   varchar(100) not null comment '配置键',
+    config_value varchar(500) null comment '配置值',
+    description  varchar(200) null comment '描述',
+    create_time  datetime default CURRENT_TIMESTAMP null,
+    update_time  datetime default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP null,
+    unique key uk_config_key (config_key)
+) comment '系统配置';
+
+INSERT INTO system_config (config_key, config_value, description) VALUES
+('sync.datax.home', '/Users/jinmu/Downloads/datax', 'DataX 安装路径'),
+('sync.seatunnel.home', '/opt/seatunnel', 'SeaTunnel 安装路径'),
+('sync.work-dir', '/tmp/dp-sync', '同步任务工作目录'),
+('sync.timeout-seconds', '600', '同步任务超时(秒)'),
+('task.work-dir', '/tmp/dp-task', '脚本任务工作目录')
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value);

@@ -72,10 +72,25 @@ public class TaskParamsHelper {
                 p.setSourceDataSourceCode(node.getSourceDataSourceCode());
                 p.setSourceSchema(node.getSourceSchema());
                 p.setSourceTable(node.getSourceTable());
+                p.setReadMode(node.getReadMode());
+                p.setSqlText(node.getSqlText());
+                p.setWhereCondition(node.getWhereCondition());
+                p.setPartitionColumn(node.getPartitionColumn());
+                p.setPartitionNum(node.getPartitionNum());
                 p.setTargetDataSourceCode(node.getTargetDataSourceCode());
                 p.setTargetSchema(node.getTargetSchema());
                 p.setTargetTable(node.getTargetTable());
                 p.setFieldMapping(node.getFieldMapping());
+                p.setFetchSize(node.getFetchSize());
+                p.setBatchSize(node.getBatchSize());
+                p.setSinkWriteStrategy(node.getSinkWriteStrategy());
+                p.setSinkQuery(node.getSinkQuery());
+                p.setSchemaSaveMode(node.getSchemaSaveMode());
+                p.setDataSaveMode(node.getDataSaveMode());
+                p.setCustomSql(node.getCustomSql());
+                p.setPrimaryKeys(node.getPrimaryKeys());
+                p.setParallelism(node.getParallelism());
+                p.setRetryTimes(node.getRetryTimes());
                 yield JSON.toJSONString(p);
             }
             case PYTHON, SHELL -> {
@@ -127,14 +142,55 @@ public class TaskParamsHelper {
                 if (StrUtil.isBlank(node.getTargetDataSourceCode())) {
                     throw new ApiException("请选择目标数据源");
                 }
-                if (StrUtil.isBlank(node.getSourceTable())) {
+                String readMode = StrUtil.blankToDefault(node.getReadMode(), "table");
+                if ("table".equalsIgnoreCase(readMode) && StrUtil.isBlank(node.getSourceTable())) {
                     throw new ApiException("源表不能为空");
+                }
+                if ("query".equalsIgnoreCase(readMode) && StrUtil.isBlank(node.getSqlText())) {
+                    throw new ApiException("自定义读取 SQL 不能为空");
+                }
+                if ("query".equalsIgnoreCase(readMode)) {
+                    String sql = node.getSqlText().trim().toLowerCase(Locale.ROOT);
+                    if (!sql.startsWith("select ") && !sql.startsWith("with ")) {
+                        throw new ApiException("SeaTunnel 自定义读取 SQL 仅支持 SELECT 查询");
+                    }
                 }
                 if (StrUtil.isBlank(node.getTargetTable())) {
                     throw new ApiException("目标表不能为空");
                 }
-                this.resolveDataSource(node.getSourceDataSourceCode(), workspaceCode);
-                this.resolveDataSource(node.getTargetDataSourceCode(), workspaceCode);
+                DataSource source = this.resolveDataSource(node.getSourceDataSourceCode(), workspaceCode);
+                DataSource target = this.resolveDataSource(node.getTargetDataSourceCode(), workspaceCode);
+                this.validateSeaTunnelJdbcSource(source, "源端");
+                this.validateSeaTunnelJdbcSource(target, "目标端");
+                if (StrUtil.isNotBlank(node.getWhereCondition())
+                        && !node.getWhereCondition().trim().toLowerCase(Locale.ROOT).startsWith("where ")) {
+                    throw new ApiException("SeaTunnel 过滤条件必须以 where 开头");
+                }
+                if (node.getPartitionNum() != null && node.getPartitionNum() < 1) {
+                    throw new ApiException("SeaTunnel 分片数必须大于 0");
+                }
+                if (node.getParallelism() != null && node.getParallelism() < 1) {
+                    throw new ApiException("SeaTunnel 并行度必须大于 0");
+                }
+                if (node.getFetchSize() != null && node.getFetchSize() < 0) {
+                    throw new ApiException("SeaTunnel 读取批次不能小于 0");
+                }
+                if (node.getBatchSize() != null && node.getBatchSize() < 1) {
+                    throw new ApiException("SeaTunnel 写入批次必须大于 0");
+                }
+                if (node.getRetryTimes() != null && node.getRetryTimes() < 0) {
+                    throw new ApiException("SeaTunnel 失败重试次数不能小于 0");
+                }
+                if ("custom".equalsIgnoreCase(node.getSinkWriteStrategy()) && StrUtil.isBlank(node.getSinkQuery())) {
+                    throw new ApiException("自定义写入模式必须填写参数化写入 SQL");
+                }
+                if ("custom".equalsIgnoreCase(node.getSinkWriteStrategy()) && !node.getSinkQuery().contains("?")) {
+                    throw new ApiException("自定义写入 SQL 必须包含 ? 参数占位符");
+                }
+                if ("CUSTOM_PROCESSING".equalsIgnoreCase(node.getDataSaveMode()) && StrUtil.isBlank(node.getCustomSql())) {
+                    throw new ApiException("自定义数据处理模式必须填写前置 SQL");
+                }
+                this.validateSeaTunnelMappings(node);
             }
             case PYTHON, SHELL -> {
                 if (StrUtil.isBlank(node.getScript())) {
@@ -162,6 +218,37 @@ public class TaskParamsHelper {
             throw new ApiException("数据源非启用状态: " + datasourceCode);
         }
         return dataSource;
+    }
+
+    private void validateSeaTunnelJdbcSource(DataSource dataSource, String side) {
+        Set<String> supportedTypes = Set.of("mysql", "tidb", "postgresql");
+        String type = StrUtil.blankToDefault(dataSource.getType(), "").toLowerCase(Locale.ROOT);
+        if (!supportedTypes.contains(type)) {
+            throw new ApiException(side + "数据源类型 " + dataSource.getType()
+                    + " 需要专用 SeaTunnel Connector，当前 JDBC 批同步仅支持 MySQL、TiDB、PostgreSQL");
+        }
+    }
+
+    private void validateSeaTunnelMappings(TaskFlowNode node) {
+        if (CollUtil.isEmpty(node.getFieldMapping())) {
+            return;
+        }
+        Set<String> targets = new HashSet<>();
+        for (SyncTaskParams.FieldMapping mapping : node.getFieldMapping()) {
+            if (mapping == null || StrUtil.isBlank(mapping.getSource()) || StrUtil.isBlank(mapping.getTarget())) {
+                throw new ApiException("SeaTunnel 字段映射的源字段和目标字段不能为空");
+            }
+            if (!targets.add(mapping.getTarget())) {
+                throw new ApiException("SeaTunnel 目标字段不能重复映射: " + mapping.getTarget());
+            }
+        }
+        if (CollUtil.isNotEmpty(node.getPrimaryKeys())) {
+            for (String primaryKey : node.getPrimaryKeys()) {
+                if (!targets.contains(primaryKey)) {
+                    throw new ApiException("SeaTunnel 冲突主键必须包含在目标字段映射中: " + primaryKey);
+                }
+            }
+        }
     }
 
     /**

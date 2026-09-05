@@ -1,12 +1,13 @@
 package cn.datapilot.web.service.sync;
 
 import cn.datapilot.common.exception.ApiException;
+import cn.datapilot.web.service.SystemConfigService;
 import cn.datapilot.web.service.sync.engine.SyncEngine;
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.StrUtil;
+import jakarta.annotation.Resource;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -26,11 +27,21 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class SyncEngineExecutor {
 
-    @Value("${dp.sync.work-dir:/tmp/dp-sync}")
-    private String workDir;
+    @Resource
+    private SystemConfigService systemConfigService;
 
-    @Value("${dp.sync.timeout-seconds:600}")
-    private int timeoutSeconds;
+    private String workDir() {
+        return this.systemConfigService.getValue("sync.work-dir", "/tmp/dp-sync");
+    }
+
+    private int timeoutSeconds() {
+        String value = this.systemConfigService.getValue("sync.timeout-seconds", "600");
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return 600;
+        }
+    }
 
     /**
      * 执行引擎，返回退出码与日志；引擎未安装时抛异常
@@ -40,7 +51,12 @@ public class SyncEngineExecutor {
     }
 
     public ExecuteResult execute(SyncEngine engine, String configContent, String logPathStr) throws IOException, InterruptedException {
-        Path dir = Paths.get(workDir);
+        return this.execute(engine, configContent, logPathStr, null);
+    }
+
+    public ExecuteResult execute(SyncEngine engine, String configContent, String logPathStr, Integer taskTimeoutSeconds)
+            throws IOException, InterruptedException {
+        Path dir = Paths.get(this.workDir());
         Files.createDirectories(dir);
         String token = UUID.fastUUID().toString(true);
         Path configPath = dir.resolve(token + "-" + engine.configFileName());
@@ -64,7 +80,9 @@ public class SyncEngineExecutor {
         Process process = pb.start();
         boolean finished;
         try {
-            finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
+            int effectiveTimeout = taskTimeoutSeconds == null || taskTimeoutSeconds < 1
+                    ? this.timeoutSeconds() : taskTimeoutSeconds;
+            finished = process.waitFor(effectiveTimeout, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             process.destroyForcibly();
             Thread.currentThread().interrupt();
@@ -72,7 +90,9 @@ public class SyncEngineExecutor {
         }
         if (!finished) {
             process.destroyForcibly();
-            throw new ApiException("同步执行超时(>" + timeoutSeconds + "s)，已终止");
+            int effectiveTimeout = taskTimeoutSeconds == null || taskTimeoutSeconds < 1
+                    ? this.timeoutSeconds() : taskTimeoutSeconds;
+            throw new ApiException("同步执行超时(>" + effectiveTimeout + "s)，已终止");
         }
 
         int exitCode = process.exitValue();

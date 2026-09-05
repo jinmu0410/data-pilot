@@ -279,6 +279,15 @@
       @closed="onNodeDialogClosed"
     />
 
+    <SeaTunnelTaskDialog
+      v-else-if="selectedConfig && selectedNodeType?.type === 'SEATUNNEL'"
+      v-model="nodeDialogVisible"
+      :config="selectedConfig"
+      :datasources="datasources"
+      @delete="deleteSelectedNode"
+      @closed="onNodeDialogClosed"
+    />
+
     <CodeTaskDialog
       v-else-if="selectedConfig && ['SQL', 'PYTHON', 'SHELL'].includes(selectedNodeType?.type ?? '')"
       v-model="nodeDialogVisible"
@@ -494,6 +503,7 @@ import '@logicflow/core/dist/index.css'
 import { NODE_TYPES, getNodeType, buildDefaultConfig, type NodeConfig, type FieldMappingRow, type FieldDef } from './nodes'
 import SqlEditor from '../../components/SqlEditor.vue'
 import DataXTaskDialog from './DataXTaskDialog.vue'
+import SeaTunnelTaskDialog from './SeaTunnelTaskDialog.vue'
 import CodeTaskDialog from './CodeTaskDialog.vue'
 import {
   getDataFlowDetail,

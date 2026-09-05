@@ -95,6 +95,7 @@
           <el-menu-item index="/system/permission">权限管理</el-menu-item>
           <el-menu-item index="/system/workspace">工作空间</el-menu-item>
           <el-menu-item index="/system/loginlog">登录日志</el-menu-item>
+          <el-menu-item index="/system/config">配置管理</el-menu-item>
         </el-sub-menu>
       </el-menu>
 
@@ -215,7 +216,8 @@ const commands = [
   { name: '角色管理', group: '系统管理', path: '/system/role' },
   { name: '权限管理', group: '系统管理', path: '/system/permission' },
   { name: '工作空间', group: '系统管理', path: '/system/workspace' },
-  { name: '登录日志', group: '系统管理', path: '/system/loginlog' }
+  { name: '登录日志', group: '系统管理', path: '/system/loginlog' },
+  { name: '配置管理', group: '系统管理', path: '/system/config' }
 ]
 
 const pageTitle = computed(() => String(route.meta.title || '工作台'))

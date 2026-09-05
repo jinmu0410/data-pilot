@@ -66,13 +66,28 @@ export interface FieldMappingRow {
 
 const SYNC_FIELDS: FieldDef[] = [
   { key: 'sourceDataSourceCode', label: '源数据源', type: 'datasource', required: true },
-  { key: 'sourceSchema', label: '源库', type: 'input', placeholder: '可选，如 test', default: '' },
-  { key: 'sourceTable', label: '源表', type: 'input', required: true, placeholder: '如 t' },
+  { key: 'sourceSchema', label: '源库', type: 'schema', default: '' },
+  { key: 'sourceTable', label: '源表', type: 'table', required: true },
+  { key: 'readMode', label: '读取方式', type: 'input', default: 'table' },
+  { key: 'sqlText', label: '读取 SQL', type: 'sql', default: '' },
+  { key: 'whereCondition', label: '过滤条件', type: 'input', default: '' },
+  { key: 'partitionColumn', label: '分片字段', type: 'input', default: '' },
+  { key: 'partitionNum', label: '分片数', type: 'number', default: 10 },
   { key: 'targetDataSourceCode', label: '目标数据源', type: 'datasource', required: true },
-  { key: 'targetSchema', label: '目标库', type: 'input', placeholder: '可选，如 test', default: '' },
-  { key: 'targetTable', label: '目标表', type: 'input', required: true, placeholder: '如 t' },
+  { key: 'targetSchema', label: '目标库', type: 'schema', default: '' },
+  { key: 'targetTable', label: '目标表', type: 'table', required: true },
   { key: 'fieldMapping', label: '字段映射', type: 'fieldMapping', default: [] },
-  { key: 'timeout', label: '超时(秒)', type: 'number', default: 30 }
+  { key: 'sinkWriteStrategy', label: '写入策略', type: 'input', default: 'generated' },
+  { key: 'sinkQuery', label: '写入 SQL', type: 'sql', default: '' },
+  { key: 'schemaSaveMode', label: '表结构策略', type: 'input', default: 'ERROR_WHEN_SCHEMA_NOT_EXIST' },
+  { key: 'dataSaveMode', label: '数据策略', type: 'input', default: 'APPEND_DATA' },
+  { key: 'customSql', label: '自定义前置 SQL', type: 'sql', default: '' },
+  { key: 'primaryKeys', label: '冲突主键', type: 'tags', default: [] },
+  { key: 'fetchSize', label: '读取批次', type: 'number' },
+  { key: 'batchSize', label: '写入批次', type: 'number', default: 1000 },
+  { key: 'parallelism', label: '并行度', type: 'number', default: 1 },
+  { key: 'retryTimes', label: '失败重试', type: 'number', default: 0 },
+  { key: 'timeout', label: '超时(秒)', type: 'number', default: 600 }
 ]
 
 // DataX 同步（DolphinScheduler 风格：SQL 语句 + 目标表 + 字段映射 + 前置/后置 SQL + 限流）

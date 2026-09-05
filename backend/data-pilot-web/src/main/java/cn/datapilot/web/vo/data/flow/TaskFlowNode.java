@@ -43,6 +43,14 @@ public class TaskFlowNode {
 
     private String sourceTable;
 
+    private String readMode;
+
+    private String whereCondition;
+
+    private String partitionColumn;
+
+    private Integer partitionNum;
+
     private String targetDataSourceCode;
 
     private String targetSchema;
@@ -68,6 +76,25 @@ public class TaskFlowNode {
     private Integer batchSize;
 
     private Integer channel;
+
+    /**
+     * SeaTunnel JDBC 写入及运行参数
+     */
+    private String sinkWriteStrategy;
+
+    private String sinkQuery;
+
+    private String schemaSaveMode;
+
+    private String dataSaveMode;
+
+    private String customSql;
+
+    private List<String> primaryKeys;
+
+    private Integer parallelism;
+
+    private Integer retryTimes;
 
     /**
      * PYTHON/SHELL

@@ -1,11 +1,12 @@
 package cn.datapilot.web.service.task;
 
 import cn.datapilot.common.exception.ApiException;
+import cn.datapilot.web.service.SystemConfigService;
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.StrUtil;
+import jakarta.annotation.Resource;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -25,14 +26,18 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class SubprocessExecutor {
 
-    @Value("${dp.task.work-dir:/tmp/dp-task}")
-    private String workDir;
+    @Resource
+    private SystemConfigService systemConfigService;
+
+    private String workDir() {
+        return this.systemConfigService.getValue("task.work-dir", "/tmp/dp-task");
+    }
 
     /**
      * 将内容写入工作目录并返回绝对路径
      */
     public Path writeFile(String suffix, String content) throws IOException {
-        Path dir = Paths.get(workDir);
+        Path dir = Paths.get(this.workDir());
         Files.createDirectories(dir);
         String token = UUID.fastUUID().toString(true);
         Path path = dir.resolve(token + suffix);
@@ -48,7 +53,7 @@ public class SubprocessExecutor {
     }
 
     public Result run(List<String> command, int timeoutSeconds, String logPathStr) throws IOException, InterruptedException {
-        Path dir = Paths.get(workDir);
+        Path dir = Paths.get(this.workDir());
         Files.createDirectories(dir);
         String token = UUID.fastUUID().toString(true);
         Path logPath = StrUtil.isNotBlank(logPathStr) ? Paths.get(logPathStr) : dir.resolve(token + ".log");

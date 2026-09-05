@@ -18,6 +18,23 @@ public class SyncTaskParams {
 
     private String sourceTable;
 
+    /**
+     * SeaTunnel 读取模式：table/query
+     */
+    private String readMode;
+
+    /**
+     * SeaTunnel 表读取附加过滤条件，需以 where 开头
+     */
+    private String whereCondition;
+
+    /**
+     * SeaTunnel JDBC 查询分片字段与分片数
+     */
+    private String partitionColumn;
+
+    private Integer partitionNum;
+
     private String targetDataSourceCode;
 
     private String targetSchema;
@@ -73,6 +90,28 @@ public class SyncTaskParams {
      * DataX 并发通道数
      */
     private Integer channel;
+
+    /**
+     * SeaTunnel 目标写入策略：generated/custom
+     */
+    private String sinkWriteStrategy;
+
+    /**
+     * SeaTunnel 自定义参数化写入 SQL
+     */
+    private String sinkQuery;
+
+    private String schemaSaveMode;
+
+    private String dataSaveMode;
+
+    private String customSql;
+
+    private List<String> primaryKeys;
+
+    private Integer parallelism;
+
+    private Integer retryTimes;
 
     @Data
     public static class FieldMapping {

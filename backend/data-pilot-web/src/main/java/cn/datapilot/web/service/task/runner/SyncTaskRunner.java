@@ -51,7 +51,8 @@ public class SyncTaskRunner implements TaskRunner {
             SyncEngine engine = this.syncEngineFactory.get(context.getTaskType());
             SyncEngineContext ctx = this.buildContext(context.getTaskType(), params, context.getWorkspaceCode());
             String config = engine.buildConfig(ctx);
-            SyncEngineExecutor.ExecuteResult r = this.syncEngineExecutor.execute(engine, config, context.getLogPath());
+            SyncEngineExecutor.ExecuteResult r = this.syncEngineExecutor.execute(
+                    engine, config, context.getLogPath(), context.getTimeout());
             result.setLogContent(r.getLog());
             if (r.isSuccess()) {
                 result.setStatus("SUCCESS");
@@ -108,10 +109,25 @@ public class SyncTaskRunner implements TaskRunner {
             }
             this.applyFieldMappings(ctx, params);
         } else {
-            // SeaTunnel / 表同步模式
+            // SeaTunnel JDBC 批同步模式
             ctx.setSource(this.toEndpoint(source, params.getSourceSchema(), params.getSourceTable()));
             ctx.setTarget(this.toEndpoint(target, params.getTargetSchema(), params.getTargetTable()));
             this.applyFieldMappings(ctx, params);
+            ctx.setReadMode(params.getReadMode());
+            ctx.setQuerySql(params.getSqlText());
+            ctx.setWhereCondition(params.getWhereCondition());
+            ctx.setPartitionColumn(params.getPartitionColumn());
+            ctx.setPartitionNum(params.getPartitionNum());
+            ctx.setFetchSize(params.getFetchSize());
+            ctx.setBatchSize(params.getBatchSize());
+            ctx.setSinkWriteStrategy(params.getSinkWriteStrategy());
+            ctx.setSinkQuery(params.getSinkQuery());
+            ctx.setSchemaSaveMode(params.getSchemaSaveMode());
+            ctx.setDataSaveMode(params.getDataSaveMode());
+            ctx.setCustomSql(params.getCustomSql());
+            ctx.setPrimaryKeys(params.getPrimaryKeys());
+            ctx.setParallelism(params.getParallelism());
+            ctx.setRetryTimes(params.getRetryTimes());
         }
         return ctx;
     }

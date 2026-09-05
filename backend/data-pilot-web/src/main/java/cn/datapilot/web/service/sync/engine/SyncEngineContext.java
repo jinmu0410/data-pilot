@@ -67,6 +67,33 @@ public class SyncEngineContext {
      */
     private Integer batchSize;
 
+    /**
+     * SeaTunnel JDBC 读取、写入和运行参数
+     */
+    private String readMode;
+
+    private String whereCondition;
+
+    private String partitionColumn;
+
+    private Integer partitionNum;
+
+    private String sinkWriteStrategy;
+
+    private String sinkQuery;
+
+    private String schemaSaveMode;
+
+    private String dataSaveMode;
+
+    private String customSql;
+
+    private List<String> primaryKeys;
+
+    private Integer parallelism;
+
+    private Integer retryTimes;
+
     @Data
     public static class Endpoint {
 

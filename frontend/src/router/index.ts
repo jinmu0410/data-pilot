@@ -86,6 +86,12 @@ const router = createRouter({
           name: 'system-loginlog',
           component: () => import('../views/system/loginlog/index.vue'),
           meta: { title: '登录日志' }
+        },
+        {
+          path: 'system/config',
+          name: 'system-config',
+          component: () => import('../views/system/config/index.vue'),
+          meta: { title: '配置管理' }
         }
       ]
     }
