@@ -709,14 +709,14 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
         if (StrUtil.isBlank(storedSecret)) {
             return new AuthConfig(AUTH_PUBLIC, null, false);
         }
-        if (storedSecret.startsWith(HMAC_PREFIX)) {
+        if (storedSecret.startsWith(HMAC_PREFIX + "v2:")) {
             return new AuthConfig(AUTH_HMAC_SHA256,
                     AesUtils.decryptGcm(storedSecret.substring(HMAC_PREFIX.length()), this.apiEncryptionKey), false);
         }
-        if (storedSecret.startsWith(API_KEY_HASH_PREFIX)) {
+        if (storedSecret.matches("^key\\$[0-9a-f]{64}$")) {
             return new AuthConfig(AUTH_API_KEY, storedSecret.substring(API_KEY_HASH_PREFIX.length()), true);
         }
-        if (storedSecret.startsWith(API_KEY_ENCRYPTED_PREFIX)) {
+        if (storedSecret.startsWith(API_KEY_ENCRYPTED_PREFIX + "v2:")) {
             return new AuthConfig(AUTH_API_KEY,
                     AesUtils.decryptGcm(storedSecret.substring(API_KEY_ENCRYPTED_PREFIX.length()), this.apiEncryptionKey), false);
         }
