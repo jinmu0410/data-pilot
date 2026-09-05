@@ -1,16 +1,20 @@
 <template>
   <div class="api-page">
-    <el-card shadow="never" class="page-card">
-      <template #header>
-        <div class="card-header">
-          <div class="card-header-left">
-            <span class="card-title">查询模板</span>
-            <span class="card-desc">将一条 SQL 保存为模板并发布成对外可调用的 REST API</span>
-          </div>
-          <el-button type="primary" :icon="Plus" @click="openAdd">新建 API</el-button>
-        </div>
-      </template>
+    <section class="page-hero">
+      <div class="hero-copy">
+        <span class="page-eyebrow">DATA SERVICE</span>
+        <h2>API 服务</h2>
+        <p>把查询 SQL 封装成可鉴权、可限流、可观测的数据接口。</p>
+      </div>
+      <div class="hero-stats">
+        <div><strong>{{ page.total }}</strong><span>API 总数</span></div>
+        <div><strong>{{ publishedCount }}</strong><span>当前页已发布</span></div>
+        <div><strong>{{ enabledCount }}</strong><span>当前页启用</span></div>
+      </div>
+      <el-button type="primary" :icon="Plus" size="large" @click="openAdd">创建 API</el-button>
+    </section>
 
+    <el-card shadow="never" class="filter-card">
       <div class="filter-bar">
         <el-form inline :model="query" @submit.prevent>
           <el-form-item>
@@ -46,17 +50,25 @@
           </el-form-item>
         </el-form>
       </div>
+    </el-card>
 
-      <el-table v-loading="loading" :data="list" border>
+    <el-card shadow="never" class="list-card">
+      <div class="list-heading">
+        <div><h3>服务列表</h3><span>统一管理草稿、发布版本与调用入口</span></div>
+        <span class="support-tip">PREPARED SQL · SECRET · RATE LIMIT · LOG</span>
+      </div>
+      <el-table v-loading="loading" :data="list" class="api-table">
         <template #empty>
           <el-empty description="暂无查询模板，点击右上角「新建 API」开始" :image-size="80" />
         </template>
-        <el-table-column prop="id" label="ID" width="70" align="center" />
-        <el-table-column label="名称" min-width="200" show-overflow-tooltip>
+        <el-table-column label="API 服务" min-width="240" show-overflow-tooltip>
           <template #default="{ row }">
-            <div class="name-cell">
-              <div class="name-text">{{ row.name }}</div>
-              <div v-if="row.description" class="name-desc">{{ row.description }}</div>
+            <div class="api-name-cell">
+              <span class="api-logo">API</span>
+              <div class="name-cell">
+                <div class="name-text">{{ row.name }}</div>
+                <div class="name-desc">{{ row.description || '暂无服务描述' }}</div>
+              </div>
             </div>
           </template>
         </el-table-column>
@@ -68,20 +80,18 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="dataSourceName" label="数据源" min-width="130" show-overflow-tooltip />
+        <el-table-column label="数据源" min-width="145" show-overflow-tooltip>
+          <template #default="{ row }"><span class="datasource-pill">{{ row.dataSourceName }}</span></template>
+        </el-table-column>
         <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'ENABLE' ? 'success' : 'info'" effect="light" round size="small">
-              {{ row.status === 'ENABLE' ? '启用' : '禁用' }}
-            </el-tag>
+            <span class="status-badge" :class="{ enabled: row.status === 'ENABLE' }"><i></i>{{ row.status === 'ENABLE' ? '启用' : '禁用' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="版本" width="100" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.publishVersion" type="primary" effect="light" round size="small">
-              {{ row.publishVersion }}
-            </el-tag>
-            <el-tag v-else type="info" effect="light" round size="small">未发布</el-tag>
+            <span v-if="row.publishVersion" class="version-badge">{{ row.publishVersion }}</span>
+            <span v-else class="draft-badge">草稿</span>
           </template>
         </el-table-column>
         <el-table-column prop="updateTime" label="更新时间" width="170" />
@@ -117,78 +127,68 @@
     </el-card>
 
     <!-- 新建/编辑 -->
-    <el-dialog v-model="formVisible" width="800px" top="3vh" class="form-dialog" destroy-on-close>
+    <el-dialog v-model="formVisible" width="min(1160px, calc(100vw - 40px))" top="3vh" append-to-body class="api-config-dialog" destroy-on-close :close-on-click-modal="false">
       <template #header>
-        <div class="dialog-header">
-          <el-icon class="dialog-header-icon"><EditPen /></el-icon>
-          <div>
-            <div class="dialog-header-title">{{ form.id ? '编辑 API' : '新建 API' }}</div>
-            <div class="dialog-header-sub">{{ form.id ? '修改查询模板配置' : '保存一条 SQL 查询模板，发布后即可对外调用' }}</div>
-          </div>
+        <div class="dialog-heading">
+          <span class="dialog-logo">API</span>
+          <div><div class="dialog-title">{{ form.id ? '编辑 API 服务' : '创建 API 服务' }}</div><div class="dialog-subtitle">定义查询逻辑、请求参数与运行策略，保存后可发布为 REST API</div></div>
+          <span class="dialog-mode">{{ form.id ? 'EDIT SERVICE' : 'NEW SERVICE' }}</span>
         </div>
       </template>
-
-      <el-form :model="form" label-width="90px">
-        <div class="section-title">基础信息</div>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="名称" required>
-              <el-input v-model="form.name" placeholder="API 名称" maxlength="200" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="数据源" required>
-              <el-select v-model="form.dataSourceCode" placeholder="选择数据源" filterable style="width: 100%">
-                <el-option v-for="ds in jdbcDatasources" :key="ds.code" :label="`${ds.name} (${ds.type})`" :value="ds.code" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="描述">
-          <el-input v-model="form.description" type="textarea" :rows="2" maxlength="500" placeholder="描述这个接口的用途（可选）" />
-        </el-form-item>
-
-        <div class="section-title">SQL 模板<span class="req">*</span></div>
-        <div class="editor-panel">
+      <div class="config-shell">
+        <aside class="config-sidebar">
+          <span class="sidebar-label">SERVICE BUILDER</span>
+          <div class="step-card done"><span>01</span><div><strong>基本信息</strong><small>名称、数据源与状态</small></div></div>
+          <div class="step-card" :class="{ done: !!form.template.trim() }"><span>02</span><div><strong>查询逻辑</strong><small>只读 SQL 与动态占位符</small></div></div>
+          <div class="step-card" :class="{ done: templateParams.length > 0 }"><span>03</span><div><strong>请求参数</strong><small>自动识别并配置测试值</small></div></div>
+          <div class="service-summary"><span>配置概览</span><strong>{{ form.name || '未命名 API' }}</strong><p>{{ selectedDatasource?.name || '尚未选择数据源' }}</p><div><i :class="{ ready: canDraftTest }"></i>{{ canDraftTest ? '可执行草稿测试' : '等待完成必填配置' }}</div></div>
+        </aside>
+        <main class="config-content">
+          <section class="form-section">
+            <div class="section-heading"><div><span class="section-index">01</span><div><h3>基本信息</h3><p>用于识别服务并选择查询数据源</p></div></div></div>
+            <div class="form-grid basic-grid">
+              <div class="field"><label>API 名称 <em>*</em></label><el-input v-model="form.name" size="large" maxlength="200" show-word-limit placeholder="例如：订单明细查询" /></div>
+              <div class="field"><label>查询数据源 <em>*</em></label><el-select v-model="form.dataSourceCode" size="large" placeholder="选择 JDBC 数据源" filterable style="width:100%"><el-option v-for="ds in jdbcDatasources" :key="ds.code" :label="`${ds.name} (${ds.type})`" :value="ds.code" /></el-select></div>
+              <div class="field wide-field"><label>服务描述</label><el-input v-model="form.description" type="textarea" :rows="2" maxlength="500" placeholder="说明接口用途、使用方或数据口径（可选）" /></div>
+            </div>
+          </section>
+          <section class="form-section">
+            <div class="section-heading"><div><span class="section-index">02</span><div><h3>SQL 查询模板</h3><p>仅支持 SELECT / WITH 查询，变量使用 &#36;{param} 占位</p></div></div><button type="button" class="format-action" @click="sqlEditorRef?.format()"><el-icon><MagicStick /></el-icon>格式化 SQL</button></div>
+            <div class="editor-panel">
           <div class="editor-toolbar">
-            <span class="editor-lang">SQL</span>
+            <span class="editor-lang">{{ editorDialect === 'postgresql' ? 'POSTGRESQL' : 'SQL' }}</span>
             <div class="editor-toolbar-actions">
-              <span class="editor-toolbar-hint">支持 ${'${param}'} 占位符</span>
-              <button type="button" class="editor-format-btn" @click="sqlEditorRef?.format()">
-                <el-icon><MagicStick /></el-icon>
-                <span>格式化</span>
-              </button>
+              <span class="editor-toolbar-hint">PreparedStatement 安全绑定参数</span>
             </div>
           </div>
           <div class="editor-wrap">
             <SqlEditor ref="sqlEditorRef" v-model="form.template" :dialect="editorDialect" />
           </div>
         </div>
-        <div v-if="templateParams.length" class="param-chips">
-          <span class="param-chips-label">检测到参数</span>
-          <el-tag v-for="p in templateParams" :key="p" size="small" effect="light" round>{{ p }}</el-tag>
-        </div>
-
-        <div class="section-title">运行配置</div>
-        <el-form-item label="超时(秒)">
-          <el-input-number v-model="form.timeout" :min="1" :max="3600" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-switch
-            v-model="form.status"
-            active-value="ENABLE"
-            inactive-value="DISABLE"
-            active-text="启用"
-            inactive-text="禁用"
-            inline-prompt
-            :width="56"
-          />
-        </el-form-item>
-      </el-form>
+            <div class="sql-hint"><span>i</span><p>占位符只能代表参数值，不能替代库名、表名或 SQL 关键字；服务端会预编译绑定以避免参数注入。</p></div>
+          </section>
+          <section class="form-section">
+            <div class="section-heading"><div><span class="section-index">03</span><div><h3>请求参数</h3><p>根据 SQL 自动识别。填写测试值可在保存前验证查询结果</p></div></div><span class="param-counter">{{ templateParams.length }} PARAMETERS</span></div>
+            <div v-if="parameterRows.length" class="parameter-table">
+              <div class="parameter-head"><span>参数名</span><span>值类型</span><span>测试值</span><span>说明</span></div>
+              <div v-for="item in parameterRows" :key="item.name" class="parameter-row">
+                <div class="parameter-name"><code v-text="'${' + item.name + '}'"></code><small>必传</small></div>
+                <el-select v-model="item.type"><el-option v-for="option in PARAM_TYPES" :key="option.value" :label="option.label" :value="option.value" /></el-select>
+                <el-input v-model="item.value" :placeholder="parameterPlaceholder(item.type)" clearable />
+                <el-input v-model="item.description" placeholder="业务含义（当前仅本次测试）" clearable />
+              </div>
+            </div>
+            <div v-else class="parameter-empty"><span>{ }</span><div><strong>当前 SQL 没有动态参数</strong><p>输入类似 WHERE id = &#36;{id} 后会自动生成参数配置行</p></div></div>
+          </section>
+          <section class="form-section runtime-section">
+            <div class="section-heading"><div><span class="section-index">04</span><div><h3>运行设置</h3><p>控制查询超时与草稿启用状态</p></div></div></div>
+            <div class="runtime-grid"><div class="setting-card"><div><strong>查询超时</strong><small>避免慢查询长期占用连接</small></div><el-input-number v-model="form.timeout" :min="1" :max="3600" controls-position="right" /><span>秒</span></div><div class="setting-card"><div><strong>服务状态</strong><small>禁用后不能发布或调用</small></div><el-switch v-model="form.status" active-value="ENABLE" inactive-value="DISABLE" active-text="启用" inactive-text="禁用" /></div></div>
+          </section>
+        </main>
+      </div>
 
       <template #footer>
-        <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
+        <div class="dialog-footer"><span class="footer-tip">参数定义由 SQL 实时生成，无需重复维护。</span><el-button @click="formVisible = false">取消</el-button><el-button :icon="VideoPlay" :loading="testingDraft" :disabled="!canDraftTest" @click="handleDraftTest">测试草稿</el-button><el-button type="primary" :loading="saving" @click="handleSave">{{ form.id ? '保存修改' : '创建 API' }}</el-button></div>
       </template>
     </el-dialog>
 
@@ -250,56 +250,34 @@
     <!-- 测试/预览 -->
     <el-dialog
       v-model="testVisible"
-      :title="`测试 - ${testName}`"
-      width="860px"
+      width="min(980px, calc(100vw - 40px))"
       top="3vh"
-      class="test-dialog"
+      append-to-body
+      class="api-test-dialog"
       destroy-on-close
+      :close-on-click-modal="false"
     >
-      <div class="test-field-label">动态参数 (JSON)</div>
-      <el-input v-model="testParams" type="textarea" :rows="2" class="test-params-input" placeholder='{"id": 1}' />
-
-      <div class="test-actions">
-        <el-button type="primary" :icon="CaretRight" :loading="testing" @click="handleTest">运行</el-button>
-        <div v-if="testResult" class="test-meta">
-          <el-tag v-if="testResult.truncated" type="warning" effect="light" size="small">仅显示前 200 行</el-tag>
-          <span v-if="testResult.rowCount != null">{{ testResult.rowCount }} 行</span>
-          <span v-if="testResult.durationMs != null">{{ testResult.durationMs }} ms</span>
-        </div>
+      <template #header><div class="dialog-heading"><span class="dialog-logo test-logo">RUN</span><div><div class="dialog-title">接口测试 · {{ testName }}</div><div class="dialog-subtitle">填写动态参数，预览 SQL 结果并生成外部调用示例</div></div><span class="dialog-mode">{{ testCode }}</span></div></template>
+      <div class="test-shell">
+        <section class="test-params-panel">
+          <div class="test-panel-head"><div><strong>请求参数</strong><span>{{ testParameterRows.length }} 个 SQL 占位符</span></div><el-switch v-model="advancedParams" active-text="JSON" /></div>
+          <template v-if="!advancedParams">
+            <div v-if="testParameterRows.length" class="test-param-list">
+              <div v-for="item in testParameterRows" :key="item.name" class="test-param-item"><div class="test-param-label"><code>{{ item.name }}</code><span>必传</span></div><div class="test-param-control"><el-select v-model="item.type" style="width:105px"><el-option v-for="option in PARAM_TYPES" :key="option.value" :label="option.label" :value="option.value" /></el-select><el-input v-model="item.value" :placeholder="parameterPlaceholder(item.type)" clearable /></div></div>
+            </div>
+            <div v-else class="parameter-empty compact"><span>{ }</span><div><strong>此接口无需参数</strong><p>可以直接运行查询</p></div></div>
+          </template>
+          <div v-else><el-input v-model="testParamsJson" type="textarea" :rows="8" class="test-params-input" placeholder='{"id": 1}' /><div class="json-hint">适合粘贴复杂参数；必须是合法 JSON 对象。</div></div>
+          <div class="test-actions"><el-button type="primary" :icon="CaretRight" :loading="testing" @click="handleTest">运行查询</el-button><el-button @click="resetTestParams">重置参数</el-button></div>
+        </section>
+        <section class="test-result-panel">
+          <div class="test-panel-head"><div><strong>运行结果</strong><span v-if="testResult">{{ testResult.rowCount }} 行 · {{ testResult.durationMs }} ms</span><span v-else>尚未执行</span></div><el-tag v-if="testResult?.truncated" type="warning" effect="light" size="small">仅展示前 200 行</el-tag></div>
+          <el-table v-if="testResult?.columns?.length" :data="testResult.rows" border size="small" max-height="300" class="result-table"><el-table-column v-for="col in testResult.columns" :key="col" :prop="col" :label="col" min-width="120" show-overflow-tooltip /></el-table>
+          <el-empty v-else :description="testResult ? '查询成功，无返回结果' : '运行后将在这里展示查询结果'" :image-size="62" />
+        </section>
       </div>
-
-      <el-table
-        v-if="testResult?.columns?.length"
-        :data="testResult.rows"
-        border
-        size="small"
-        max-height="320"
-        class="result-table"
-      >
-        <el-table-column
-          v-for="col in testResult.columns"
-          :key="col"
-          :prop="col"
-          :label="col"
-          min-width="120"
-          show-overflow-tooltip
-        />
-      </el-table>
-      <el-empty v-else-if="testResult && testResult.rowCount === 0" description="无返回结果" :image-size="60" />
-
       <div class="curl-block">
-        <div class="curl-head">
-          <span>调用示例（外部系统）</span>
-          <div class="curl-head-right">
-            <el-select v-model="testMethod" size="small" style="width: 90px">
-              <el-option label="one" value="one" />
-              <el-option label="count" value="count" />
-              <el-option label="list" value="list" />
-              <el-option label="page" value="page" />
-            </el-select>
-            <el-button link type="primary" size="small" @click="copyCurl">复制</el-button>
-          </div>
-        </div>
+        <div class="curl-head"><div><strong>外部调用示例</strong><span>选择响应模式后自动生成 cURL</span></div><div class="curl-head-right"><el-select v-model="testMethod" size="small" style="width:105px"><el-option label="单条 one" value="one" /><el-option label="数量 count" value="count" /><el-option label="列表 list" value="list" /><el-option label="分页 page" value="page" /></el-select><template v-if="testMethod === 'page'"><el-input-number v-model="testPageNum" size="small" :min="1" :max="100000" controls-position="right" style="width:95px" /><el-input-number v-model="testPageSize" size="small" :min="1" :max="1000" controls-position="right" style="width:95px" /></template><el-button link type="primary" size="small" @click="copyCurl">复制 cURL</el-button></div></div>
         <pre class="curl-code">{{ curlText }}</pre>
       </div>
     </el-dialog>
@@ -379,7 +357,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Search,
@@ -388,7 +366,6 @@ import {
   ArrowDown,
   Refresh,
   Edit,
-  EditPen,
   Promotion,
   VideoPlay,
   CopyDocument,
@@ -415,12 +392,22 @@ import {
   type QueryExecuteResult
 } from '../../api/service'
 
-const JDBC_TYPES = ['Doris', 'MySQL', 'PostgreSQL']
+const JDBC_TYPES = ['Doris', 'MySQL', 'TiDB', 'PostgreSQL']
+type ParameterType = 'string' | 'number' | 'boolean' | 'null'
+interface ParameterRow { name: string; type: ParameterType; value: string; description: string }
+const PARAM_TYPES: Array<{ label: string; value: ParameterType }> = [
+  { label: '文本', value: 'string' },
+  { label: '数字', value: 'number' },
+  { label: '布尔', value: 'boolean' },
+  { label: '空值', value: 'null' }
+]
 
 const loading = ref(false)
 const list = ref<QueryTemplateItem[]>([])
 const query = reactive({ keyword: '', status: '', dataSourceCode: '' })
 const page = reactive({ current: 1, size: 10, total: 0 })
+const publishedCount = computed(() => list.value.filter((item) => !!item.publishVersion).length)
+const enabledCount = computed(() => list.value.filter((item) => item.status === 'ENABLE').length)
 
 const allDatasources = ref<DataSourceItem[]>([])
 const jdbcDatasources = computed(() =>
@@ -431,12 +418,21 @@ const jdbcDatasources = computed(() =>
 
 const formVisible = ref(false)
 const saving = ref(false)
+const testingDraft = ref(false)
 const form = reactive<QueryTemplateForm>({ name: '', dataSourceCode: '', template: '', timeout: 30, status: 'ENABLE', description: '' })
 
 const templateParams = computed(() => {
   const matches = form.template.match(/\$\{([a-zA-Z0-9_]+)\}/g) ?? []
   return [...new Set(matches.map((m) => m.slice(2, -1)))]
 })
+const parameterRows = ref<ParameterRow[]>([])
+const selectedDatasource = computed(() => jdbcDatasources.value.find((item) => item.code === form.dataSourceCode))
+const canDraftTest = computed(() => !!form.dataSourceCode && !!form.template.trim() && isReadOnlySql(form.template))
+
+watch(templateParams, (names) => {
+  const previous = new Map(parameterRows.value.map((item) => [item.name, item]))
+  parameterRows.value = names.map((name) => previous.get(name) ?? { name, type: 'string', value: '', description: '' })
+}, { immediate: true })
 
 const sqlEditorRef = ref<{ format: () => void } | null>(null)
 
@@ -464,8 +460,12 @@ const testId = ref(0)
 const testName = ref('')
 const testCode = ref('')
 const testSecret = ref('')
-const testParams = ref('{}')
+const testParamsJson = ref('{}')
+const testParameterRows = ref<ParameterRow[]>([])
+const advancedParams = ref(false)
 const testMethod = ref('list')
+const testPageNum = ref(1)
+const testPageSize = ref(20)
 const testResult = ref<QueryExecuteResult | null>(null)
 
 const logVisible = ref(false)
@@ -481,18 +481,57 @@ const logDetail = ref<QueryLogDetail | null>(null)
 const curlText = computed(() => {
   const origin = window.location.origin
   const secretHeader = testSecret.value ? `  -H 'X-Secret: ${testSecret.value}' \\\n` : ''
+  const body: Record<string, unknown> = { method: testMethod.value, params: currentTestParams(false) ?? {} }
+  if (testMethod.value === 'page') {
+    body.pageNum = testPageNum.value
+    body.pageSize = testPageSize.value
+  }
   return `curl -X POST '${origin}/dp-web/open/api/${testCode.value}' \\\n` +
     `  -H 'Content-Type: application/json' \\\n` +
     secretHeader +
-    `  -d '${JSON.stringify({ method: testMethod.value, params: parseParams() })}'`
+    `  -d '${JSON.stringify(body)}'`
 })
 
-function parseParams(): Record<string, unknown> {
+function isReadOnlySql(sql: string) {
+  return /^(select|with)\b/i.test(sql.trim()) && !/;\s*\S/.test(sql.trim())
+}
+
+function parameterPlaceholder(type: ParameterType) {
+  return type === 'number' ? '例如：1001' : type === 'boolean' ? 'true / false' : type === 'null' ? '固定传入 null' : '输入文本值'
+}
+
+function convertParameter(item: ParameterRow): unknown {
+  if (item.type === 'null') return null
+  if (item.type === 'number') {
+    if (!item.value.trim() || Number.isNaN(Number(item.value))) throw new Error(`参数 ${item.name} 需要填写有效数字`)
+    return Number(item.value)
+  }
+  if (item.type === 'boolean') {
+    if (!['true', 'false'].includes(item.value.trim().toLowerCase())) throw new Error(`参数 ${item.name} 只能填写 true 或 false`)
+    return item.value.trim().toLowerCase() === 'true'
+  }
+  if (!item.value.trim()) throw new Error(`请填写参数 ${item.name}`)
+  return item.value
+}
+
+function rowsToParams(rows: ParameterRow[], notify = true): Record<string, unknown> | null {
   try {
-    const v = JSON.parse(testParams.value || '{}')
-    return v && typeof v === 'object' ? v : {}
-  } catch {
-    return {}
+    return Object.fromEntries(rows.map((item) => [item.name, convertParameter(item)]))
+  } catch (error) {
+    if (notify) ElMessage.warning(error instanceof Error ? error.message : '参数格式错误')
+    return null
+  }
+}
+
+function currentTestParams(notify = true): Record<string, unknown> | null {
+  if (!advancedParams.value) return rowsToParams(testParameterRows.value, notify)
+  try {
+    const value = JSON.parse(testParamsJson.value || '{}')
+    if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error('请求参数必须是 JSON 对象')
+    return value
+  } catch (error) {
+    if (notify) ElMessage.warning(error instanceof Error ? error.message : 'JSON 格式错误')
+    return null
   }
 }
 
@@ -569,6 +608,7 @@ function openAdd() {
   form.timeout = 30
   form.status = 'ENABLE'
   form.description = ''
+  parameterRows.value = []
   formVisible.value = true
 }
 
@@ -581,7 +621,24 @@ async function openEdit(row: QueryTemplateItem) {
   form.timeout = row.timeout
   form.status = row.status
   form.description = row.description
+  parameterRows.value = []
   formVisible.value = true
+}
+
+async function handleDraftTest() {
+  if (!canDraftTest.value) {
+    ElMessage.warning('请先选择数据源并填写只读 SQL')
+    return
+  }
+  const params = rowsToParams(parameterRows.value)
+  if (params === null) return
+  testingDraft.value = true
+  try {
+    const result = await testTemplate({ dataSourceCode: form.dataSourceCode, template: form.template, params })
+    ElMessage.success(`草稿执行成功：${result.rowCount} 行，耗时 ${result.durationMs} ms`)
+  } finally {
+    testingDraft.value = false
+  }
 }
 
 async function handleSave() {
@@ -595,6 +652,10 @@ async function handleSave() {
   }
   if (!form.template.trim()) {
     ElMessage.warning('SQL 模板不能为空')
+    return
+  }
+  if (!isReadOnlySql(form.template)) {
+    ElMessage.warning('API 服务只允许单条 SELECT 或 WITH 查询语句')
     return
   }
   saving.value = true
@@ -621,9 +682,14 @@ async function handleSave() {
   }
 }
 
-function openPublish(row: QueryTemplateItem) {
+async function openPublish(row: QueryTemplateItem) {
   publishTarget.value = row
-  publishForm.secret = ''
+  try {
+    const detail = await getTemplateDetail(row.id)
+    publishForm.secret = detail?.secret ?? ''
+  } catch {
+    publishForm.secret = ''
+  }
   publishForm.cacheOn = false
   publishForm.limitOn = false
   publishForm.limitRate = 10
@@ -657,9 +723,11 @@ async function handlePublish() {
 
 async function openTest(row: QueryTemplateItem) {
   let secret = ''
+  let template = ''
   try {
     const d = await getTemplateDetail(row.id)
     secret = d?.secret ?? ''
+    template = d?.template ?? ''
   } catch {
     /* ignore */
   }
@@ -667,20 +735,33 @@ async function openTest(row: QueryTemplateItem) {
   testName.value = row.name
   testCode.value = row.code
   testSecret.value = secret
-  testParams.value = '{}'
+  const names = [...new Set((template.match(/\$\{([a-zA-Z0-9_]+)\}/g) ?? []).map((item) => item.slice(2, -1)))]
+  testParameterRows.value = names.map((name) => ({ name, type: 'string', value: '', description: '' }))
+  testParamsJson.value = JSON.stringify(Object.fromEntries(names.map((name) => [name, ''])), null, 2)
+  advancedParams.value = false
   testMethod.value = 'list'
+  testPageNum.value = 1
+  testPageSize.value = 20
   testResult.value = null
   testVisible.value = true
 }
 
 async function handleTest() {
+  const params = currentTestParams()
+  if (params === null) return
   testing.value = true
   testResult.value = null
   try {
-    testResult.value = await testTemplate({ id: testId.value, params: parseParams() })
+    testResult.value = await testTemplate({ id: testId.value, params })
   } finally {
     testing.value = false
   }
+}
+
+function resetTestParams() {
+  testParameterRows.value.forEach((item) => { item.type = 'string'; item.value = '' })
+  testParamsJson.value = JSON.stringify(Object.fromEntries(testParameterRows.value.map((item) => [item.name, ''])), null, 2)
+  testResult.value = null
 }
 
 async function copyCurl() {
@@ -1139,4 +1220,31 @@ onMounted(async () => {
   overflow: auto;
   font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 }
+
+/* API service refresh */
+.api-page { display: grid; gap: 14px; }
+.page-hero { min-height: 116px; display: flex; align-items: center; gap: 28px; padding: 22px 25px; border: 1px solid #e7e9f1; border-radius: 12px; background: linear-gradient(135deg, #fbfbff, #f5f7fc); }
+.hero-copy { min-width: 280px; flex: 1; }.page-eyebrow { color: #7669ef; font-size: 9px; font-weight: 800; letter-spacing: 1.7px; }.page-hero h2 { margin: 5px 0 6px; color: #20283a; font-size: 22px; }.page-hero p { margin: 0; color: #8992a3; font-size: 11px; }
+.hero-stats { display: flex; align-items: center; }.hero-stats > div { min-width: 92px; padding: 3px 20px; border-left: 1px solid #e0e3ea; text-align: center; }.hero-stats strong, .hero-stats span { display: block; }.hero-stats strong { color: #30394c; font-size: 21px; }.hero-stats span { margin-top: 3px; color: #9aa2b1; font-size: 9px; }
+.filter-card :deep(.el-card__body) { padding: 16px 18px 0; }.filter-bar { margin: 0; }.filter-bar :deep(.el-form-item) { margin: 0 12px 16px 0; }
+.list-card :deep(.el-card__body) { padding: 0; }.list-heading { height: 67px; display: flex; align-items: center; justify-content: space-between; padding: 0 19px; border-bottom: 1px solid #edf0f4; }.list-heading h3 { display: inline; margin: 0; color: #2c3548; font-size: 14px; }.list-heading > div > span { margin-left: 10px; color: #9aa2b1; font-size: 10px; }.support-tip { padding: 5px 9px; border-radius: 5px; color: #6e7790; background: #f4f5f8; font-size: 8px; letter-spacing: .3px; }
+.api-name-cell { display: flex; align-items: center; gap: 11px; min-width: 0; }.api-logo, .dialog-logo { width: 36px; height: 36px; display: grid; place-items: center; flex-shrink: 0; border-radius: 10px; color: #fff; background: linear-gradient(145deg, #6c5ce7, #8b76f6); font-size: 8px; font-weight: 800; box-shadow: 0 7px 16px rgba(108, 92, 231, .2); }.name-cell { min-width: 0; }.name-text { color: #344054; font-size: 11px; font-weight: 650; }.name-desc { margin-top: 4px; color: #a0a7b5; font-size: 8px; }.code-text { color: #626d80; font-size: 10px; }.datasource-pill { padding: 4px 7px; border-radius: 5px; color: #326a94; background: #edf6fb; font-size: 9px; }.status-badge { display: inline-flex; align-items: center; gap: 6px; color: #929aaa; font-size: 9px; }.status-badge i { width: 6px; height: 6px; border-radius: 50%; background: #b9bec8; }.status-badge.enabled { color: #079669; }.status-badge.enabled i { background: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.1); }.version-badge, .draft-badge { display: inline-flex; padding: 4px 8px; border-radius: 999px; font-size: 8px; font-weight: 700; }.version-badge { color: #6758e8; background: #f0eeff; }.draft-badge { color: #8a93a4; background: #f1f2f5; }.pager { margin: 0; justify-content: flex-end; padding: 16px 18px; border-top: 1px solid #edf0f4; }
+.dialog-heading { display: flex; align-items: center; gap: 12px; padding-right: 38px; }.dialog-logo { width: 40px; height: 40px; border-radius: 11px; }.dialog-title { color: #172033; font-size: 17px; font-weight: 700; }.dialog-subtitle { margin-top: 3px; color: #8a94a6; font-size: 12px; }.dialog-mode { max-width: 260px; overflow: hidden; margin-left: auto; padding: 5px 9px; border: 1px solid #dedaff; border-radius: 999px; color: #6758e8; background: #f0efff; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.config-shell { height: min(680px, calc(94vh - 155px)); min-height: 520px; display: grid; grid-template-columns: 220px minmax(0, 1fr); overflow: hidden; border: 1px solid #e7e9f0; border-radius: 12px; background: #fafbfc; }.config-sidebar { display: flex; flex-direction: column; padding: 19px 14px; border-right: 1px solid #e7e9f0; background: #fbfbfd; }.sidebar-label { margin: 0 8px 10px; color: #9aa2b1; font-size: 9px; font-weight: 700; letter-spacing: .9px; }.step-card { display: flex; align-items: center; gap: 10px; padding: 11px 9px; border-radius: 8px; color: #7a8497; }.step-card + .step-card { margin-top: 3px; }.step-card > span { width: 29px; height: 29px; display: grid; place-items: center; flex-shrink: 0; border-radius: 8px; color: #9aa2b1; background: #eef0f4; font-size: 8px; font-weight: 800; }.step-card strong, .step-card small { display: block; }.step-card strong { color: #536075; font-size: 10px; }.step-card small { margin-top: 3px; color: #a0a7b5; font-size: 8px; }.step-card.done { background: #f2f0ff; }.step-card.done > span { color: #fff; background: linear-gradient(145deg,#6c5ce7,#8b76f6); }.step-card.done strong { color: #4c42a8; }
+.service-summary { margin-top: auto; padding: 13px; border: 1px solid #e6e8ef; border-radius: 9px; background: #fff; }.service-summary > span { color: #9aa2b1; font-size: 8px; letter-spacing: .8px; }.service-summary > strong { display: block; overflow: hidden; margin-top: 6px; color: #364154; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }.service-summary p { margin: 5px 0 10px; color: #8e97a7; font-size: 8px; }.service-summary div { display: flex; align-items: center; gap: 6px; color: #9aa2b1; font-size: 8px; }.service-summary div i { width: 6px; height: 6px; border-radius: 50%; background: #c0c5cf; }.service-summary div i.ready { background: #10b981; }
+.config-content { min-width: 0; overflow-y: auto; padding: 24px 27px; background: #fff; }.form-section + .form-section { margin-top: 25px; padding-top: 23px; border-top: 1px solid #eceef3; }.section-heading { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }.section-heading > div { display: flex; align-items: flex-start; gap: 10px; }.section-index { width: 25px; height: 25px; display: grid; place-items: center; flex-shrink: 0; border-radius: 7px; color: #635bff; background: #eeecff; font-size: 8px; font-weight: 800; }.section-heading h3 { margin: 0; color: #293247; font-size: 13px; }.section-heading p { margin: 4px 0 0; color: #929aaa; font-size: 9px; }.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }.field { min-width: 0; }.field label { display: block; margin-bottom: 7px; color: #4f596c; font-size: 10px; font-weight: 650; }.field label em { color: #ef5361; font-style: normal; }.wide-field { grid-column: 1 / -1; }.format-action { display: inline-flex; align-items: center; gap: 5px; padding: 6px 9px; border: 1px solid #dfe2e9; border-radius: 6px; color: #667085; background: #fff; font-size: 9px; cursor: pointer; }.format-action:hover { color: #635bff; border-color: #bdb7f8; }
+.editor-panel { border: 1px solid #343542; border-radius: 9px; box-shadow: none; }.editor-toolbar { padding: 8px 12px; background: #252630; }.editor-lang { font-size: 9px; }.editor-toolbar-hint { font-size: 9px; }.editor-wrap { height: 245px; }.sql-hint { display: flex; align-items: flex-start; gap: 9px; margin-top: 10px; padding: 10px 12px; border-radius: 7px; color: #667085; background: #f5f7fb; }.sql-hint span { width: 17px; height: 17px; display: grid; place-items: center; flex-shrink: 0; border-radius: 50%; color: #fff; background: #7b72e8; font-size: 9px; font-weight: 700; }.sql-hint p { margin: 1px 0 0; font-size: 9px; line-height: 1.55; }.param-counter { padding: 4px 7px; border-radius: 5px; color: #6758e8; background: #f0efff; font-size: 8px; font-weight: 700; }
+.parameter-table { overflow: hidden; border: 1px solid #e5e8ef; border-radius: 9px; }.parameter-head, .parameter-row { display: grid; grid-template-columns: 1.1fr .75fr 1.2fr 1.3fr; align-items: center; gap: 10px; padding: 9px 12px; }.parameter-head { color: #8992a3; background: #f7f8fa; font-size: 8px; font-weight: 700; }.parameter-row + .parameter-row { border-top: 1px solid #edf0f4; }.parameter-name { min-width: 0; }.parameter-name code { display: block; overflow: hidden; color: #635bff; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }.parameter-name small { display: block; margin-top: 3px; color: #eb5967; font-size: 8px; }.parameter-empty { display: flex; align-items: center; gap: 13px; padding: 18px; border: 1px dashed #dfe3ea; border-radius: 9px; background: #fafbfc; }.parameter-empty > span { width: 37px; height: 37px; display: grid; place-items: center; border-radius: 9px; color: #7469df; background: #eeecff; font-family: monospace; font-size: 12px; }.parameter-empty strong, .parameter-empty p { display: block; }.parameter-empty strong { color: #566176; font-size: 10px; }.parameter-empty p { margin: 4px 0 0; color: #9aa2b1; font-size: 8px; }.runtime-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }.setting-card { display: flex; align-items: center; gap: 9px; padding: 13px 14px; border: 1px solid #e8eaf0; border-radius: 8px; background: #fafbfc; }.setting-card > div { min-width: 0; flex: 1; }.setting-card strong, .setting-card small { display: block; }.setting-card strong { color: #4b5568; font-size: 10px; }.setting-card small { margin-top: 4px; color: #969ead; font-size: 8px; }.setting-card > span { color: #8f98a8; font-size: 9px; }.dialog-footer { width: 100%; display: flex; align-items: center; }.footer-tip { margin-right: auto; color: #8f98a8; font-size: 9px; }
+.test-shell { display: grid; grid-template-columns: 320px minmax(0,1fr); overflow: hidden; min-height: 350px; border: 1px solid #e5e8ef; border-radius: 10px; }.test-params-panel, .test-result-panel { min-width: 0; padding: 16px; }.test-params-panel { border-right: 1px solid #e5e8ef; background: #fafbfc; }.test-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }.test-panel-head > div strong, .test-panel-head > div span { display: block; }.test-panel-head strong { color: #3c4659; font-size: 11px; }.test-panel-head > div span { margin-top: 3px; color: #9aa2b1; font-size: 8px; }.test-param-list { display: grid; gap: 12px; max-height: 245px; overflow-y: auto; padding-right: 3px; }.test-param-item { padding: 10px; border: 1px solid #e5e8ef; border-radius: 8px; background: #fff; }.test-param-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }.test-param-label code { color: #635bff; font-size: 10px; font-weight: 700; }.test-param-label span { color: #e45564; font-size: 8px; }.test-param-control { display: flex; gap: 7px; }.test-actions { margin: 14px 0 0; }.parameter-empty.compact { padding: 14px; }.json-hint { margin-top: 5px; color: #9aa2b1; font-size: 8px; }.test-logo { font-size: 7px; background: linear-gradient(145deg,#0ea5a4,#3b82f6); }.result-table { width: 100%; }.curl-block { margin-top: 14px; border-radius: 9px; }.curl-head { padding: 9px 12px; }.curl-head > div:first-child strong, .curl-head > div:first-child span { display: block; }.curl-head > div:first-child strong { font-size: 10px; }.curl-head > div:first-child span { margin-top: 3px; color: #929aaa; font-size: 8px; font-weight: 400; }.curl-code { max-height: 145px; font-size: 10px; }
+.publish-target { border-radius: 9px; }.log-block { border-radius: 8px; }.muted { color: #c0c4cc; }
+@media (max-width: 900px) { .page-hero { align-items: flex-start; flex-wrap: wrap; }.hero-stats { order: 3; width: 100%; }.hero-stats > div:first-child { border-left: 0; }.config-shell { grid-template-columns: 185px minmax(0,1fr); }.config-content { padding: 21px 18px; }.parameter-head, .parameter-row { grid-template-columns: 1fr 90px 1fr; }.parameter-head span:last-child, .parameter-row > :last-child { display: none; }.test-shell { grid-template-columns: 280px minmax(0,1fr); } }
+@media (max-width: 680px) { .page-hero { gap: 16px; padding: 18px; }.hero-copy { min-width: 0; width: 100%; }.page-hero p, .support-tip { display: none; }.hero-stats > div { min-width: 0; flex: 1; padding: 3px 9px; }.list-heading { padding: 0 14px; }.dialog-heading { gap: 9px; padding-right: 28px; }.dialog-logo { width: 34px; height: 34px; }.dialog-subtitle, .dialog-mode { display: none; }.dialog-title { font-size: 15px; white-space: nowrap; }.config-shell { height: calc(94vh - 138px); min-height: 0; display: block; overflow-y: auto; }.config-sidebar { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; padding: 10px; border-right: 0; border-bottom: 1px solid #e7e9f0; }.sidebar-label { grid-column: 1/-1; }.step-card { padding: 7px; }.step-card small, .service-summary { display: none; }.config-content { overflow: visible; padding: 18px 13px; }.form-grid, .runtime-grid { grid-template-columns: 1fr; }.wide-field { grid-column: auto; }.parameter-head { display: none; }.parameter-row { grid-template-columns: 1fr; gap: 7px; padding: 12px; }.parameter-row > :last-child { display: flex; }.parameter-row + .parameter-row { border-top: 1px solid #e7e9f0; }.footer-tip { display: none; }.dialog-footer { gap: 5px; }.dialog-footer .el-button { min-width: 0; margin-left: 0; padding: 8px 9px; font-size: 11px; }.test-shell { display: block; max-height: calc(92vh - 340px); overflow-y: auto; }.test-params-panel { border-right: 0; border-bottom: 1px solid #e5e8ef; }.curl-head { align-items: flex-start; gap: 9px; }.curl-head-right { flex-wrap: wrap; justify-content: flex-end; } }
+</style>
+
+<style>
+.api-config-dialog.el-dialog, .api-test-dialog.el-dialog { overflow: hidden; border-radius: 14px; }
+.api-config-dialog .el-dialog__header, .api-test-dialog .el-dialog__header { margin-right: 0; padding: 18px 22px 14px; border-bottom: 1px solid #edf0f4; }
+.api-config-dialog .el-dialog__body, .api-test-dialog .el-dialog__body { padding: 16px 20px; }
+.api-config-dialog .el-dialog__footer { padding: 13px 20px 17px; border-top: 1px solid #edf0f4; }
+@media (max-width:680px) { .api-config-dialog .el-dialog__header, .api-test-dialog .el-dialog__header { padding: 14px 13px 11px; }.api-config-dialog .el-dialog__body, .api-test-dialog .el-dialog__body { padding: 10px; }.api-config-dialog .el-dialog__footer { padding: 10px 12px 12px; } }
 </style>

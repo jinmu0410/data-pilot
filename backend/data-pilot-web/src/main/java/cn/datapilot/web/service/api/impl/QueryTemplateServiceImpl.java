@@ -64,6 +64,11 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
     private static final int PREVIEW_ROW_LIMIT = 200;
 
     /**
+     * 对外分页单页上限，避免超大请求占满连接与内存
+     */
+    private static final int MAX_PAGE_SIZE = 1000;
+
+    /**
      * 响应参数记录上限（字符）
      */
     private static final int RESPONSE_ARG_LIMIT = 2000;
@@ -131,7 +136,8 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
 
     @Override
     public QueryTemplateDetailResponse detail(Long id) {
-        QueryTemplate template = this.getById(id);
+        WorkspaceData workspace = Context.getWorkspace();
+        QueryTemplate template = this.resolveTemplate(id, workspace.getCode());
         if (template == null) {
             return null;
         }
@@ -153,6 +159,7 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
             throw new ApiException("模板名称已存在");
         }
         this.resolveDataSource(request.getDataSourceCode(), workspace.getCode());
+        this.validateReadOnlyTemplate(request.getTemplate());
         QueryTemplate template = new QueryTemplate();
         this.orikaMapper.map(request, template);
         template.setCode(UUID.fastUUID().toString(true));
@@ -177,11 +184,12 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
                 .exists()) {
             throw new ApiException("模板名称已存在");
         }
-        QueryTemplate template = this.getById(request.getId());
+        QueryTemplate template = this.resolveTemplate(request.getId(), workspace.getCode());
         if (template == null) {
             throw new ApiException("模板不存在");
         }
         this.resolveDataSource(request.getDataSourceCode(), workspace.getCode());
+        this.validateReadOnlyTemplate(request.getTemplate());
         this.orikaMapper.map(request, template);
         this.updateById(template);
         return true;
@@ -189,25 +197,46 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
 
     @Override
     public Boolean delete(Long id) {
-        QueryTemplate template = this.getById(id);
+        WorkspaceData workspace = Context.getWorkspace();
+        QueryTemplate template = this.resolveTemplate(id, workspace.getCode());
         if (template == null) {
             return false;
         }
         this.removeById(id);
+        this.queryTemplatePublishMapper.delete(new LambdaQueryWrapper<QueryTemplatePublish>()
+                .eq(QueryTemplatePublish::getCode, template.getCode())
+                .eq(QueryTemplatePublish::getWorkspaceCode, workspace.getCode()));
+        this.cache.clear();
         return true;
     }
 
     @Override
     public QueryTemplatePublishResponse publish(QueryTemplatePublishRequest request) {
         WorkspaceData workspace = Context.getWorkspace();
-        QueryTemplate template = this.getById(request.getId());
+        QueryTemplate template = this.resolveTemplate(request.getId(), workspace.getCode());
         if (template == null) {
             throw new ApiException("模板不存在");
         }
         this.resolveDataSource(template.getDataSourceCode(), workspace.getCode());
+        this.validateReadOnlyTemplate(template.getTemplate());
         long count = this.queryTemplatePublishMapper.selectCount(
-                new LambdaQueryWrapper<QueryTemplatePublish>().eq(QueryTemplatePublish::getCode, template.getCode()));
+                new LambdaQueryWrapper<QueryTemplatePublish>()
+                        .eq(QueryTemplatePublish::getCode, template.getCode())
+                        .eq(QueryTemplatePublish::getWorkspaceCode, workspace.getCode()));
         String version = "v" + (count + 1);
+
+        if ("ENABLE".equals(request.getEnableLimiting())) {
+            if (request.getLimitRate() == null || request.getLimitRate() < 1) {
+                throw new ApiException("限流次数必须大于 0");
+            }
+            if (request.getLimitRefreshInterval() == null || request.getLimitRefreshInterval() < 1) {
+                throw new ApiException("限流周期必须大于 0");
+            }
+            if (StrUtil.isBlank(request.getLimitTimeUnit())
+                    || !Set.of("SECONDS", "MINUTES", "HOURS").contains(request.getLimitTimeUnit())) {
+                throw new ApiException("限流时间单位不合法");
+            }
+        }
 
         QueryTemplatePublish publish = new QueryTemplatePublish();
         publish.setName(template.getName());
@@ -229,6 +258,9 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
         publish.setCreateUserId(Context.getUser().getId());
         this.queryTemplatePublishMapper.insert(publish);
 
+        // 发布策略变更后清理旧限流器，下一次调用将按新版本重新初始化。
+        this.redissonClient.getRateLimiter(RedisKey.QUERY_TEMPLATE_LIMIT.build(template.getCode())).delete();
+
         template.setSecret(publish.getSecret());
         template.setCurrentVersion(version);
         template.setPublishVersion(version);
@@ -246,7 +278,7 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
         String templateText;
         Integer timeout;
         if (request.getId() != null) {
-            QueryTemplate template = this.getById(request.getId());
+            QueryTemplate template = this.resolveTemplate(request.getId(), workspace.getCode());
             if (template == null) {
                 throw new ApiException("模板不存在");
             }
@@ -284,11 +316,11 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
         String requestId = TraceInterceptor.getRequestId();
         String method = StrUtil.isBlank(request.getMethod()) ? "list" : request.getMethod().toLowerCase();
         if (!METHODS.contains(method)) {
-            method = "list";
+            throw new ApiException("不支持的调用方法: {}", method);
         }
         Map<String, Object> params = request.getParams();
-        int pageNum = request.getPageNum() == null ? 1 : request.getPageNum();
-        int pageSize = request.getPageSize() == null ? 10 : request.getPageSize();
+        int pageNum = request.getPageNum() == null ? 1 : Math.max(1, request.getPageNum());
+        int pageSize = request.getPageSize() == null ? 10 : Math.max(1, Math.min(MAX_PAGE_SIZE, request.getPageSize()));
         long start = System.currentTimeMillis();
 
         QueryLog queryLog = new QueryLog();
@@ -309,7 +341,7 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
             this.checkRateLimit(publish);
             QueryCallResponse response;
             if ("ENABLE".equals(publish.getEnableCache())) {
-                String cacheKey = this.buildCacheKey(publish.getCode(), method, params, pageNum, pageSize);
+                String cacheKey = this.buildCacheKey(publish.getCode(), publish.getVersion(), method, params, pageNum, pageSize);
                 response = this.cache.get(cacheKey);
                 if (response != null) {
                     queryLog.setHitCache("YES");
@@ -372,7 +404,10 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
 
     @Override
     public QueryLogDetailResponse logDetail(Long id) {
-        QueryLog queryLog = this.queryLogMapper.selectById(id);
+        WorkspaceData workspace = Context.getWorkspace();
+        QueryLog queryLog = this.queryLogMapper.selectOne(new LambdaQueryWrapper<QueryLog>()
+                .eq(QueryLog::getId, id)
+                .eq(QueryLog::getWorkspaceCode, workspace.getCode()));
         if (queryLog == null) {
             return null;
         }
@@ -425,9 +460,7 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
      * 解析模板占位符为 ? 并收集绑定值
      */
     private PreparedSql prepareSql(String template, Map<String, Object> params) {
-        if (StrUtil.isBlank(template)) {
-            throw new ApiException("模板不能为空");
-        }
+        this.validateReadOnlyTemplate(template);
         Matcher matcher = PLACEHOLDER.matcher(template);
         List<String> names = new ArrayList<>();
         StringBuffer sb = new StringBuffer();
@@ -444,6 +477,72 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
             bindValues.add(params.get(name));
         }
         return new PreparedSql(sb.toString(), bindValues);
+    }
+
+    /**
+     * 数据 API 只允许单条只读查询。占位符只能用于值绑定，不能借助多语句执行写操作。
+     */
+    private void validateReadOnlyTemplate(String template) {
+        if (StrUtil.isBlank(template)) {
+            throw new ApiException("模板不能为空");
+        }
+        String normalized = this.stripLeadingComments(template).stripLeading();
+        String lower = normalized.toLowerCase(Locale.ROOT);
+        if (!lower.matches("^(select|with)\\b[\\s\\S]*")) {
+            throw new ApiException("API 模板只允许 SELECT 或 WITH 查询");
+        }
+        if (this.containsStatementSeparator(normalized)) {
+            throw new ApiException("API 模板只允许单条 SQL，不支持多语句");
+        }
+    }
+
+    private String stripLeadingComments(String sql) {
+        String value = sql;
+        boolean changed;
+        do {
+            changed = false;
+            value = value.stripLeading();
+            if (value.startsWith("--")) {
+                int lineEnd = value.indexOf('\n');
+                value = lineEnd < 0 ? "" : value.substring(lineEnd + 1);
+                changed = true;
+            } else if (value.startsWith("/*")) {
+                int commentEnd = value.indexOf("*/", 2);
+                if (commentEnd < 0) {
+                    throw new ApiException("SQL 注释未闭合");
+                }
+                value = value.substring(commentEnd + 2);
+                changed = true;
+            }
+        } while (changed);
+        return value;
+    }
+
+    private boolean containsStatementSeparator(String sql) {
+        boolean singleQuote = false;
+        boolean doubleQuote = false;
+        boolean backtick = false;
+        for (int i = 0; i < sql.length(); i++) {
+            char current = sql.charAt(i);
+            char next = i + 1 < sql.length() ? sql.charAt(i + 1) : '\0';
+            if (!singleQuote && !doubleQuote && !backtick && current == '-' && next == '-') {
+                int lineEnd = sql.indexOf('\n', i + 2);
+                if (lineEnd < 0) return false;
+                i = lineEnd;
+                continue;
+            }
+            if (!singleQuote && !doubleQuote && !backtick && current == '/' && next == '*') {
+                int commentEnd = sql.indexOf("*/", i + 2);
+                if (commentEnd < 0) throw new ApiException("SQL 注释未闭合");
+                i = commentEnd + 1;
+                continue;
+            }
+            if (!doubleQuote && !backtick && current == '\'' && (i == 0 || sql.charAt(i - 1) != '\\')) singleQuote = !singleQuote;
+            else if (!singleQuote && !backtick && current == '"' && (i == 0 || sql.charAt(i - 1) != '\\')) doubleQuote = !doubleQuote;
+            else if (!singleQuote && !doubleQuote && current == '`') backtick = !backtick;
+            else if (!singleQuote && !doubleQuote && !backtick && current == ';' && !sql.substring(i + 1).trim().isEmpty()) return true;
+        }
+        return false;
     }
 
     /**
@@ -545,8 +644,9 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
         };
     }
 
-    private String buildCacheKey(String code, String method, Map<String, Object> params, int pageNum, int pageSize) {
-        return code + "|" + method + "|" + JSON.toJSONString(params) + "|" + pageNum + "|" + pageSize;
+    private String buildCacheKey(String code, String version, String method, Map<String, Object> params,
+                                 int pageNum, int pageSize) {
+        return code + "|" + version + "|" + method + "|" + JSON.toJSONString(params) + "|" + pageNum + "|" + pageSize;
     }
 
     private long extractNumber(QueryCallResponse response) {
@@ -598,6 +698,16 @@ public class QueryTemplateServiceImpl extends ServiceImpl<QueryTemplateMapper, Q
             throw new ApiException("数据源非启用状态");
         }
         return dataSource;
+    }
+
+    private QueryTemplate resolveTemplate(Long id, String workspaceCode) {
+        if (id == null || StrUtil.isBlank(workspaceCode)) {
+            return null;
+        }
+        return this.lambdaQuery()
+                .eq(QueryTemplate::getId, id)
+                .eq(QueryTemplate::getWorkspaceCode, workspaceCode)
+                .one();
     }
 
     private Object convertValue(Object value) {
